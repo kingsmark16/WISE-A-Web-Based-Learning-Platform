@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id String @id @default(ulid())
+  clerkId String @unique
+  fullName String?
+  emailAddress String @unique
+  imageUrl String?
+  role Role @default(STUDENT)
+  createdAt DateTime @default(now())
+
+  createdCourses Course[] @relation("CourseCreator")
+  managedCourses Course[] @relation("CourseFaculty")
+
+  assignedBy FacultyAssignment[] @relation("AssignedFaculty")
+  assignedFaculty FacultyAssignment[] @relation("AssigningAdmin")
+
+  enrollments Enrollment[]
+}
+
+model Course {
+  id String @id @default(ulid())
+  title String
+  description String?
+  thumbnail String?
+  category String
+  isPublished Boolean @default(false)
+  code String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String
+  createdBy User @relation("CourseCreator", fields: [createdById], references: [id])
+
+  facultyId String?
+  managedBy User? @relation("CourseFaculty", fields: [facultyId], references: [id])
+
+  facultyAssignments FacultyAssignment[]
+
+  enrollments Enrollment[]
+
+  @@index([createdById])
+  @@index([facultyId])
+  @@index([category])
+}
+
+model FacultyAssignment {
+  id String @id @default(ulid())
+
+  adminId String
+  admin User @relation("AssigningAdmin", fields: [adminId], references: [id])
+
+  facultyId String
+  faculty User @relation("AssignedFaculty", fields: [facultyId], references: [id])
+
+  courseId String
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@unique([facultyId, courseId])
+  @@index([adminId])
+  @@index([facultyId])
+  @@index([courseId])
+}
+
+model Enrollment {
+  id String @id @default(ulid())
+  studentId String
+  courseId String
+  enrolledAt DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+enum Role {
+  ADMIN
+  FACULTY
+  STUDENT
+}

@@ -1,0 +1,40 @@
+import express from 'express'
+import dotenv from 'dotenv'
+import cors from 'cors'
+import { clerkMiddleware, requireAuth } from '@clerk/express'
+import authRoutes from './routes/authRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
+import guestRoutes from './routes/guestRoutes.js'
+import studentRoutes from './routes/studentRoutes.js'
+import courseRoutes from './routes/courseRoutes.js'
+import statsRoutes from './routes/statsRoutes.js'
+import facultyRoutes from './routes/facultyRoutes.js'
+
+const app = express();
+
+dotenv.config();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(cors(
+    {
+        origin:'http://localhost:5173',
+        credentials: true
+    }
+));
+app.use(clerkMiddleware()); 
+
+
+
+app.use('/api/admin', requireAuth(), adminRoutes);
+app.use('/api/student', requireAuth(), studentRoutes);
+app.use('/api/faculty', facultyRoutes);
+app.use('/api/course', courseRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/auth',requireAuth(), authRoutes);
+app.use('/api', guestRoutes);
+
+app.listen(PORT, () => {
+    console.log(`Server running in PORT ${PORT}`);
+})
+
