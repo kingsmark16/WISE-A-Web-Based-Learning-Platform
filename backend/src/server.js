@@ -18,7 +18,10 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors(
     {
-        origin:'http://localhost:5173',
+        origin: [
+            'http://localhost:5173',
+            'http://192.168.254.180:5173',
+        ],
         credentials: true
     }
 ));
@@ -34,7 +37,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/auth',requireAuth(), authRoutes);
 app.use('/api', guestRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running in PORT ${PORT}`);
 })
 

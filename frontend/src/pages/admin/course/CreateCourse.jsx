@@ -3,18 +3,21 @@ import { useGetFacultyId } from "../../../hooks/useGetFaculty";
 import { useCreateCourse } from "../../../hooks/useCourses";
 
 const categories = [
-  "Technology Programming",
-  "Business Entrepreneurship",
-  "Creative Art & Design",
-  "Health and Wellness",
-  "Education Teaching",
-  "Personal Development",
-  "Science Engineering",
+  "Technology",
+  "Business",
+  "Design",
+  "Health",
+  "Education",
+  "Science",
+  "Engineering",
   "Mathematics",
-  "Social Sciences Humanities",
-  "Career Professional Development",
-  "Finance Economics",
-  "Law Politics Society"
+  "Humanities",
+  "Management",
+  "Environment",
+  "Law",
+  "Research",
+  "Communication",
+  "Culture"
 ];
 
 const CreateCourse = () => {

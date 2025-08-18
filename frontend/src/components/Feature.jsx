@@ -1,3 +1,4 @@
+import SpotlightCard from './SpotlightCard';
 
 const features = [
     {
@@ -18,10 +19,12 @@ const Feature = () => {
   return (
     <>
       {features.map((item) => (
-        <div key={item.title} className="w-80 flex justify-center items-center flex-col bg-secondary py-7 px-3 gap-5 hover:bg-secondary/80">
-            <h3 className="font-semibold text-lg">{item.title}</h3>
-            <p className="text-center font-light">{item.description}</p>
-        </div>
+        
+        <SpotlightCard key={item.title} className="custom-spotlight-card flex justify-center items-center flex-col w-80 py-11 md:py-14 gap-4" spotlightColor="rgba(0, 229, 255, 0.2)">
+            <h3 className="text-primary font-semibold text-lg md:text-xl">{item.title}</h3>
+            <p className="text-center text-sm md:text-md font-light">{item.description}</p>
+        </SpotlightCard>
+        
       ))}
     </>
   )
