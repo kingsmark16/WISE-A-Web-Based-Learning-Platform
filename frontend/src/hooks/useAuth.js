@@ -100,11 +100,11 @@ export const useVerifyEmailMutation = () => {
 }
 
 export const useGoogleSignUpMutation = () => {
-    const {signUp} = useSignUp();
+    const {signIn} = useSignIn();
 
     return useMutation({
         mutationFn: async () => {
-            await signUp.authenticateWithRedirect({
+            await signIn.authenticateWithRedirect({
                 strategy: 'oauth_google',
                 redirectUrl: '/sso-callback',
                 redirectUrlComplete: '/auth-callback'

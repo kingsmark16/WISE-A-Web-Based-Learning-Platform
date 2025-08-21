@@ -13,7 +13,7 @@ const LandingPage = () => {
   const separator2Ref = useRef(null);
 
   useEffect(() => {
-    // First separator flowing animation
+    
     if (separator1Ref.current) {
       const flowElement = separator1Ref.current.querySelector('.flow-element');
       
@@ -35,7 +35,7 @@ const LandingPage = () => {
       });
     }
 
-    // Second separator - same animation as first
+    
     if (separator2Ref.current) {
       const flowElement = separator2Ref.current.querySelector('.flow-element');
       
@@ -78,8 +78,10 @@ const LandingPage = () => {
       <div className="flex justify-center items-center flex-col gap-5 text-center pt-25 sm:pt-30 md:pt-45 md:pb-10 mx-auto">
         <h1 className="text-2xl px-2 leading-10 tracking-wide md:px-0 md:text-4xl lg:text-5xl md:tracking-normal font-bold md:mb-5"><span className="text-primary">Learning</span> Without Limits</h1>
         <div className="w-[90%] xl:w-[60%] flex justify-center items-center flex-col mt-5 gap-6">
-          <h3 className="text-lg md:text-xl font-medium">Welcome to WISE</h3>
-          <p className="text-sm md:text-base font-light leading-6 md:leading-7 mt-3">Designed exclusively for Partido State University. WISE offers a modern, accessible platform where students can explore and enroll in micro-credential courses across various fields.
+          <div>
+            <img src="PSU_LOGO.png" alt="" className="w-40 h-40" />
+          </div>
+          <p className="text-sm md:text-base lg:text-lg font-light leading-6 md:leading-7 mt-3">WISE is Partido State University’s dedicated platform for accessible, modern, and skill-focused education. Explore, enroll, and excel in micro-credential courses designed to prepare you for today’s dynamic world.
           </p>
         </div>
         <div className="mt-6 md:mt-8">
@@ -101,7 +103,7 @@ const LandingPage = () => {
       </div>
       
       
-      {/* Animated separator 1 */}
+   
       <div ref={separator1Ref} className="relative py-16 sm:py-20 overflow-hidden">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full h-px bg-gradient-to-r from-transparent via-muted-foreground/20 to-transparent"></div>
@@ -109,7 +111,6 @@ const LandingPage = () => {
         <div className="relative flex justify-center">
           <div className="relative overflow-hidden">
             <div className="bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 h-px w-32 sm:w-48"></div>
-            {/* Flowing animation element */}
             <div className="flow-element absolute top-0 left-0 h-px w-8 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
           </div>
         </div>
@@ -118,7 +119,7 @@ const LandingPage = () => {
     
       <div className="flex justify-center items-center flex-col">
         <h2 className="text-xl md:text-2xl font-bold">Unlock Your Potential with WISE</h2>
-        <div className="flex justify-center items-center flex-wrap gap-10 mt-5 mx-14">
+        <div className="mt-16 flex justify-center items-center flex-wrap gap-10 mx-14">
           <Feature/>
         </div>
       </div>
@@ -129,7 +130,7 @@ const LandingPage = () => {
         <RandomCourse/>
       </div>
 
-      {/* Animated separator 2 - Same as separator 1 */}
+      
       <div ref={separator2Ref} className="relative py-16 sm:py-20 overflow-hidden">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full h-px bg-gradient-to-r from-transparent via-muted-foreground/20 to-transparent"></div>
@@ -137,7 +138,6 @@ const LandingPage = () => {
         <div className="relative flex justify-center">
           <div className="relative overflow-hidden">
             <div className="bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 h-px w-32 sm:w-48"></div>
-            {/* Flowing animation element */}
             <div className="flow-element absolute top-0 left-0 h-px w-8 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
           </div>
         </div>

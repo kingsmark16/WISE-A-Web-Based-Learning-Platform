@@ -39,6 +39,14 @@ const SignUp = () => {
         }
     }
 
+    const handleGoogleSignUp = async () => {
+      try {
+        await googleSignupMutation.mutateAsync();
+      } catch (error) {
+        console.error('Error in GoogleSignUp', error);
+      }
+    }
+
   return (
     <div>
         <div>
@@ -123,7 +131,7 @@ const SignUp = () => {
                     </p>
                     <div className="space-y-2">
                         <button
-                        onClick={() => googleSignupMutation.mutateAsync()}
+                        onClick={handleGoogleSignUp}
                         className="flex w-full items-center justify-center gap-x-3 rounded-md bg-gradient-to-b from-white to-neutral-50 px-2 py-1.5 text-sm font-medium text-neutral-950 shadow outline-none ring-1 ring-black/5 hover:to-neutral-100 focus-visible:outline-offset-2 focus-visible:outline-neutral-600 active:text-neutral-950/60"
                         >
                         Sign up with Google

@@ -93,6 +93,8 @@ const ChromaGrid = ({
     handleLeave();
   };
 
+  if(!data) return <div>No courses available</div>
+
   return (
     <div
       ref={rootRef}
