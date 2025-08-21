@@ -1,82 +1,276 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {
-  id String @id @default(ulid())
-  clerkId String @unique
-  fullName String?
-  emailAddress String @unique
-  imageUrl String?
-  role Role @default(STUDENT)
-  createdAt DateTime @default(now())
+  id           String    @id @default(ulid())
+  clerkId      String    @unique
+  fullName     String?
+  emailAddress String    @unique
+  imageUrl     String?
+  role         Role      @default(STUDENT)
+  createdAt    DateTime  @default(now())
 
   createdCourses Course[] @relation("CourseCreator")
   managedCourses Course[] @relation("CourseFaculty")
 
-  assignedBy FacultyAssignment[] @relation("AssignedFaculty")
-  assignedFaculty FacultyAssignment[] @relation("AssigningAdmin")
 
-  enrollments Enrollment[]
+  enrollments      Enrollment[]
+  completions      CourseCompletion[]
+  certificates     Certificate[]
+  
+  quizSubmissions  QuizSubmission[]
+
+  // Forum relations - if you decide to add these
+  forumPosts       ForumPost[]
+  forumReplies     ForumReply[]
 }
 
 model Course {
-  id String @id @default(ulid())
-  title String
+  id          String    @id @default(ulid())
+  title       String
   description String?
-  thumbnail String?
-  category String
-  isPublished Boolean @default(false)
-  code String? @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  thumbnail   String?
+  category    String
+  isPublished Boolean   @default(false)
+  code        String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   createdById String
-  createdBy User @relation("CourseCreator", fields: [createdById], references: [id])
+  createdBy   User      @relation("CourseCreator", fields: [createdById], references: [id])
 
-  facultyId String?
-  managedBy User? @relation("CourseFaculty", fields: [facultyId], references: [id])
+  facultyId   String?
+  managedBy   User?     @relation("CourseFaculty", fields: [facultyId], references: [id])
 
-  facultyAssignments FacultyAssignment[]
-
-  enrollments Enrollment[]
+  
+  enrollments        Enrollment[]
+  
+  // Course content
+  chapters           Chapter[]
+  
+  // Completion tracking
+  completions        CourseCompletion[]
+  certificates       Certificate[]
+  
+  // Forum
+  forumPosts         ForumPost[]
 
   @@index([createdById])
   @@index([facultyId])
   @@index([category])
 }
 
-model FacultyAssignment {
-  id String @id @default(ulid())
+model Chapter {
+  id          String    @id @default(ulid())
+  title       String
+  description String?
+  position    Int
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  adminId String
-  admin User @relation("AssigningAdmin", fields: [adminId], references: [id])
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  facultyId String
-  faculty User @relation("AssignedFaculty", fields: [facultyId], references: [id])
+  videoLessons VideoLesson[]
+  quiz         Quiz?
+  attachments  Attachment[]
 
-  courseId String
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  assignedAt DateTime @default(now())
-
-  @@unique([facultyId, courseId])
-  @@index([adminId])
-  @@index([facultyId])
+  @@unique([courseId, position])
   @@index([courseId])
 }
+
+model VideoLesson {
+  id          String   @id @default(ulid())
+  title       String
+  description String?
+  videoUrl    String
+  position    Int
+  duration    Int?     // in seconds
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapterId   String
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, position])
+  @@index([chapterId])
+}
+
+model Quiz {
+  id          String   @id @default(ulid())
+  title       String
+  description String?
+  isPublished Boolean  @default(false)
+  timeLimit   Int?     // in minutes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapterId   String   @unique
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  questions    QuizQuestion[]
+  submissions  QuizSubmission[]
+}
+
+model QuizQuestion {
+  id            String           @id @default(ulid())
+  question      String
+  type          QuestionType
+  options       String[]
+  correctAnswer String
+  explanation   String?
+  points        Int              @default(1)
+  position      Int
+  
+  quizId        String
+  quiz          Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  answers       QuizAnswer[]
+
+  @@unique([quizId, position])
+  @@index([quizId])
+}
+
+model QuizSubmission {
+  id        String   @id @default(ulid())
+  score     Int?
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  answers   QuizAnswer[]
+
+  @@index([studentId])
+  @@index([quizId])
+}
+
+model QuizAnswer {
+  id             String   @id @default(ulid())
+  answer         String
+  isCorrect      Boolean?
+  
+  submissionId   String
+  submission     QuizSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  questionId     String
+  question       QuizQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, questionId])
+  @@index([submissionId])
+  @@index([questionId])
+}
+
+model Attachment {
+  id        String     @id @default(ulid())
+  name      String
+  url       String
+  fileType  FileType
+  size      Int        // in bytes
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  chapterId String
+  chapter   Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId])
+}
+
+// Forum models
+model ForumPost {
+  id          String      @id @default(ulid())
+  title       String
+  content     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  isPinned    Boolean     @default(false)
+  isLocked    Boolean     @default(false)
+  
+  courseId    String
+  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+  
+  replies     ForumReply[]
+
+  @@index([courseId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model ForumReply {
+  id          String      @id @default(ulid())
+  content     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  isAnswer    Boolean     @default(false)
+  
+  postId      String
+  post        ForumPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+// Course completion and certification
+model CourseCompletion {
+  id               String   @id @default(ulid())
+  completedAt      DateTime @default(now())
+  
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseId         String
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  certificate      Certificate?
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Certificate {
+  id               String   @id @default(ulid())
+  certificateNumber String  @unique
+  issueDate        DateTime @default(now())
+  certificateUrl   String?
+  
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseId         String
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  completionId     String   @unique
+  completion       CourseCompletion @relation(fields: [completionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([certificateNumber])
+}
+
 
 model Enrollment {
   id String @id @default(ulid())
@@ -96,4 +290,20 @@ enum Role {
   ADMIN
   FACULTY
   STUDENT
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum FileType {
+  PDF
+  IMAGE
+  DOCUMENT
+  SPREADSHEET
+  PRESENTATION
+  ARCHIVE
+  OTHER
 }
