@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { generateCourseCode } from "../utils/generateCourseCode.js";
 
+
 const prisma = new PrismaClient();
+
 
 export const createCourse = async (req, res) => {
    
