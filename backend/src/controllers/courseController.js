@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { generateCourseCode } from "../utils/generateCourseCode.js";
+import cloudinary from "../lib/cloudinary.js";
 
 
 const prisma = new PrismaClient();
@@ -8,7 +9,7 @@ const prisma = new PrismaClient();
 export const createCourse = async (req, res) => {
    
    try {
-      const {title, description, thumbnail, category, facultyId} = req.body;
+      const {title, description, category, facultyId} = req.body;
       const code = generateCourseCode();
 
       if(!title || !category){
@@ -27,12 +28,36 @@ export const createCourse = async (req, res) => {
          }
       })
 
+      let thumbnailUrl = null;
+      if(req.file){
+        try {
+            const uploadResult = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'course-thumbnails',
+                        resource_type: 'image',
+                    },
+                    (error, result) => {
+                        if(error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                uploadStream.end(req.file.buffer);
+            });
+
+            thumbnailUrl = uploadResult.secure_url;
+        } catch (uploadError) {
+            console.log("Error uploading to Cloudinary:", uploadError);
+            return res.status(500).json({message: "Error uploading thumbnail"});
+        }
+      }
+
 
       const newCourse = await prisma.course.create({
          data: {
             title,
             description,
-            thumbnail,
+            thumbnail: thumbnailUrl,
             category,
             code,
             createdById,
