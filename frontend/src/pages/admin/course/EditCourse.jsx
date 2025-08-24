@@ -1,21 +1,25 @@
 import { useEffect, useState } from "react";
 import { useGetCourse, useUpdateCourse } from "../../../hooks/useCourses"
 import { useNavigate, useParams } from "react-router-dom";
+import { useUploadImage } from "../../../hooks/uploads/useUploadImage";
 
 
 const categories = [
-  "Technology Programming",
-  "Business Entrepreneurship",
-  "Creative Art & Design",
-  "Health and Wellness",
-  "Education Teaching",
-  "Personal Development",
-  "Science Engineering",
+  "Technology",
+  "Business",
+  "Design",
+  "Health",
+  "Education",
+  "Science",
+  "Engineering",
   "Mathematics",
-  "Social Sciences Humanities",
-  "Career Professional Development",
-  "Finance Economics",
-  "Law Politics Society"
+  "Humanities",
+  "Management",
+  "Environment",
+  "Law",
+  "Research",
+  "Communication",
+  "Culture"
 ];
 
 const EditCourse = () => {
@@ -23,7 +27,8 @@ const EditCourse = () => {
     const {id} = useParams();
     const navigate = useNavigate();
     const {data, isLoading, error} = useGetCourse(id);
-    const {mutate: updateCourse, isPending} = useUpdateCourse();
+    const {mutate: updateCourse, isPending: isUpdating} = useUpdateCourse();
+    const {mutate: uploadImage, isPending: isUploading, error: uploadError} = useUploadImage();
 
     const [formData, setFormData] = useState({
         title: "",
@@ -31,7 +36,11 @@ const EditCourse = () => {
         category: "",
         thumbnail: "",
         isPublished: false
-    })
+    });
+
+    const [thumbnailPreview, setThumbnailPreview] = useState("");
+    const [thumbnailPublicId, setThumbnailPublicId] = useState("");
+    const [newImageSelected, setNewImageSelected] = useState(false);
 
     useEffect(() => {
         if(data?.course) {
@@ -41,13 +50,68 @@ const EditCourse = () => {
                 category: data.course.category || "",
                 thumbnail: data.course.thumbnail || "",
                 isPublished: data.course.isPublished || false
-            })
+            });
+
+            setThumbnailPreview(data.course.thumbnail || "");
+
+            if(data.course.thumbnail){
+                const publicId = extractPublicIdFromUrl(data.course.thumbnail);
+                setThumbnailPublicId(publicId);
+            }
         }
     }, [data]);
 
 
+    const extractPublicIdFromUrl = (url) => {
+        if(!url) return "";
+        try {
+            const parts = url.split('/');
+            const filename = parts[parts.length - 1];
+            const publicId = filename.split('.')[0];
+
+            return `course-thumbnails/${publicId}`;
+        } catch (error) {
+            console.log("Error extracting public ID:", error);
+            return "";
+        }
+    }
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files?.[0];
+        if(file){
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setThumbnailPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+            setNewImageSelected(true);
+
+            uploadImage({
+                file,
+                previousPublicId: thumbnailPublicId
+            }, {
+                onSuccess: (data) => {
+                    setFormData(prev => ({...prev, thumbnail: data.imageUrl}));
+                    setThumbnailPublicId(data.publicId);
+                    setNewImageSelected(false);
+                    console.log('Image uploaded successfully');
+                },
+                onError: (error) => {
+                    console.error('Upload failed', error);
+                    setThumbnailPreview(formData.thumbnail);
+                    setNewImageSelected(false);
+                }
+            })
+        }
+    }
+
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        if(isUploading) {
+            console.log('Please wait for image upload to complete');
+            return;
+        }
 
         updateCourse({id, courseData: formData});
     }
@@ -95,11 +159,38 @@ const EditCourse = () => {
             <div>
                 <label htmlFor="">Thumbnail</label>
                 <input 
-                    type="url" 
+                    type="file"
+                    accept="image/*" 
                     className=""
-                    value={formData.thumbnail}
-                    onChange={(e) => setFormData({...formData, thumbnail: e.target.value})}
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
                 />
+
+                {isUploading && (
+                    <div className="mt-2 flex items-center text-blue-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                        Uploading image...
+                    </div>
+                )}
+                {uploadError && (
+                    <div className="mt-2 text-red-600 text-sm">
+                        Upload Failed: {uploadError.message}
+                    </div>
+                )}
+                {thumbnailPreview && (
+                    <div className="mt-2">
+                        <img 
+                            src={thumbnailPreview}
+                            alt="Thumbnail preview"
+                            className="w-32 h-20 object-cover rounded border"
+                        />
+                        {!newImageSelected && !isUploading && formData.thumbnail && (
+                            <div className="text-green-600 text-sm mt-1">
+                                ✓ Current thumbnail
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             <div>
                 <label htmlFor="">
@@ -115,9 +206,9 @@ const EditCourse = () => {
                     <button 
                         type="submit" 
                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        disabled={isPending}
+                        disabled={isUpdating || isUploading}
                     >
-                        {isPending ? "Updating..." : "Update Course"}
+                        {isUpdating ? "Updating..." : "Update Course"}
                     </button>
                     <button 
                         type="button"

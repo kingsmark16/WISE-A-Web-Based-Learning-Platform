@@ -9,6 +9,7 @@ import studentRoutes from './routes/studentRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
 import statsRoutes from './routes/statsRoutes.js'
 import facultyRoutes from './routes/facultyRoutes.js'
+import uploadRoutes from './routes/uploadRoutes.js'
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.use(cors(
 app.use(clerkMiddleware()); 
 
 
-
+app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', requireAuth(), adminRoutes);
 app.use('/api/student', requireAuth(), studentRoutes);
 app.use('/api/faculty', facultyRoutes);
