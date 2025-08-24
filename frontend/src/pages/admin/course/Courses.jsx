@@ -149,7 +149,7 @@ const Courses = () => {
 
       <div className="flex gap-2 mt-4 items-center">
         <button
-          className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+          className="px-3 py-1 rounded disabled:opacity-50"
           disabled={page === 1}
           onClick={() => setPage(p => p - 1)}
         >
@@ -159,7 +159,7 @@ const Courses = () => {
           Page {page} of {totalPages}
         </span>
         <button
-          className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+          className="px-3 py-1 rounded disabled:opacity-50"
           disabled={page === totalPages}
           onClick={() => setPage(p => p + 1)}
         >

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGetFacultyId } from "../../../hooks/useGetFaculty";
 import { useCreateCourse } from "../../../hooks/useCourses";
+import { useUploadImage } from "../../../hooks/uploads/useUploadImage";
 
 const categories = [
   "Technology",
@@ -25,34 +26,73 @@ const CreateCourse = () => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [thumbnail, setThumbnail] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [faculty, setFaculty] = useState("");
+
+  const [thumbnailPublicId, setThumbnailPublicId] = useState("");
+  const [thumbnailPreview, setThumbnailPreview] = useState("");
+
   const [facultySearch, setFacultySearch] = useState("");
   const [showInstructorList, setShowInstructorList] = useState(false);
 
   const { data: facultyList = [], isLoading, error } = useGetFacultyId();
-  const {mutate: createCourse, isLoading: isCreating, error: createCourseError} = useCreateCourse();
+  const {mutate: createCourse, isPending: isCreating, error: createCourseError} = useCreateCourse();
+  const {mutate: uploadImage, isPending: isUploading, error: uploadError} = useUploadImage();
 
   const filteredFaculty = (facultyList.faculty || []).filter(f =>
     f.fullName.toLowerCase().includes(facultySearch.toLowerCase())
   );
 
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      uploadImage({
+        file, 
+        previousPublicId: thumbnailPublicId
+      },{
+        onSuccess: (data) => {
+          setThumbnailUrl(data.imageUrl);
+          setThumbnailPublicId(data.publicId);
+          console.log('Image uploaded successfully');
+        },
+        onError: (error) => {
+          console.error('Upload failed', error);
+          setThumbnailPreview("");
+        }
+      });
+    }
+  };
+
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if(!thumbnailUrl){
+      console.log('Please wait for image upload to complete or select an image');
+      return;
+      
+    }
 
     createCourse({
       title,
       category,
       description,
-      thumbnail,
+      thumbnail: thumbnailUrl,
       facultyId: faculty
     })
   }
 
   return (
-    <div className="max-w-lg mx-auto mt-8 p-6 bg-white rounded shadow">
+    <div className="max-w-lg mx-auto mt-8 p-6 rounded shadow">
       <h2 className="text-2xl font-bold mb-6">Create Course</h2>
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="block mb-1 font-medium">Title</label>
           <input
@@ -75,11 +115,36 @@ const CreateCourse = () => {
         <div>
           <label className="block mb-1 font-medium">Thumbnail</label>
           <input
-            type="text"
+            type="file"
+            accept="image/*"
             className="w-full px-3 py-2 border rounded"
-            value={thumbnail}
-            onChange={e => setThumbnail(e.target.value)}
+            onChange={handleImageUpload}
+            disabled={isUploading}
           />
+          {isUploading && (
+            <div>
+              <p>Uploading image...</p>
+            </div>
+          )}
+          {uploadError && (
+            <div>
+              <p>Upload Failed: {uploadError.message}</p>
+            </div>
+          )}
+          {thumbnailPreview && (
+            <div className="mt-2">
+              <img 
+                src={thumbnailPreview}
+                alt=""
+                className="w-32 h-20 object-cover rounded border"
+              />
+              {thumbnailUrl && (
+                <div>
+                  <p>Image uploaded successfully</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div>
           <label className="block mb-1 font-medium">Instructor</label>
@@ -100,7 +165,7 @@ const CreateCourse = () => {
             </button>
           </div>
           {showInstructorList && (
-            <div className="mt-2 p-4 border rounded bg-gray-50 shadow-lg absolute z-10 w-full max-w-lg">
+            <div className="mt-2 p-4 border rounded shadow-lg absolute z-10 w-full max-w-lg">
               <div className="flex justify-between items-center mb-2">
                 <span className="font-semibold">Select Instructor</span>
                 <button
@@ -161,9 +226,8 @@ const CreateCourse = () => {
         </div>
         <button
           type="submit"
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-          disabled={isCreating}
-          onClick={handleSubmit}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+          disabled={isCreating || isUploading}
         >
           {isCreating ? "Creating..." : "Create Course"}
         </button>

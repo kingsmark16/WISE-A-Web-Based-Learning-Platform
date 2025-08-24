@@ -3,13 +3,14 @@ import { generateCourseCode } from "../utils/generateCourseCode.js";
 import cloudinary from "../lib/cloudinary.js";
 
 
+
 const prisma = new PrismaClient();
 
 
 export const createCourse = async (req, res) => {
    
    try {
-      const {title, description, category, facultyId} = req.body;
+      const {title, description, category, facultyId, thumbnail} = req.body; // Add thumbnail from request
       const code = generateCourseCode();
 
       if(!title || !category){
@@ -28,36 +29,11 @@ export const createCourse = async (req, res) => {
          }
       })
 
-      let thumbnailUrl = null;
-      if(req.file){
-        try {
-            const uploadResult = await new Promise((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream(
-                    {
-                        folder: 'course-thumbnails',
-                        resource_type: 'image',
-                    },
-                    (error, result) => {
-                        if(error) reject(error);
-                        else resolve(result);
-                    }
-                );
-                uploadStream.end(req.file.buffer);
-            });
-
-            thumbnailUrl = uploadResult.secure_url;
-        } catch (uploadError) {
-            console.log("Error uploading to Cloudinary:", uploadError);
-            return res.status(500).json({message: "Error uploading thumbnail"});
-        }
-      }
-
-
       const newCourse = await prisma.course.create({
          data: {
             title,
             description,
-            thumbnail: thumbnailUrl,
+            thumbnail,
             category,
             code,
             createdById,
@@ -87,6 +63,7 @@ export const getCourses = async (req, res) => {
             select: {
                 id: true,
                 title: true,
+                thumbnail: true,
                 category: true,
                 isPublished: true,
                 code: true,
@@ -128,6 +105,7 @@ export const getCourse = async (req, res) => {
                 id
             },
             select: {
+                id: true,
                 title: true,
                 description: true,
                 thumbnail: true,
@@ -164,11 +142,34 @@ export const deleteCourse = async (req, res) => {
         const course = await prisma.course.findUnique({
             where: {
                 id
+            },
+            select: {
+                id: true,
+                thumbnail: true
             }
         });
 
         if(!course){
             return res.status(404).json({message: "Course not found"});
+        }
+
+        if(course.thumbnail) {
+            try {
+                const extractPublicId = (url) => {
+                    const parts = url.split('/');
+                    const filename = parts[parts.length - 1];
+                    const publicId = filename.split('.')[0];
+                    return `course-thumbnails/${publicId}`;
+                };
+
+                const publicId = extractPublicId(course.thumbnail);
+
+                await cloudinary.uploader.destroy(publicId);
+                console.log(`Deleted image: ${publicId}`);
+
+            } catch (deleteError) {
+                console.log("Error deleting image from Cloudinary:", deleteError);
+            }
         }
 
         await prisma.course.delete({
@@ -192,10 +193,9 @@ export const updateCourse = async (req, res) => {
         const updateData = req.body;
 
         if(!id) return res.status(404).json({message: "Invalid courseId"});
-        
 
         const filteredData = Object.fromEntries(
-            Object.entries(updateData).filter(([_, value]) => value !== undefined && value !== null)
+            Object.entries(updateData).filter(([_, value]) => value !== undefined && value !== null && value !== "")
         );
 
         const course = await prisma.course.update({
@@ -205,6 +205,7 @@ export const updateCourse = async (req, res) => {
                 id: true,
                 title: true,
                 description: true,
+                thumbnail: true,
                 category: true,
                 isPublished: true,
                 code: true,
@@ -221,7 +222,6 @@ export const updateCourse = async (req, res) => {
                     }
                 }
             }
-
         });
 
         res.status(200).json({message: "Course updated successfully", course});

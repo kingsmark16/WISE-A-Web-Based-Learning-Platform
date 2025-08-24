@@ -23,7 +23,11 @@ export const useCreateCourse = () => {
 
     return useMutation({
         mutationFn: async (courseData) => {
-            const response = await axiosInstance.post('/course', courseData);
+            const response = await axiosInstance.post('/course', courseData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
             return response.data;
         },
         onSuccess: () => {
@@ -72,7 +76,11 @@ export const useUpdateCourse = () => {
 
     return useMutation({
         mutationFn: async ({id, courseData}) => {
-            const response = await axiosInstance.patch(`/course/${id}`, courseData);
+            const response = await axiosInstance.patch(`/course/${id}`, courseData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
 
             return response.data;
         },
