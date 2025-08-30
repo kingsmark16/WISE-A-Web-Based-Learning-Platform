@@ -4,6 +4,7 @@ import {Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Table
 } from "@/components/ui/table";
 import { useDeleteCourse, useGetCourses } from "../../../hooks/useCourses";
 import { useUser } from "@clerk/clerk-react";
+import { Eye, Edit, Trash2, Plus, Search } from "lucide-react";
 
 const Courses = () => {
 
@@ -52,8 +53,8 @@ const Courses = () => {
   }, [selectedCategory, searchTerm]);
 
 
-  if (getCoursesLoading) return <div>Loading...</div>;
-  if (getCoursesError) return <div>{getCoursesError.message}</div>
+  if (getCoursesLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
+  if (getCoursesError) return <div className="text-red-600 text-center p-4 bg-red-50 rounded-lg">{getCoursesError.message}</div>
 
 
   const getCreatorDisplayName = (course) => {
@@ -78,93 +79,198 @@ const Courses = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 items-center">
-        <select
-          className="px-4 py-2 rounded border"
-          value={selectedCategory}
-          onChange={e => setSelectedCategory(e.target.value)}
-        >
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+    <div className="space-y-6 p-6 min-h-screen">
+      {/* Header */}
+      <div className="bg-foreground/5 rounded-lg shadow-sm border p-6">
+        <h1 className="text-2xl font-bold mb-6">Course Management</h1>
+        
+        {/* Filters and Search */}
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            <select
+              className="text-background px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
 
-        <input
-            type="text"
-            placeholder="Search by title..."
-            className="px-4 py-2 rounded border flex-1 min-w-[240px]"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-        />
+            <div className="relative flex-1 min-w-[280px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search by course title..."
+                className="pl-10 pr-4 py-2 w-full rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
 
-        <button onClick={() => navigate('/admin/courses/create')}>Create Course</button>
+          <button 
+            onClick={() => navigate('/admin/courses/create')}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Create Course
+          </button>
+        </div>
       </div>
 
-      <div>
-        <Table>
-          <TableCaption>A list of all courses.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Course Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Published</TableHead>
-              <TableHead>Created By</TableHead>
-              <TableHead>Instructor</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedCourses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center">
-                  No courses found.
-                </TableCell>
+      {/* Table Container */}
+      <div className="bg-foreground/5 rounded-lg shadow-sm border">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1000px]">
+            <TableCaption className="py-4">
+              Showing {paginatedCourses.length} of {filteredCourses.length} courses
+            </TableCaption>
+            <TableHeader>
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Course Title</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Category</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Code</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-center whitespace-nowrap">Status</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Created By</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Instructor</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Last Updated</TableHead>
+                <TableHead className="font-semibold py-4 px-6 text-center whitespace-nowrap">Actions</TableHead>
               </TableRow>
-            ) : (
-              paginatedCourses.map(course => (
-                <TableRow 
-                  key={course.id}
-                  >
-                  <TableCell>{course.title}</TableCell>
-                  <TableCell>{course.category}</TableCell>
-                  <TableCell>{course.code}</TableCell>
-                  <TableCell>{course.isPublished ? "Yes" : "No"}</TableCell>
-                  <TableCell>{getCreatorDisplayName(course)}</TableCell>
-                  <TableCell>{course.managedBy?.fullName}</TableCell>
-                  <TableCell>{new Date(course.updatedAt).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <button onClick={() => handleEdit(course.id)}>Edit</button>
-                    <button onClick={() => handleDelete(course.id)}>Delete</button>
-                    <button onClick={() => handleView(course.id)}>View</button>
+            </TableHeader>
+            <TableBody>
+              {paginatedCourses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      
+                      <p className="text-lg font-medium">No courses found</p>
+                      <p className="text-sm">Try adjusting your search or filters</p>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                paginatedCourses.map((course, index) => (
+                  <TableRow 
+                    key={course.id}
+                    className={`border-b hover: transition-colors ${index % 2 === 0 ? '' : ''}`}
+                  >
+                    <TableCell className="py-4 px-6 font-medium whitespace-nowrap">
+                      {course.title}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 whitespace-nowrap">
+                      <span className="text-xs font-medium px-2.5 py-0.5 rounded-full">
+                        {course.category}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-6 font-mono text-sm whitespace-nowrap">
+                      {course.code}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-center whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        course.isPublished 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {course.isPublished ? "Published" : "Draft"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-6 whitespace-nowrap">
+                      {getCreatorDisplayName(course)}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 whitespace-nowrap">
+                      {course.managedBy?.fullName || "Not assigned"}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
+                      {new Date(course.updatedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleView(course.id)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="View Course"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(course.id)}
+                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                          title="Edit Course"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(course.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Course"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      <div className="flex gap-2 mt-4 items-center">
-        <button
-          className="px-3 py-1 rounded disabled:opacity-50"
-          disabled={page === 1}
-          onClick={() => setPage(p => p - 1)}
-        >
-          Previous
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          className="px-3 py-1 rounded disabled:opacity-50"
-          disabled={page === totalPages}
-          onClick={() => setPage(p => p + 1)}
-        >
-          Next
-        </button>
+      {/* Pagination */}
+      <div className="bg-foreground/5 rounded-lg shadow-sm border p-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <p className="text-sm">
+            Showing <span className="font-medium">{((page - 1) * limit) + 1}</span> to{' '}
+            <span className="font-medium">
+              {Math.min(page * limit, filteredCourses.length)}
+            </span>{' '}
+            of <span className="font-medium">{filteredCourses.length}</span> results
+          </p>
+          
+          <div className="flex items-center gap-2">
+            <button
+              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+            >
+              Previous
+            </button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      page === pageNum
+                        ? 'bg-blue-600'
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={page === totalPages}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

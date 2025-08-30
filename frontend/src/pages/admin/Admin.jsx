@@ -3,12 +3,24 @@ import { useAdminDashboard } from '../../hooks/useAdminDashboard.js'
 import { Loader } from 'lucide-react'
 import { NavLink } from 'react-router-dom';
 import { Outlet } from 'react-router-dom'
+import { useState } from 'react';
+import Header from '../../components/Header.jsx';
+import Sidebar from '../../components/Sidebar.jsx';
 
 const Admin = () => {
   const { data, isLoading, error } = useAdminDashboard();
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    console.log(data)
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
+  console.log(data)
+  
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
@@ -24,7 +36,7 @@ const Admin = () => {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <div className="text-center">
-          {/* Fix: Don't render data object directly */}
+       
           <p className="text-red-600 mb-4">Error: {error.message}</p>
           <p className="text-sm text-gray-600">
             {error.response?.status === 403 ? 'Access denied - Admin role required' : 'Failed to load dashboard'}
@@ -43,48 +55,19 @@ const Admin = () => {
   }
 
   return (
-   
     <div className="min-h-screen">
-      <header className="shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div className=''>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-
-              <div>
-                <NavLink to="/admin/courses" className="text-blue-600 hover:underline">
-                  Courses
-                </NavLink>
-              </div>
-              
-              <div>
-                <NavLink to="/admin/analytics" className="text-blue-600 hover:underline">
-                  Analytics
-                </NavLink>
-              </div>
-
-            </div>
-            <div className="flex items-center space-x-4">
-              <UserButton />
-              <SignOutButton>
-                <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                  Sign Out
-                </button>
-              </SignOutButton>
-            </div>
-          </div>
-        </div>
-      </header>
-
-
-
-      <main className="max-w-7xl mx-auto py-6 px-4">
-
+      <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      
+      <div className="flex">
+        <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         
-          <Outlet />
-      </main>
+        <main className="flex-1 pt-25 overflow-x-auto">
+          <div className="p-4 min-w-0">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
-    
   )
 }
 

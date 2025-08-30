@@ -1,7 +1,6 @@
 import { Route, Routes } from "react-router-dom"
 import SignIn from "./pages/SignIn"
 import LandingPage from "./pages/LandingPage"
-import SignUp from "./pages/SignUp"
 import AuthCallbackPage from "./pages/AuthCallbackPage"
 import Admin from "./pages/admin/Admin"
 import SSOCallbackPage from "./pages/SSOCallbackPage"
@@ -19,7 +18,7 @@ import EditCourse from "./pages/admin/course/EditCourse"
 
 const App = () => {
   return (
-    <div>
+    <div className="overflow-hidden">
 
       <Routes>
         <Route path="/" element={
@@ -31,12 +30,6 @@ const App = () => {
         <Route path="/sign-in" element={
           <RedirectIfSignedIn>
             <SignIn/>
-          </RedirectIfSignedIn>
-        }/>
-
-        <Route path="/sign-up" element={
-          <RedirectIfSignedIn>
-            <SignUp/>
           </RedirectIfSignedIn>
         }/>
 

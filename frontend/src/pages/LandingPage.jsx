@@ -71,7 +71,6 @@ const LandingPage = () => {
             
           <div className="flex justify-center items-center gap-1 sm:gap-5">
               <NavLink className={({isActive}) => `text-sm sm:tracking-widest px-3.5 py-1.5 rounded-md hover:bg-secondary hover:underline transition duration-300 ${isActive}`} to='/sign-in'>Login</NavLink>
-              <NavLink className={({isActive}) => `text-sm sm:tracking-widest bg-primary px-3.5 py-1.5 rounded-md hover:bg-primary-foreground transition duration-300  ${isActive}`} to='/sign-up'>Sign up</NavLink>
           </div>
       </header>
      
