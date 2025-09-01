@@ -11,7 +11,7 @@ export const useGetCourses = () => {
             const response = await axiosInstance.get('/course');
             return response.data;
         },
-        staleTime: 1000 * 60 * 60, // 5 minutes
+        staleTime: 1000 * 60 * 60,
     })
 }
 

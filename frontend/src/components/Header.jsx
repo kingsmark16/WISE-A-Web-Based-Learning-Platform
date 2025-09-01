@@ -43,7 +43,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search courses, faculty, students..."
-              className="w-full pl-10 pr-10 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-10 py-2 border rounded-lg bg-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-input focus:border-transparent"
             />
             {searchQuery && (
               <button
@@ -73,7 +73,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
 
       {/* Mobile Search Bar - Overlay */}
       {isSearchOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-lg z-40">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-secondary border-b shadow-lg z-40">
           <div className="p-4">
             <form onSubmit={handleSearchSubmit} className="relative">
               <div className="relative">
@@ -83,7 +83,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search courses, faculty, students..."
-                  className="w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-3 border rounded-lg bg-secondary text-foreground focus:outline-none focus:ring-2 focus:ring-input focus:border-transparent"
                   autoFocus
                 />
                 {searchQuery && (

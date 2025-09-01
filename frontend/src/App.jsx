@@ -9,10 +9,11 @@ import RedirectIfSignedIn from "./components/RedirectIfSignedIn"
 import Student from "./pages/student/Student"
 
 import Courses from "./pages/admin/course/Courses"
-import Analytics from "./pages/admin/Analytics"
+
 import CreateCourse from "./pages/admin/course/CreateCourse"
 import CourseDetail from "./components/CourseDetail"
 import EditCourse from "./pages/admin/course/EditCourse"
+import Analytics from "./pages/admin/analytics/Analytics"
 
 
 

@@ -22,9 +22,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-40
-          transform transition-transform duration-300 ease-in-out flex-shrink-0
-          lg:translate-x-0 lg:static lg:h-screen
+          fixed top-0 left-0 h-full w-64 bg-secondary border-r border z-30
+          transform transition-transform duration-300 ease-in-out flex-shrink-0 overflow-y-auto
+          lg:translate-x-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{ minWidth: '256px', maxWidth: '256px' }}
@@ -45,8 +45,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
                       isActive
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-l-4 border-blue-500'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-primary-foreground'
+                        : 'hover:bg-primary-foreground/30'
                     }`
                   }
                 >

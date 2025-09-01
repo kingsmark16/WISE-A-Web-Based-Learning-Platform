@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.35.3",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-three/drei": "^10.6.1",
@@ -29,6 +31,7 @@
     "react-dom": "^19.1.0",
     "react-loading-icons": "^1.1.0",
     "react-router-dom": "^7.7.0",
+    "recharts": "^2.15.4",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
     "three": "^0.179.1"

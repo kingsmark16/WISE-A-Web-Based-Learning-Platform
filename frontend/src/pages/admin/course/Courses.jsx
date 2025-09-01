@@ -79,16 +79,16 @@ const Courses = () => {
   };
 
   return (
-    <div className="space-y-6 p-6 min-h-screen">
+    <div className="space-y-6 px-2 min-h-screen">
       {/* Header */}
       <div className="bg-foreground/5 rounded-lg shadow-sm border p-6">
         <h1 className="text-2xl font-bold mb-6">Course Management</h1>
         
         {/* Filters and Search */}
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <div className="flex flex-col w-full sm:flex-row justify-baseline items-baseline gap-3 flex-1">
             <select
-              className="text-background px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="text-foreground bg-accent px-4 py-2 rounded-lg border focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none"
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
             >
@@ -97,12 +97,12 @@ const Courses = () => {
               ))}
             </select>
 
-            <div className="relative flex-1 min-w-[280px]">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" />
               <input
                 type="text"
                 placeholder="Search by course title..."
-                className="pl-10 pr-4 py-2 w-full rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="pl-10 pr-4 py-2 w-full rounded-lg bg-accent focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -111,7 +111,7 @@ const Courses = () => {
 
           <button 
             onClick={() => navigate('/admin/courses/create')}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex justify-center items-center gap-2 bg-primary hover:bg-primary-foreground px-4 py-2 rounded-lg font-medium text-sm transition-colors"
           >
             <Plus className="h-4 w-4" />
             Create Course
@@ -127,7 +127,7 @@ const Courses = () => {
               Showing {paginatedCourses.length} of {filteredCourses.length} courses
             </TableCaption>
             <TableHeader>
-              <TableRow className="border-b border-gray-200">
+              <TableRow className="border-b border-border">
                 <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Course Title</TableHead>
                 <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Category</TableHead>
                 <TableHead className="font-semibold py-4 px-6 text-left whitespace-nowrap">Code</TableHead>
@@ -236,7 +236,7 @@ const Courses = () => {
           
           <div className="flex items-center gap-2">
             <button
-              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               disabled={page === 1}
               onClick={() => setPage(p => p - 1)}
             >
@@ -253,7 +253,7 @@ const Courses = () => {
                     className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       page === pageNum
                         ? 'bg-blue-600'
-                        : 'text-gray-500 hover:bg-gray-50'
+                        : 'text-foreground'
                     }`}
                   >
                     {pageNum}
@@ -263,7 +263,7 @@ const Courses = () => {
             </div>
             
             <button
-              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               disabled={page === totalPages}
               onClick={() => setPage(p => p + 1)}
             >

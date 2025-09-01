@@ -44,7 +44,7 @@ const Admin = () => {
           <div className="mt-4 space-x-2">
             <UserButton />
             <SignOutButton>
-              <button className="bg-red-600 text-white px-4 py-2 rounded">
+              <button className="bg-red-600 px-4 py-2 rounded">
                 Sign Out
               </button>
             </SignOutButton>
@@ -61,7 +61,7 @@ const Admin = () => {
       <div className="flex">
         <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         
-        <main className="flex-1 pt-25 overflow-x-auto">
+        <main className="flex-1 pt-16 ml-0 lg:ml-64 transition-all duration-300 ease-in-out overflow-x-auto">
           <div className="p-4 min-w-0">
             <Outlet />
           </div>
