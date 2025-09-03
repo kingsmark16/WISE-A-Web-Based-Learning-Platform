@@ -19,11 +19,13 @@ model User {
   imageUrl     String?
   role         Role      @default(STUDENT)
   createdAt    DateTime  @default(now())
+  lastActiveAt DateTime @default(now())
 
   createdCourses Course[] @relation("CourseCreator")
   managedCourses Course[] @relation("CourseFaculty")
 
 
+  dailyActivities     DailyUserActivity[]
   enrollments      Enrollment[]
   completions      CourseCompletion[]
   certificates     Certificate[]
@@ -34,7 +36,14 @@ model User {
   forumPosts       ForumPost[]
   forumReplies     ForumReply[]
 }
-
+model DailyUserActivity {
+  id       String   @id @default(ulid())
+  userId   String
+  date     DateTime @db.Date
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+}
 model Course {
   id          String    @id @default(ulid())
   title       String
