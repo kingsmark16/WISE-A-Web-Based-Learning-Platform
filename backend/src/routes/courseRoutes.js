@@ -1,16 +1,16 @@
 import { Router } from "express";
 
-import { createCourse, deleteCourse, getCourse, getCourses, updateCourse } from "../controllers/courseController.js";
+import { createCourse, deleteCourse, getCourse, getCourses, publishCourse, updateCourse } from "../controllers/courseController.js";
 import { requireRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.post('/', createCourse);
+router.post('/', requireRole(['ADMIN', 'FACULTY']), createCourse);
 router.get('/:id', getCourse)
 router.get('/', getCourses);
-router.patch('/:id', updateCourse);
-router.delete('/:id', deleteCourse);
-
+router.patch('/:id', requireRole(['ADMIN', 'FACULTY']), updateCourse);
+router.delete('/:id', requireRole(['ADMIN']), deleteCourse);
+router.patch('/:id/publish', requireRole(['ADMIN']), publishCourse);
 
 
 export default router;

@@ -10,6 +10,7 @@ import courseRoutes from './routes/courseRoutes.js'
 import statsRoutes from './routes/statsRoutes.js'
 import facultyRoutes from './routes/facultyRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
+import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js'
 
 const app = express();
 
@@ -29,13 +30,13 @@ app.use(cors(
 app.use(clerkMiddleware()); 
 
 
-app.use('/api/upload', uploadRoutes);
-app.use('/api/admin', requireAuth(), adminRoutes);
-app.use('/api/student', requireAuth(), studentRoutes);
-app.use('/api/faculty', facultyRoutes);
-app.use('/api/course', courseRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/auth',requireAuth(), authRoutes);
+app.use('/api/upload', requireAuth(), uploadRoutes);
+app.use('/api/admin', requireAuth(), updateLastActive, adminRoutes);
+app.use('/api/student', requireAuth(), updateLastActive, studentRoutes);
+app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
+app.use('/api/course', requireAuth(), courseRoutes);
+app.use('/api/stats', requireAuth(), statsRoutes);
+app.use('/api/auth',requireAuth(), updateLastActive, authRoutes);
 app.use('/api', guestRoutes);
 
 app.listen(PORT, "0.0.0.0", () => {

@@ -116,15 +116,43 @@ export const getCourse = async (req, res) => {
                 createdBy: {
                     select: {
                         fullName: true,
+                        imageUrl: true
                     }
                 },
                 managedBy: {
                     select: {
-                        fullName: true
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                enrollments: {
+                    select: {
+                        id: true,
+                        enrolledAt: true,
+                        student: {
+                            select: {
+                                fullName: true,
+                                imageUrl: true,
+                                lastActiveAt: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        enrolledAt: 'desc'
+                    }
+                },
+                _count: {
+                    select: {
+                        enrollments: true
                     }
                 }
+
             }
         })
+
+        if(!course) {
+            return res.status(404).json({message: "Course not found"});
+        }
 
         res.status(200).json({course});
 
@@ -232,5 +260,32 @@ export const updateCourse = async (req, res) => {
     }
 }
 
+
+export const publishCourse = async (req, res) => {
+    try {
+        
+        const {id} = req.params;
+        const {isPublished} = req.body;
+
+        if(!id || typeof isPublished !== "boolean") return res.status(400).json({message: "Invalid request"});
+
+        const course = await prisma.course.update({
+            where: {id},
+            data: {isPublished},
+            select: {
+                id: true,
+                title: true,
+                isPublished: true,
+                updatedAt: true
+            }
+        });
+
+        res.status(200).json({message: "Course publish status updated", course});
+
+    } catch (error) {
+        console.log("Error in publishCourse controller", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
 
 

@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getAllFacultyByName } from "../controllers/facultyController.js";
+import { requireRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.get('/', getAllFacultyByName);
+
 
 export default router;
