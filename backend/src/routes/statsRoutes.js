@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { requireRole } from "../middlewares/authMiddleware.js";
-import { getActiveUsers, getTotalCourses } from "../controllers/statsController.js";
+import { getActiveUsers, getTotalCoursesAndUsers } from "../controllers/statsController.js";
 
 const router = Router();
 
-router.get('/total', getTotalCourses);
+router.get('/total', getTotalCoursesAndUsers);
 router.get('/active-users', getActiveUsers);
 
 

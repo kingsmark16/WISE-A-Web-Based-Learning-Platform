@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
-import { useDeleteCourse, useGetCourses } from "../../../hooks/useCourses";
+import { useDeleteCourse, useGetCourses } from "../../../hooks/courses/useCourses";
 import { useUser } from "@clerk/clerk-react";
 import { Eye, Edit, Trash2, Plus, Search } from "lucide-react";
 
@@ -65,7 +65,7 @@ const Courses = () => {
   
 
   const handleView = (courseId) => {
-    navigate(`/admin/courses/${courseId}`);
+    navigate(`/admin/courses/view/${courseId}`);
   }
 
   const handleEdit = (courseId) => {

@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGetFacultyId } from "../../../hooks/useGetFaculty";
-import { useCreateCourse } from "../../../hooks/useCourses";
+import { useGetFacultyId } from "../../../hooks/analytics/adminAnalytics/useGetFaculty";
+import { useCreateCourse } from "../../../hooks/courses/useCourses";
 import { useUploadImage } from "../../../hooks/uploads/useUploadImage";
 import { useDeleteImage } from "../../../hooks/uploads/useDeleteImage";
-import { ArrowLeft, Upload, X, Check, Search, User, Image as ImageIcon } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { X, Check, Search, User, Image as ImageIcon } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 

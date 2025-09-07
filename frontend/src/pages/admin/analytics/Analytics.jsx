@@ -1,4 +1,4 @@
-import { useGetCourseTotal } from "../../../hooks/analytics/useGetCourseTotal"
+import { useGetCourseTotal } from "../../../hooks/analytics/adminAnalytics/useGetCourseTotal"
 import { TotalCoursesChart } from "./TotalCourse"
 import { TotalUserChart } from "./TotalUserChart";
 import { ActiveUserAnalytics } from "./ActiveUserAnalytics";
@@ -11,12 +11,12 @@ const Analytics = () => {
 
   return (
     <div className="mt-8">
-      <div>
-        <ActiveUserAnalytics/>
-      </div>
       <div className="flex justify-center gap-5 items-center">
         <TotalCoursesChart totalCourses={courseAnalytics?.totalCourses} coursesPerCategory={courseAnalytics?.coursesPerCategory} />
         <TotalUserChart totalUsers={courseAnalytics.totalUsers} totalAdmins={courseAnalytics.totalAdmins} totalFaculty={courseAnalytics.totalFaculty} totalStudents={courseAnalytics.totalStudents}/>
+      </div>
+      <div>
+        <ActiveUserAnalytics/>
       </div>
     </div>
   )

@@ -1,13 +1,33 @@
 import { NavLink } from 'react-router-dom';
 import { BarChart3, BookOpen, Users, GraduationCap } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 
-const Sidebar = ({ isOpen, onClose }) => {
-  const menuItems = [
+const menuConfig = {
+  ADMIN: [
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
-    { name: 'Faculty', path: '/admin/faculty', icon: Users },
+    { name: 'Faculty', path: '/admin/faculty-management', icon: Users },
     { name: 'Student', path: '/admin/students', icon: GraduationCap },
-  ];
+  ],
+  STUDENT: [
+    { name: 'Home', path: '/student/homepage' },
+    { name: 'My Courses', path: '/student/my-courses' },
+    { name: 'Certification', path: '/student/certification' },
+    { name: 'Analytics', path: '/student/analytics' },
+  ],
+  FACULTY: [
+    { name: 'Courses', path: '/faculty/courses' },
+    { name: 'Analytics', path: '/faculty/analytics' },
+  ],
+};
+
+const Sidebar = ({ isOpen, onClose}) => {
+
+  const {user} = useUser();
+
+  const role = user.publicMetadata?.role;
+  
+  const menuItems = menuConfig[role] || [];
 
   return (
     <>
@@ -50,7 +70,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     }`
                   }
                 >
-                  <IconComponent size={20} />
+                  {IconComponent && <IconComponent size={20} />}
                   <span className="font-medium">{item.name}</span>
                 </NavLink>
               );

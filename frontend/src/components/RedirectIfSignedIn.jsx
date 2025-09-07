@@ -21,7 +21,7 @@ const RedirectIfSignedIn = ({ children }) => {
       } else if (role === "STUDENT") {
         navigate("/student", { replace: true })
       } else {
-        navigate("/admin", { replace: true }) // fallback or admin
+        navigate("/admin", { replace: true })
       }
     }
   }, [isSignedIn, isLoaded, user, navigate])

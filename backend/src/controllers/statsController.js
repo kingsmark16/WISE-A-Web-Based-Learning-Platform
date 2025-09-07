@@ -2,7 +2,8 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const getTotalCourses = async (req, res) => {
+
+export const getTotalCoursesAndUsers = async (req, res) => {
     try {
         const totalCourses = await prisma.course.count();
         const totalUsers = await prisma.user.count();

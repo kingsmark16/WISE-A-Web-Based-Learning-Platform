@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { useGetActiveUsers } from "../../../hooks/analytics/useGetActiveUsers"
+import { useGetActiveUsers } from "../../../hooks/analytics/adminAnalytics/useGetActiveUsers"
 
 import {
   Card,

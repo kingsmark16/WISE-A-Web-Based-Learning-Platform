@@ -30,12 +30,12 @@ app.use(cors(
 app.use(clerkMiddleware()); 
 
 
-app.use('/api/upload', uploadRoutes);
+app.use('/api/upload', requireAuth(), uploadRoutes);
 app.use('/api/admin', requireAuth(), updateLastActive, adminRoutes);
 app.use('/api/student', requireAuth(), updateLastActive, studentRoutes);
 app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
-app.use('/api/course', courseRoutes);
-app.use('/api/stats', statsRoutes);
+app.use('/api/course', requireAuth(), courseRoutes);
+app.use('/api/stats', requireAuth(), statsRoutes);
 app.use('/api/auth',requireAuth(), updateLastActive, authRoutes);
 app.use('/api', guestRoutes);
 
