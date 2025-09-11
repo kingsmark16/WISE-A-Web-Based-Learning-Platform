@@ -1,6 +1,6 @@
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { useGetActiveUsers } from "../../../hooks/analytics/adminAnalytics/useGetActiveUsers"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+
 
 import {
   Card,
@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export const description = "An interactive area chart"
+export const description = ""
 
 const chartConfig = {
   activeFaculty: {
@@ -37,9 +37,8 @@ const chartConfig = {
   },
 }
 
-export function ActiveUserAnalytics() {
+export function ActiveUserAnalytics({ activeUsersData, isLoading, error }) {
   const [timeRange, setTimeRange] = React.useState("90d")
-  const { data: activeUsersData, isLoading, error } = useGetActiveUsers()
 
   // Get the correct local date
   const getLocalDateString = () => {
@@ -98,6 +97,8 @@ export function ActiveUserAnalytics() {
     return filtered
   }, [activeUsersData, timeRange])
 
+ 
+  
   if (isLoading)
     return (
       <div className="flex justify-center p-8">
@@ -110,36 +111,6 @@ export function ActiveUserAnalytics() {
         Error loading active users: {error.message}
       </div>
     )
-
-  const getTotalActiveFaculty = () => {
-    if (!activeUsersData) return 0
-
-    switch (timeRange) {
-      case "7d":
-        return activeUsersData.activeFaculty7Days || 0
-      case "30d":
-        return activeUsersData.activeFaculty30Days || 0
-      case "90d":
-        return activeUsersData.activeFaculty90Days || 0
-      default:
-        return activeUsersData.activeFaculty90Days || 0
-    }
-  }
-
-  const getTotalActiveStudents = () => {
-    if (!activeUsersData) return 0
-
-    switch (timeRange) {
-      case "7d":
-        return activeUsersData.activeStudents7Days || 0
-      case "30d":
-        return activeUsersData.activeStudents30Days || 0
-      case "90d":
-        return activeUsersData.activeStudents90Days || 0
-      default:
-        return activeUsersData.activeStudents90Days || 0
-    }
-  }
 
   const getTimeRangeLabel = () => {
     switch (timeRange) {
@@ -159,9 +130,7 @@ export function ActiveUserAnalytics() {
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1">
           <CardTitle>
-            Active Users - Faculty:{" "}
-            {getTotalActiveFaculty().toLocaleString()}, Students:{" "}
-            {getTotalActiveStudents().toLocaleString()}
+            Active Users
           </CardTitle>
           <CardDescription>
             Showing active faculty and students for the {getTimeRangeLabel()}
@@ -234,6 +203,13 @@ export function ActiveUserAnalytics() {
                 })
               }}
             />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              padding={{ top: 20, bottom: 0 }}
+              tickFormatter={(value) => value.toLocaleString()}
+            />
             <ChartTooltip
               cursor={true}
               content={
@@ -254,17 +230,17 @@ export function ActiveUserAnalytics() {
             />
             <Area
               dataKey="activeFaculty"
-              type="natural"
+              type="monotone"
               fill="url(#fillActiveFaculty)"
               stroke="var(--color-activeFaculty)"
-              stackId="a"
+              strokeWidth={2}
             />
             <Area
               dataKey="activeStudents"
-              type="natural"
+              type="monotone"
               fill="url(#fillActiveStudents)"
               stroke="var(--color-activeStudents)"
-              stackId="a"
+              strokeWidth={2}
             />
             <ChartLegend content={<ChartLegendContent />} />
           </AreaChart>

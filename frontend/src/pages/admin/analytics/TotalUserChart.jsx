@@ -90,7 +90,7 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
                           y={(viewBox.cy || 0) + 24}
                           className="fill-foreground"
                         >
-                          Total Users
+                          Users
                         </tspan>
                       </text>
                     );
@@ -102,7 +102,9 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        
+        <div className="flex items-center gap-2 leading-none font-medium">
+          Showing total User <TrendingUp className="h-4 w-4" />
+        </div>
       </CardFooter>
     </Card>
   );
