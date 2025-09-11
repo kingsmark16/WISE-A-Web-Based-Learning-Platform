@@ -19,11 +19,11 @@ const MainLayout = () => {
     <div className="min-h-screen">
       <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       
-      <div className="flex">
+      <div className="flex pt-20"> {/* Increased padding-top for more space */}
         <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         
-        <main className="flex-1 pt-16 ml-0 lg:ml-64 transition-all duration-300 ease-in-out overflow-x-auto">
-          <div className="p-4 min-w-0">
+        <main className="flex-1 ml-0 lg:ml-64 min-h-[calc(100vh-5rem)] overflow-auto">
+          <div className="p-6"> {/* Increased padding for better spacing */}
             <Outlet />
           </div>
         </main>
