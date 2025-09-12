@@ -51,7 +51,7 @@ export function TotalCoursesChart({ totalCourses, coursesPerCategory }) {
 
   return (
     <Card className="flex flex-col">
-     
+      
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
@@ -93,7 +93,7 @@ export function TotalCoursesChart({ totalCourses, coursesPerCategory }) {
                           y={(viewBox.cy || 0) + 24}
                           className="fill-foreground"
                         >
-                          Total Courses
+                          Courses
                         </tspan>
                       </text>
                     );
@@ -105,7 +105,9 @@ export function TotalCoursesChart({ totalCourses, coursesPerCategory }) {
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        
+        <div className="flex items-center gap-2 leading-none font-medium">
+          Showing total Courses <TrendingUp className="h-4 w-4" />
+        </div>
       </CardFooter>
     </Card>
   );
