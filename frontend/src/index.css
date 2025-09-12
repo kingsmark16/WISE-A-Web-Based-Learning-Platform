@@ -123,7 +123,7 @@
   }
 }
 
-/* Add to your global CSS file */
+
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
@@ -133,7 +133,7 @@
   display: none;  /* Safari and Chrome */
 }
 
-/* Add xs breakpoint if not already defined */
+
 @media (min-width: 475px) {
   .xs\:px-3 {
     padding-left: 0.75rem;
