@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, UploadCloud, CloudOff } from "lucide-react";
 import { useState } from "react";
 import { Copy } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Users, MessageSquare, BookOpen, ChevronRight } from "lucide-react";
+import CourseContentNav from "./CourseContentNav";
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -16,7 +17,6 @@ const CourseDetail = () => {
   const { data, isLoading, error, refetch } = useGetCourse(id);
   const [publishing, setPublishing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState("content");
   const publishMutation = usePublishCourse();
 
   if (isLoading) {
@@ -41,12 +41,15 @@ const CourseDetail = () => {
 
   const handlePublishToggle = async () => {
     setPublishing(true);
-    await publishMutation.mutateAsync({
-      id: course.id,
-      isPublished: !course.isPublished,
-    });
-    setPublishing(false);
-    refetch();
+    try {
+      await publishMutation.mutateAsync({
+        id: course.id,
+        isPublished: !course.isPublished,
+      });
+      await refetch(); // Ensure course data is refreshed before updating UI
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const handleCopyCode = () => {
@@ -76,28 +79,10 @@ const CourseDetail = () => {
     }
   };
 
-  const courseContent = (
-    <div>
-      <h4 className="font-semibold mb-2">Course Content</h4>
-      <p className="text-muted-foreground">List of modules, lessons, or materials goes here.</p>
-    </div>
-  );
-  const enrolledStudents = (
-    <div>
-      <h4 className="font-semibold mb-2">Enrolled Students</h4>
-      <p className="text-muted-foreground">List of students enrolled in this course goes here.</p>
-    </div>
-  );
-  const forum = (
-    <div>
-      <h4 className="font-semibold mb-2">Forum</h4>
-      <p className="text-muted-foreground">Course discussion forum will be shown here.</p>
-    </div>
-  );
+  
 
   return (
-    <div className="max-w-6xl mx-auto px-2 md:px-6 mt-3 md:mt-10">
-      
+    <div className="max-w-6xl mx-auto md:mt-5">
       <div className="mb-6 flex md:flex-row items-start md:items-center justify-between gap-4">
         <Button variant="outline" onClick={handleBack} className="flex items-center gap-2">
           <ArrowLeft size={18} />
@@ -109,39 +94,87 @@ const CourseDetail = () => {
             Edit
           </Button>
           <Button
-            variant={course.isPublished ? "destructive" : "default"}
+            variant={course.isPublished ? "outline" : "default"}
             onClick={handlePublishToggle}
             disabled={publishing}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 transition-all duration-200 ${
+              publishing
+                ? "opacity-70 cursor-not-allowed"
+                : course.isPublished
+                ? "border border-green-500 text-green-700 hover:bg-green-50"
+                : "bg-primary text-white hover:bg-primary/90"
+            }`}
           >
-            {course.isPublished ? <CloudOff size={18} /> : <UploadCloud size={18} />}
-            {publishing
-              ? "Processing..."
-              : course.isPublished
-              ? "Unpublish"
-              : "Publish"}
+            {publishing ? (
+              <>
+                <UploadCloud size={18} className="animate-spin" />
+              </>
+            ) : course.isPublished ? (
+              <>
+                <CloudOff size={18} />
+                <span>Unpublish</span>
+              </>
+            ) : (
+              <>
+                <UploadCloud size={18} />
+                <span>Publish</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
-      <Card className="shadow-lg">
-        <CardHeader className="flex flex-col md:flex-row gap-8 md:gap-12 pb-0">
+      <Card className="shadow-lg bg-background border-0 p-0">
+        <CardHeader className="flex flex-col xl:flex-row md:justify-baseline gap-4 md:gap-8 pb-0 px-0">
           {course.thumbnail && (
             <img
               src={course.thumbnail}
               alt={course.title}
-              className="max-w-xs w-full h-auto max-h-60 object-contain rounded-lg border mx-auto md:mx-0 mb-4 md:mb-0"
+              className="max-w-xl w-full h-auto object-contain rounded-lg md:mx-0 mb-4 md:mb-0"
             />
           )}
           <div className="flex-1">
-            <CardTitle className="text-2xl md:text-3xl font-bold mb-4">{course.title}</CardTitle>
+            <CardTitle className="text-xl md:text-2xl font-bold mb-4">{course.title}</CardTitle>
             <div className="flex flex-wrap gap-3 mb-4">
-              <Badge variant="outline">{course.category}</Badge>
-              <Badge className="text-foreground" variant="secondary">
+              {/* Modern shadcn badge for category */}
+              <Badge
+                variant="secondary"
+                className="rounded-full px-4 py-1 text-sm font-medium bg-primary/10 text-primary border-none shadow-sm"
+              >
+                {course.category}
+              </Badge>
+              {/* Modern shadcn badge for status */}
+              <Badge
+                className={`rounded-full px-4 py-1 text-sm font-medium shadow-sm ${
+                  course.isPublished
+                    ? "bg-green-100 text-green-700 border-none"
+                    : "bg-yellow-100 text-yellow-700 border-none"
+                }`}
+                variant="outline"
+              >
                 {course.isPublished ? "Published" : "Draft"}
               </Badge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+              <div>
+                <h3 className="font-semibold mb-2 text-sm">Instructor</h3>
+                <div className="flex items-center gap-2 text-xs">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={course.managedBy?.imageUrl} alt={course.managedBy?.fullName} />
+                    <AvatarFallback>
+                      {course.managedBy?.fullName?.split(" ").map(n => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-muted-foreground">{course.managedBy?.fullName || "Not assigned"}</span>
+                </div>
+              </div>
+            </div>
+            <div>
               {course.code && (
                 <div className="flex items-center">
-                  <Badge variant="outline">Code: {course.code}</Badge>
+                  <span className="pr-2">Code:</span>
+                  <Badge variant="outline" className="rounded-full px-3 py-1 text-muted-foreground font-mono text-xs bg-muted/60">
+                    {course.code}
+                  </Badge>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -156,81 +189,33 @@ const CourseDetail = () => {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-              <div>
-                <h3 className="font-semibold mb-2 text-sm">Created By</h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={course.createdBy?.imageUrl} alt={course.createdBy?.fullName} />
-                    <AvatarFallback>
-                      {course.createdBy?.fullName?.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{course.createdBy?.fullName || "Unknown"}</span>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2 text-sm">Instructor</h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={course.managedBy?.imageUrl} alt={course.managedBy?.fullName} />
-                    <AvatarFallback>
-                      {course.managedBy?.fullName?.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{course.managedBy?.fullName || "Not assigned"}</span>
-                </div>
-              </div>
-            </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
-          <h3 className="font-semibold mb-3 text-sm">Description</h3>
-          <div className="mb-6 text-muted-foreground">{course.description}</div>
-          <h3 className="font-semibold mb-3 text-sm">Last Updated</h3>
-          <div className="mb-8 text-sm text-muted-foreground">
-            {course.updatedAt
-              ? new Date(course.updatedAt).toLocaleString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "N/A"}
-          </div>
-          {/* Tabs Section */}
-          <div className="mt-4 md:mt-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="relative">
-                <TabsList
-                  className="w-full flex gap-2 mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide"
-                  style={{ WebkitOverflowScrolling: "touch" }}
-                >
-                  <TabsTrigger value="content" className="text-base md:text-lg px-4 py-2">Course Content</TabsTrigger>
-                  <TabsTrigger value="students" className="text-base md:text-lg px-4 py-2">Enrolled Students</TabsTrigger>
-                  <TabsTrigger value="forum" className="text-base md:text-lg px-4 py-2">Forum</TabsTrigger>
-                </TabsList>
-                {/* Scroll indicator for small screens */}
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none flex items-center h-full pr-2 md:hidden">
-                  <span className="bg-gradient-to-l from-muted to-transparent px-2 py-1 rounded-full flex items-center text-xs text-muted-foreground">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
-                      <path d="M7 4l5 5-5 5"/>
-                    </svg>
-                    Scroll
-                  </span>
-                </div>
+        <CardContent className="pt-0 px-0">
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold mb-3 text-sm">Description</h3>
+              <div className="mb-6 text-muted-foreground">{course.description}</div>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-3 text-sm">Last Updated</h3>
+              <div className="mb-8 text-sm text-muted-foreground">
+                {course.updatedAt
+                  ? new Date(course.updatedAt).toLocaleString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "N/A"}
               </div>
-              <TabsContent value="content">
-                <div className="md:p-6">{courseContent}</div>
-              </TabsContent>
-              <TabsContent value="students">
-                <div className="md:p-6">{enrolledStudents}</div>
-              </TabsContent>
-              <TabsContent value="forum">
-                <div className="md:p-6">{forum}</div>
-              </TabsContent>
-            </Tabs>
+            </div>
+
+            {/* Navigation Section */}
+              <CourseContentNav/>
+
           </div>
         </CardContent>
       </Card>
