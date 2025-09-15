@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  
 }
 
 model User {
@@ -24,6 +24,7 @@ model User {
   createdCourses Course[] @relation("CourseCreator")
   managedCourses Course[] @relation("CourseFaculty")
 
+  uploadedYoutubeVideoLessons YoutubeVideoLesson[] @relation("UserUploadedVideos")
 
   dailyActivities     DailyUserActivity[]
   enrollments      Enrollment[]
@@ -32,7 +33,6 @@ model User {
   
   quizSubmissions  QuizSubmission[]
 
-  // Forum relations - if you decide to add these
   forumPosts       ForumPost[]
   forumReplies     ForumReply[]
 }
@@ -65,7 +65,7 @@ model Course {
   enrollments        Enrollment[]
   
   // Course content
-  chapters           Chapter[]
+  modules            Module[]
   
   // Completion tracking
   completions        CourseCompletion[]
@@ -79,7 +79,7 @@ model Course {
   @@index([category])
 }
 
-model Chapter {
+model Module {
   id          String    @id @default(ulid())
   title       String
   description String?
@@ -91,31 +91,32 @@ model Chapter {
   courseId    String
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  videoLessons VideoLesson[]
+  videoLessons YoutubeVideoLesson[]
   quiz         Quiz?
   attachments  Attachment[]
 
   @@unique([courseId, position])
   @@index([courseId])
 }
-
-model VideoLesson {
+model YoutubeVideoLesson {
   id          String   @id @default(ulid())
   title       String
   description String?
-  videoUrl    String
+  thumbnail   String?
+  youtubeId   String
+  url         String
   position    Int
   duration    Int?     // in seconds
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  uploadedBy User? @relation("UserUploadedVideos", fields: [uploadedById], references: [id])
+  uploadedById String?
 
-  chapterId   String
-  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  @@unique([chapterId, position])
-  @@index([chapterId])
+  @@unique([moduleId, position])
+  @@index([moduleId])
 }
+
 
 model Quiz {
   id          String   @id @default(ulid())
@@ -126,8 +127,8 @@ model Quiz {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  chapterId   String   @unique
-  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  moduleId    String   @unique
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   questions    QuizQuestion[]
   submissions  QuizSubmission[]
@@ -195,10 +196,10 @@ model Attachment {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  chapterId String
-  chapter   Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  @@index([chapterId])
+  @@index([moduleId])
 }
 
 // Forum models
