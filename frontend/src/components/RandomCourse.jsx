@@ -103,7 +103,7 @@ const RandomCourse = () => {
 
   return (
     <>
-      <div className="w-full px-4 py-2 sm:py-4">
+      <div className="w-full px-4 sm:py-4">
         <div className="relative">
           {/* Left scroll indicator */}
           {showLeftIndicator && (
@@ -163,7 +163,7 @@ const RandomCourse = () => {
         </div>
       </div>
       
-      <div className="mt-10">
+      <div className="mt-3">
         <ChromaGrid
           courses={courses}
           radius={300}
