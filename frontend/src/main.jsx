@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')).render(
       <ClerkProvider 
         publishableKey={PUBLISHABLE_KEY}
         signInUrl='/sign-in'
-        signUpUrl='/sign-up'
+        signUpUrl='/sign-in'
       >
         <QueryClientProvider client={queryClient}>
          <ReactQueryDevtools initialIsOpen={false} />
