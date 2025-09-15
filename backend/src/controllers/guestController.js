@@ -36,7 +36,7 @@ export const getRandomCoursesByCategories = async (_, res) => {
                     SELECT * FROM "Course"
                     WHERE category = ${category}
                     ORDER BY RANDOM()
-                    LIMIT 8
+                    LIMIT 4
                 `
             )
         );

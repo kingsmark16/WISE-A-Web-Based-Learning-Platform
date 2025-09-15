@@ -102,7 +102,7 @@ const ChromaGrid = ({
       onPointerLeave={handleLeave}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className={`relative w-full h-full flex flex-wrap justify-center items-start gap-3 ${className}`}
+      className={`relative w-full h-full py-10 flex flex-wrap justify-center items-start gap-5 ${className}`}
       style={
         {
           "--r": `${radius}px`,
