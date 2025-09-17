@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import RandomCourse from "../components/RandomCourse"
 import { useRef } from "react"
-import { ArrowRight, GraduationCap, Sparkles, Users, BookOpen, Award, Target, Zap, Globe, Youtube, Facebook } from "lucide-react"
+import { ArrowRight, GraduationCap, Sparkles, Users, BookOpen, Award, Target, Zap, Globe, Youtube, Facebook, UserCheck, Lightbulb, Clock } from "lucide-react"
 
 const LandingPage = () => {
   const heroRef = useRef(null);
@@ -98,7 +99,7 @@ const LandingPage = () => {
               size="sm"
               asChild
               className="relative overflow-hidden font-semibold transition-all duration-200
-                border-primary rounded-full px-6 py-2 text-sm
+                border-primary rounded-full px-6 py-3 text-base
                 bg-gradient-to-r from-background via-muted to-background
                 hover:bg-primary hover:text-primary
                 focus:bg-primary focus:text-primary
@@ -108,7 +109,7 @@ const LandingPage = () => {
             >
               <NavLink
                 to="/sign-in"
-                className="flex items-center justify-center w-full h-full transition-colors duration-200 group-hover:text-primary-foreground group-focus:text-primary-foreground group-active:text-primary-foreground"
+                className="flex items-center justify-center w-full transition-colors duration-200 group-hover:text-primary-foreground group-focus:text-primary-foreground group-active:text-primary-foreground"
               >
                 <span className="relative z-10">Login</span>
                 {/* Animated background effect */}
@@ -122,7 +123,7 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section
         className="w-full flex items-center justify-center"
-        style={{ minHeight: 'calc(100vh - 1rem)' }}
+        style={{ minHeight: 'calc(100vh - 0rem)' }}
       >
         <div
           ref={heroRef}
@@ -146,9 +147,9 @@ const LandingPage = () => {
 
           {/* Adjusted space below the heading */}
           <div className="mt-2 sm:mt-4 transition-all duration-700">
-            <p className="mx-auto max-w-[300px] sm:max-w-[500px] lg:max-w-[600px] text-xs sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
+            <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
               WISE is Partido State University's dedicated platform for accessible, modern, and skill-focused education. 
-              Explore, enroll, and excel in micro-credential courses designed for today's dynamic world.
+              Engage in your subjects and micro-credential courses by exploring, enrolling, and excelling in programs built for the needs of the modern world.
             </p>
           </div>
 
@@ -161,18 +162,18 @@ const LandingPage = () => {
             />
           </div>
 
-          <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row w-full sm:w-auto">
+          <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row w-full sm:w-auto justify-center">
             <Button
               variant="outline"
               size="sm"
               className="relative overflow-hidden font-semibold transition-all duration-200
-                border-primary rounded-full px-10 py-5 text-base
+                border-primary rounded-full px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base
                 bg-gradient-to-r from-background via-muted to-background
                 hover:bg-primary hover:text-primary
                 focus:bg-primary focus:text-primary
                 active:bg-primary active:text-primary
                 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
-                shadow-sm hover:shadow-lg active:shadow-lg group sm:w-auto"
+                shadow-sm hover:shadow-lg active:shadow-lg group w-fit mx-auto sm:mx-0"
             >
               <span className="relative z-10">Get Started</span>
               <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/30 opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-active:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
@@ -182,38 +183,84 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="w-full flex items-center justify-center py-12 sm:py-16 px-4 sm:px-6 transition-all duration-700">
-        <div className="w-full max-w-4xl mx-auto space-y-6 sm:space-y-8 text-center">
-          <div className="text-center space-y-3 sm:space-y-4">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-              Unlock Your Potential with WISE
-            </h2>
-            <p className="mx-auto max-w-[300px] sm:max-w-[500px] lg:max-w-[600px] text-sm sm:text-base text-muted-foreground">
-              Discover the features that make WISE the perfect platform for your learning journey
-            </p>
-          </div>
-          <div className="mt-12 sm:mt-16 flex justify-center w-full">
-            {/* Responsive Feature Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full items-center justify-center transition-all duration-700">
-              <div className="bg-background/80 rounded-2xl border border-border p-6 flex flex-col items-center transition-all duration-700">
-                <h3 className="text-lg sm:text-xl font-bold text-primary mb-2">Free Courses</h3>
-                <p className="text-sm sm:text-base text-foreground text-center">
-                  Join best courses without paying anything and lifetime access
+      <section className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-7xl">
+          {/* Section Header */}
+          <div className="text-center space-y-4 sm:space-y-6 mb-12 sm:mb-16 lg:mb-20">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
+                 <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                   Unlock Your Potential
+                 </span>
+                 <br />
+                 <span className="bg-gradient-to-r from-primary via-blue-600 to-primary/80 bg-clip-text text-transparent">
+                   with WISE
+                 </span>
+               </h2>
+              <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
+                 Discover the features that make WISE the perfect platform for your learning journey at Partido State University
+               </p>
+             </div>
+           </div>
+
+          {/* Feature Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
+            {/* Community Support Card */}
+            <Card className="group relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 active:border-primary/50 focus-within:border-primary/50 hover:shadow-xl active:shadow-xl focus-within:shadow-xl hover:shadow-primary/10 active:shadow-primary/10 focus-within:shadow-primary/10">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/20 mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300">
+                  <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary group-active:text-primary group-focus:text-primary transition-colors duration-300">
+                  Community Support
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Connect with peers, mentors, and instructors for guidance and collaboration in our vibrant learning community.
                 </p>
-              </div>
-              <div className="bg-background/80 rounded-2xl border border-border p-6 flex flex-col items-center transition-all duration-700">
-                <h3 className="text-lg sm:text-xl font-bold text-primary mb-2">Expert Instructor</h3>
-                <p className="text-sm sm:text-base text-foreground text-center">
-                  Learn from industry leaders and experienced educators.
+              </CardContent>
+              {/* Subtle gradient overlay on hover / touch */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 group-focus:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
+
+            {/* Expert Instructor Card */}
+            <Card className="group relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 active:border-primary/50 focus-within:border-primary/50 hover:shadow-xl active:shadow-xl focus-within:shadow-xl hover:shadow-primary/10 active:shadow-primary/10 focus-within:shadow-primary/10">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/20 mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300">
+                  <UserCheck className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-emerald-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary group-active:text-primary group-focus:text-primary transition-colors duration-300">
+                  Expert Instructors
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Learn from industry leaders and experienced educators who bring real-world expertise to every lesson.
                 </p>
-              </div>
-              <div className="bg-background/80 rounded-2xl border border-border p-6 flex flex-col items-center transition-all duration-700">
-                <h3 className="text-lg sm:text-xl font-bold text-primary mb-2">Flexible Learning</h3>
-                <p className="text-sm sm:text-base text-foreground text-center">
-                  Access courses anytime, anywhere, on any device
+              </CardContent>
+              {/* Subtle gradient overlay on hover / touch */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 group-focus:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
+
+            {/* Flexible Learning Card */}
+            <Card className="group relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-background to-muted/30 md:col-span-2 lg:col-span-1 hover:border-primary/50 active:border-primary/50 focus-within:border-primary/50 hover:shadow-xl active:shadow-xl focus-within:shadow-xl hover:shadow-primary/10 active:shadow-primary/10 focus-within:shadow-primary/10">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/20 mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300">
+                  <Clock className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary group-active:text-primary group-focus:text-primary transition-colors duration-300">
+                  Flexible Learning
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Access courses anytime, anywhere, on any device with our responsive platform designed for modern learners.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+              {/* Subtle gradient overlay on hover / touch */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 group-focus:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
           </div>
         </div>
       </section>
