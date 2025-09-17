@@ -21,6 +21,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "googleapis": "^160.0.0",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "streamifier": "^0.1.1"
