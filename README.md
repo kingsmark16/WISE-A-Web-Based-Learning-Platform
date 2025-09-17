@@ -2,12 +2,11 @@ Setup Instruction
 
 Step 1:
     Create a 2 .env file
-    
     1 in the backend folder and 1 in the frontend folder
 
 Step 2:
 
-    Paste this in the backend .env file with your own credentials
+Paste this in the backend .env file with your own credentials
     
     PORT=
     
@@ -33,13 +32,14 @@ Step 2:
     
     API_BASE_URL=
   
-    Paste this in the frontend .env file with your own credentials
+Paste this in the frontend .env file with your own credentials
 
     VITE_CLERK_PUBLISHABLE_KEY=
 
 Step 3: 
 
-    From the root folder:
+From the root folder:
+
       cd backend
       npm install
       npx prisma generate
@@ -47,16 +47,17 @@ Step 3:
     
 Step 4:
 
-    Open New Terminal
+Open New Terminal
+
       cd frontend
       npm install
       npm run dev
   
-    This will appear: http://localhost:5173/
+This will appear: http://localhost:5173/
     
-    CTR + click to navigate
+CTR + click to navigate
     
-  (Make sure you have a separate terminal open for backend and frontend)
+(Make sure you have a separate terminal open for backend and frontend)
 
 
 
