@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import authMiddleware from '../middlewares/authMiddleware.js';
+import {requireRole} from '../middlewares/authMiddleware.js';
 import { requireRoles } from '../middlewares/roleMiddleware.js';
 import { uploadVideo } from '../middlewares/uploadVideoMiddleware.js';
 
@@ -21,25 +21,25 @@ import {
 const router = Router();
 
 // Create / register
-router.post('/upload',   authMiddleware, requireRoles('FACULTY','ADMIN'), uploadVideo.single('video'), uploadToYouTube);
-router.post('/register', authMiddleware, requireRoles('FACULTY','ADMIN'), registerExisting);
+router.post('/upload',   requireRole('FACULTY','ADMIN'), uploadVideo.single('video'), uploadToYouTube);
+router.post('/register', requireRole('FACULTY','ADMIN'), registerExisting);
 
 // Read
-router.get('/:id',              authMiddleware, getOne);
-router.get('/module/:moduleId', authMiddleware, listByModule);
-router.get('/course/:courseId', authMiddleware, listByCourse);
+router.get('/:id',              getOne);
+router.get('/module/:moduleId', listByModule);
+router.get('/course/:courseId', listByCourse);
 
 // Update (partial & full)
-router.patch('/:id',            authMiddleware, requireRoles('FACULTY','ADMIN'), update);
-router.put('/:id',              authMiddleware, requireRoles('FACULTY','ADMIN'), putUpdate);
+router.patch('/:id',            requireRole('FACULTY','ADMIN'), update);
+router.put('/:id',              requireRole('FACULTY','ADMIN'), putUpdate);
 
 // YouTube-side changes & advanced edits
-router.patch('/:id/youtube',    authMiddleware, requireRoles('FACULTY','ADMIN'), patchYouTubeMetadata);
-router.patch('/:id/replace',    authMiddleware, requireRoles('FACULTY','ADMIN'), replaceVideo);
-router.patch('/reorder',        authMiddleware, requireRoles('FACULTY','ADMIN'), bulkReorder);
+router.patch('/:id/youtube',    requireRole('FACULTY','ADMIN'), patchYouTubeMetadata);
+router.patch('/:id/replace',    requireRole('FACULTY','ADMIN'), replaceVideo);
+router.patch('/reorder',        requireRole('FACULTY','ADMIN'), bulkReorder);
 
 // Refresh & Delete
-router.post('/:id/refresh',     authMiddleware, requireRoles('FACULTY','ADMIN'), refresh);
-router.delete('/:id',           authMiddleware, requireRoles('FACULTY','ADMIN'), remove);
+router.post('/:id/refresh',     requireRole('FACULTY','ADMIN'), refresh);
+router.delete('/:id',           requireRole('FACULTY','ADMIN'), remove);
 
 export default router;
