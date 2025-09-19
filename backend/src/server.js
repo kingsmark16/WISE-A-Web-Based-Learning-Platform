@@ -61,8 +61,8 @@ app.use('/api/stats', requireAuth(), statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 
 // ===== YouTube APIs (mounted as-is; they self-protect inside) =====
-app.use('/api/youtube-auth', youtubeAuthRoutes);
-app.use('/api/youtube-lessons', youtubeVideoRoutes);
+app.use('/api/youtube-auth',requireAuth(), youtubeAuthRoutes);
+app.use('/api/youtube-lessons',requireAuth(), youtubeVideoRoutes);
 
 // ===== Public APIs =====
 app.use('/api', guestRoutes);
