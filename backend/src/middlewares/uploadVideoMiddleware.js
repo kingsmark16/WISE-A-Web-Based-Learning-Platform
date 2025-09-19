@@ -6,7 +6,7 @@ const maxBytes = parseInt(process.env.MAX_VIDEO_SIZE_BYTES || '2147483648', 10);
 const allowed = (process.env.ALLOWED_VIDEO_MIME || '')
   .split(',').map(s => s.trim()).filter(Boolean);
 
-const storage = multer.diskStorage({
+const storage = multer.memoryStorage({
   destination: (req, file, cb) => cb(null, 'tmp'),
   filename: (req, file, cb) => {
     const ext = extname(file.originalname) || '.' + (mime.lookup(file.mimetype) || 'mp4').split('/').pop();
@@ -19,5 +19,5 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error('Unsupported video mime type'), false);
 };
 
-export const uploadVideo = multer({ storage, fileFilter, limits: { fileSize: maxBytes } });
+export const uploadVideo = multer({ storage, fileFilter, limits: { fileSize: maxBytes, files: 10 } });
 export default uploadVideo;
