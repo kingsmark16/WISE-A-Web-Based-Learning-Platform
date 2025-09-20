@@ -17,6 +17,7 @@ import statsRoutes from './routes/statsRoutes.js';
 import facultyRoutes from './routes/facultyRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
+import moduleRoutes from './routes/moduleRoutes.js';
 import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 
 // YouTube routes (from our implementation)
@@ -59,10 +60,11 @@ app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
 app.use('/api/course', requireAuth(), courseRoutes);
 app.use('/api/stats', requireAuth(), statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
+app.use('/api/module', requireAuth(), moduleRoutes)
 
 // ===== YouTube APIs (mounted as-is; they self-protect inside) =====
 app.use('/api/youtube-auth',requireAuth(), youtubeAuthRoutes);
-app.use('/api/youtube-lessons',requireAuth(), youtubeVideoRoutes);
+app.use('/api/youtube-lessons', youtubeVideoRoutes);
 
 // ===== Public APIs =====
 app.use('/api', guestRoutes);
