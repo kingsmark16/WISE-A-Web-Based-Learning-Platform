@@ -24,7 +24,7 @@ model User {
   createdCourses Course[] @relation("CourseCreator")
   managedCourses Course[] @relation("CourseFaculty")
 
-  uploadedYoutubeVideoLessons YoutubeVideoLesson[] @relation("UserUploadedVideos")
+  uploadedLessons Lesson[] @relation("UserUploadedVideos")
 
   dailyActivities     DailyUserActivity[]
   enrollments      Enrollment[]
@@ -91,19 +91,20 @@ model Module {
   courseId    String
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  videoLessons YoutubeVideoLesson[]
+  lessons Lesson[]
   quiz         Quiz?
-  attachments  Attachment[]
 
   @@unique([courseId, position])
   @@index([courseId])
 }
-model YoutubeVideoLesson {
+model Lesson {
   id          String   @id @default(ulid())
   title       String
   description String?
   thumbnail   String?
-  youtubeId   String
+  youtubeId   String?
+  dropboxPath String?
+  type        LessonType
   url         String
   position    Int
   duration    Int?     // in seconds
@@ -187,20 +188,6 @@ model QuizAnswer {
   @@index([questionId])
 }
 
-model Attachment {
-  id        String     @id @default(ulid())
-  name      String
-  url       String
-  fileType  FileType
-  size      Int        // in bytes
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  moduleId  String
-  module    Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  @@index([moduleId])
-}
 
 // Forum models
 model ForumPost {
@@ -308,12 +295,9 @@ enum QuestionType {
   SHORT_ANSWER
 }
 
-enum FileType {
+enum LessonType {
   PDF
-  IMAGE
-  DOCUMENT
-  SPREADSHEET
-  PRESENTATION
-  ARCHIVE
-  OTHER
+  YOUTUBE
+  DROPBOX
+  LINK
 }

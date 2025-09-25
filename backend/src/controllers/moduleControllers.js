@@ -23,13 +23,13 @@ export const createModule = async (req, res) => {
         const auth = req.auth();
         const userId = auth.userId;
 
-        const { id: currentUserId } = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true }
+            select: { id: true, role: true }
         });
 
         // Check if user is course creator or faculty
-        if (course.createdById !== currentUserId && course.facultyId !== currentUserId) {
+        if (user.id !== course.facultyId && user.role !== 'ADMIN' ) {
             return res.status(403).json({ message: "Not authorized to create modules for this course" });
         }
 
@@ -59,8 +59,7 @@ export const createModule = async (req, res) => {
                 },
                 _count: {
                     select: {
-                        videoLessons: true,
-                        attachments: true
+                        lessons: true,
                     }
                 }
             }
@@ -96,8 +95,7 @@ export const getModules = async (req, res) => {
                 updatedAt: true,
                 _count: {
                     select: {
-                        videoLessons: true,
-                        attachments: true,
+                        lessons: true,
                     }
                 }
             },
@@ -108,13 +106,10 @@ export const getModules = async (req, res) => {
             ]
         });
 
-        const totalLessons = modules.reduce((sum, mod) => {
-          return sum + mod._count.videoLessons + mod._count.attachments;
-        }, 0);
+        
 
         res.status(200).json({ 
             modules, 
-            totalLessons
         });
         
     } catch (error) {
@@ -140,11 +135,13 @@ export const getModule = async (req, res) => {
                 position: true,
                 courseId: true,
                 updatedAt: true,
-                videoLessons: {
+                lessons: {
                     select: {
                         id: true,
                         title: true,
                         description: true,
+                        type: true,
+                        dropboxPath: true,
                         youtubeId: true,
                         position: true,
                         duration: true,
@@ -200,13 +197,13 @@ export const updateModule = async (req, res) => {
         const auth = req.auth();
         const userId = auth.userId;
 
-        const { id: currentUserId } = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true }
+            select: { id: true, role: true }
         });
 
-        if (existingModule.course.createdById !== currentUserId && 
-            existingModule.course.facultyId !== currentUserId) {
+        if (user.role !== 'ADMIN' && 
+            existingModule.course.facultyId !== user.id) {
             return res.status(403).json({ message: "Not authorized to update this module" });
         }
 
@@ -222,7 +219,7 @@ export const updateModule = async (req, res) => {
             data: filteredData,
             include: {
                 course: { select: { id: true, title: true } },
-                _count: { select: { videoLessons: true, attachments: true } },
+                _count: { select: { lessons: true } },
             }
         });
 
@@ -241,7 +238,6 @@ export const updateModule = async (req, res) => {
 
 export const deleteModule = async (req, res) => {
     try {
-
         const {id} = req.params;
 
         if(!id) return res.status(400).json({message: "Module id is required"});
@@ -251,6 +247,7 @@ export const deleteModule = async (req, res) => {
             include: {
                 course: {
                     select: {
+                        id: true,
                         createdById: true,
                         facultyId: true
                     }
@@ -263,22 +260,150 @@ export const deleteModule = async (req, res) => {
         const auth = req.auth();
         const userId = auth.userId;
 
-        const { id: currentUserId } = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true }
+            select: { id: true, role: true }
         });
 
-        if (existingModule.course.createdById !== currentUserId && 
-            existingModule.course.facultyId !== currentUserId) {
+        if (user.role !== 'ADMIN' && 
+            existingModule.course.facultyId !== user.id) {
             return res.status(403).json({ message: "Not authorized to delete this module" });
         }
 
-        await prisma.module.delete({where: {id}});
+        const modulePosition = existingModule.position;
+        const courseId = existingModule.courseId;
 
-        res.status(200).json({message: "Module deleted successfully"});
+        // Use transaction to delete module and adjust positions
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete the module
+            await tx.module.delete({
+                where: { id }
+            });
+
+            // 2. Shift all modules with higher positions down by 1
+            await tx.module.updateMany({
+                where: {
+                    courseId: courseId,
+                    position: {
+                        gt: modulePosition
+                    }
+                },
+                data: {
+                    position: {
+                        decrement: 1
+                    }
+                }
+            });
+        });
+
+        res.status(200).json({
+            message: "Module deleted successfully",
+            deletedModuleId: id,
+            deletedPosition: modulePosition
+        });
         
     } catch (error) {
         console.log("Error in deleteModule controller", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+// New: bulk reorder modules
+export const reorderModules = async (req, res) => {
+  try {
+    const { orderedModules } = req.body; // expected: [{ id, position }, ...]
+
+    if (!Array.isArray(orderedModules) || orderedModules.length === 0) {
+      return res.status(400).json({ message: "orderedModules (non-empty array) is required" });
+    }
+
+    const ids = orderedModules.map(m => m.id);
+    if (ids.some(id => !id)) {
+      return res.status(400).json({ message: "Each ordered module must include an id" });
+    }
+
+    // fetch modules & their course info
+    const modules = await prisma.module.findMany({
+      where: { id: { in: ids } },
+      include: {
+        course: {
+          select: {
+            id: true,
+            createdById: true,
+            facultyId: true
+          }
+        }
+      }
+    });
+
+    if (modules.length !== ids.length) {
+      return res.status(404).json({ message: "One or more modules not found" });
+    }
+
+    // ensure all modules belong to the same course
+    const courseIds = new Set(modules.map(m => m.course.id));
+    if (courseIds.size !== 1) {
+      return res.status(400).json({ message: "Modules must belong to the same course" });
+    }
+    const course = modules[0].course;
+    const courseId = course.id;
+
+    // auth & authorization
+    const auth = req.auth();
+    const userId = auth.userId;
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true, role: true }
+    });
+
+    if (user.role !== 'ADMIN' && course.facultyId !== user.id) {
+      return res.status(403).json({ message: "Not authorized to reorder modules for this course" });
+    }
+
+    // Normalize positions: ensure unique, sequential positions based on provided order
+    // Use the order of orderedModules to assign final positions (1-based)
+    const ordered = orderedModules.map((m, idx) => ({ id: m.id, position: idx + 1 }));
+
+    // To avoid unique constraint conflicts, first assign temporary positions that cannot collide
+    // Use a large negative offset to ensure uniqueness
+    const NEG_OFFSET = 1000000;
+    const tempUpdates = ordered.map(u => ({ id: u.id, tempPosition: -(u.position + NEG_OFFSET) }));
+
+    // Build transaction:
+    // 1) set temp positions for all affected modules
+    // 2) set final positions for all affected modules and return the updated rows
+    const tx = [
+      // set temporary positions
+      ...tempUpdates.map(tu =>
+        prisma.module.update({
+          where: { id: tu.id },
+          data: { position: tu.tempPosition }
+        })
+      ),
+      // set final positions and include counts
+      ...ordered.map(u =>
+        prisma.module.update({
+          where: { id: u.id },
+          data: { position: u.position },
+          include: {
+            _count: { select: { lessons: true } },
+          }
+        })
+      )
+    ];
+
+    const results = await prisma.$transaction(tx);
+
+    // last `ordered.length` entries are the final updated modules
+    const updated = results.slice(tempUpdates.length);
+
+    res.status(200).json({
+      message: "Modules reordered successfully",
+      modules: updated,
+      courseId
+    });
+  } catch (error) {
+    console.log("Error in reorderModules controller", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

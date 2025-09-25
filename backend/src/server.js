@@ -18,6 +18,7 @@ import facultyRoutes from './routes/facultyRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
 import moduleRoutes from './routes/moduleRoutes.js';
+import dropboxUploadRoutes from './routes/dropboxUploadRoutes.js'
 import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 
 // YouTube routes (from our implementation)
@@ -63,14 +64,16 @@ app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 app.use('/api/module', requireAuth(), moduleRoutes)
 
 // ===== YouTube APIs (mounted as-is; they self-protect inside) =====
-app.use('/api/youtube-auth',requireAuth(), youtubeAuthRoutes);
+app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
+
+app.use('/api/upload-dropbox', dropboxUploadRoutes);
 
 // ===== Public APIs =====
 app.use('/api', guestRoutes);
 
 // PDF upload (public for now)
-app.use('/upload-pdf', uploadPdfRoutes);
+app.use('/api/upload-pdf', uploadPdfRoutes);
 
 // Health + debug
 app.post('/debug', (req, res) => res.send('Debug POST hit!'));
