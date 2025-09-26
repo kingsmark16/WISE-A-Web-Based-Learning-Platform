@@ -14,6 +14,7 @@ import UploadActions from "../lessons/UploadActions";
 import LessonList from "../lessons/LessonList";
 import PdfViewerDialog from "../PdfViewer";
 import PdfViewer from "../PdfViewer";
+import VideoPlayer from "../videoPlayer"; // Make sure this import exists
 
 const SortableModule = ({ 
   item, 
@@ -408,24 +409,37 @@ const SortableModule = ({
  
       {/* Video Player */}
       {currentLesson && (
-        currentLesson.type === "PDF" ? (
-          <PdfViewer
-            open={videoPlayerOpen}
-            onClose={() => setVideoPlayerOpen(false)}
-            pdfUrl={currentLesson.url}
-            title={currentLesson.title}
-          />
-        ) : (
-          <EmbedYt
-            open={videoPlayerOpen}
-            onOpenChange={setVideoPlayerOpen}
-            lesson={currentLesson}
-            onNext={handleNextLesson}
-            onPrevious={handlePreviousLesson}
-            hasNext={currentLessonIndex < lessons.length - 1}
-            hasPrevious={currentLessonIndex > 0}
-          />
-        )
+        <>
+          {currentLesson.type === "PDF" ? (
+            <PdfViewer
+              open={videoPlayerOpen}
+              onClose={() => setVideoPlayerOpen(false)}
+              pdfUrl={currentLesson.url}
+              title={currentLesson.title}
+            />
+          ) : currentLesson.type === "YOUTUBE" ? (
+            <EmbedYt
+              open={videoPlayerOpen}
+              onOpenChange={setVideoPlayerOpen}
+              lesson={currentLesson}
+              onNext={handleNextLesson}
+              onPrevious={handlePreviousLesson}
+              hasNext={currentLessonIndex < lessons.length - 1}
+              hasPrevious={currentLessonIndex > 0}
+            />
+          ) : (
+            <VideoPlayer
+              open={videoPlayerOpen}
+              onClose={() => setVideoPlayerOpen(false)}
+              url={currentLesson.url}
+              title={currentLesson.title}
+              onNext={handleNextLesson}
+              onPrevious={handlePreviousLesson}
+              hasNext={currentLessonIndex < lessons.length - 1}
+              hasPrevious={currentLessonIndex > 0}
+            />
+          )}
+        </>
       )}
     </>
   );

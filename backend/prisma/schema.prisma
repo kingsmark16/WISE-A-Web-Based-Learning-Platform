@@ -104,6 +104,7 @@ model Lesson {
   thumbnail   String?
   youtubeId   String?
   dropboxPath String?
+  storageKey  String?
   type        LessonType
   url         String
   position    Int
@@ -281,6 +282,14 @@ model Enrollment {
   @@unique([studentId, courseId])
   @@index([studentId])
   @@index([courseId])
+}
+
+model DropboxToken {
+  id          String   @id @default(ulid())
+  access_token String
+  refresh_token String?
+  expires_at  DateTime?
+  updatedAt   DateTime @updatedAt
 }
 
 enum Role {

@@ -18,7 +18,8 @@ import facultyRoutes from './routes/facultyRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
 import moduleRoutes from './routes/moduleRoutes.js';
-import dropboxUploadRoutes from './routes/dropboxUploadRoutes.js'
+import dropboxUploadRoutes from './routes/dropboxUploadRoutes.js';
+import dropboxAuthRoutes from './routes/dropboxAuthRoutes.js'
 import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 
 // YouTube routes (from our implementation)
@@ -68,6 +69,7 @@ app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
 
 app.use('/api/upload-dropbox', dropboxUploadRoutes);
+app.use('/api/dropbox-auth', dropboxAuthRoutes);
 
 // ===== Public APIs =====
 app.use('/api', guestRoutes);
