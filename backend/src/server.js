@@ -1,13 +1,12 @@
-// src/server.js
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 import { clerkMiddleware, requireAuth } from '@clerk/express';
 
-// your existing routes
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import guestRoutes from './routes/guestRoutes.js';
@@ -17,20 +16,24 @@ import statsRoutes from './routes/statsRoutes.js';
 import facultyRoutes from './routes/facultyRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
-import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
-
-// YouTube routes (from our implementation)
+import forumNotificationRoutes from './routes/forumNotificationRoutes.js';
+import forumRoutes from './routes/forumRoutes.js';
 import youtubeAuthRoutes from './routes/youtubeAuthRoutes.js';
 import youtubeVideoRoutes from './routes/youtubeVideoRoutes.js';
+import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Resolve project root (for static paths when running with ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Ensure uploads dir exists (backend/uploads/pdfs)
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'pdfs');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// Core middleware
+// Core middleware 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -44,37 +47,36 @@ app.use(
   })
 );
 
-// Clerk middleware (parses cookies/headers, attaches req.auth)
-// NOTE: We do NOT use ClerkExpressWithAuth here.
+// Clerk middleware
 app.use(clerkMiddleware());
 
-// Static files for inline PDF viewing
+// Static files 
 app.use('/files', express.static(UPLOADS_DIR));
 
-// ===== Protected APIs (your existing ones) =====
 app.use('/api/upload', requireAuth(), uploadRoutes);
-app.use('/api/admin', requireAuth(), updateLastActive, adminRoutes);
+app.use('/api/admin',   requireAuth(), updateLastActive, adminRoutes);
 app.use('/api/student', requireAuth(), updateLastActive, studentRoutes);
 app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
 app.use('/api/course', requireAuth(), courseRoutes);
-app.use('/api/stats', requireAuth(), statsRoutes);
+app.use('/api/stats',  requireAuth(), statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
+app.use('/api/youtube-auth',    requireAuth(), youtubeAuthRoutes);
+app.use('/api/youtube-lessons', requireAuth(), youtubeVideoRoutes);
+app.use('/api', requireAuth(), forumNotificationRoutes);
+app.use('/api', requireAuth(), updateLastActive, forumRoutes);
 
-// ===== YouTube APIs (mounted as-is; they self-protect inside) =====
-app.use('/api/youtube-auth',requireAuth(), youtubeAuthRoutes);
-app.use('/api/youtube-lessons',requireAuth(), youtubeVideoRoutes);
-
-// ===== Public APIs =====
+// Public APIs 
 app.use('/api', guestRoutes);
 
-// PDF upload (public for now)
+// PDF upload endpoint (requireAuth() ta ini soon)
 app.use('/upload-pdf', uploadPdfRoutes);
 
-// Health + debug
-app.post('/debug', (req, res) => res.send('Debug POST hit!'));
-app.get('/', (req, res) => res.send('Server is running'));
-app.get('/healthz', (req, res) => res.json({ ok: true }));
+// Health / debug
+app.post('/api/_ping', (req, res) => res.json({ ok: true }));
+app.get('/',          (req, res) => res.send('Server is running'));
+app.get('/healthz',   (req, res) => res.json({ ok: true }));
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running in PORT ${PORT}`);
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
