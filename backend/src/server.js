@@ -66,10 +66,11 @@ app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 app.use('/api/module', requireAuth(), moduleRoutes)
 
 
-app.use('/api/lessons', lessonsRoutes);
+
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
 app.use('/api/upload-dropbox', dropboxUploadRoutes);
 app.use('/api/upload-pdf', uploadPdfRoutes);
+app.use('/api/lessons', lessonsRoutes);
 
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);

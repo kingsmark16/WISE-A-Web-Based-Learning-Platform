@@ -25,6 +25,7 @@ import {
 
 import { useGetModule } from "../../hooks/useModule";
 import { useReorderLessons } from "../../hooks/useLessson";
+import useDeleteFromDropbox from "../../hooks/uploads/useDeleteFromDropbox";
 
 import UploadActions from "../lessons/UploadActions";
 import LessonList from "../lessons/LessonList";
@@ -118,9 +119,21 @@ const SortableModule = ({
     e.stopPropagation();
     onEditLesson?.(lesson);
   };
-  const handleDeleteLessonLocal = (lesson, e) => {
-    e.stopPropagation();
-    onDeleteLesson?.(lesson);
+  const deleteDropboxMutation = useDeleteFromDropbox();
+
+  const handleDeleteLessonLocal = async (lesson, e) => {
+    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+    // Only delete from Dropbox if lesson type is DROPBOX
+    if (String(lesson?.type || "").toUpperCase() === "DROPBOX") {
+      try {
+        await deleteDropboxMutation.mutateAsync({ lessonId: lesson.id, type: lesson.type });
+        setLocalLessons((prev) => prev.filter((l) => l.id !== lesson.id));
+        return;
+      } catch (err) {
+        console.error("Failed to delete Dropbox lesson:", err);
+      }
+    }
+    onDeleteLesson?.(lesson, e);
   };
 
   // Drag handlers: match module behaviour (update local order on drag END)
