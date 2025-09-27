@@ -62,6 +62,8 @@ export default function VideoPlayer({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  // loading/buffering state
+  const [buffering, setBuffering] = useState(false);
   // Removed unused scrubbing state
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function VideoPlayer({
       setCurrentTime(0);
       setDuration(0);
       setBufferedEnd(0);
+      setBuffering(false);
       // pause video if open toggled off
       if (videoRef.current) {
         videoRef.current.pause();
@@ -97,22 +100,37 @@ export default function VideoPlayer({
   }, [open]);
 
   useEffect(() => {
+    // Re-attach listeners when video element or src (url/open) changes so time/progress updates reliably.
     const v = videoRef.current;
     if (!v) return;
-    const onTime = () => setCurrentTime(v.currentTime || 0);
-    const onDuration = () => setDuration(v.duration || 0);
-    const onLoadedMeta = () => setDuration(v.duration || 0);
-    const onPlay = () => setPlaying(true);
-    const onPause = () => setPlaying(false);
-    const onEnded = () => setPlaying(false);
+    let mounted = true;
+    const onTime = () => { if (!mounted) return; setCurrentTime(v.currentTime || 0); };
+    const onDuration = () => { if (!mounted) return; setDuration(isFinite(v.duration) ? v.duration : 0); };
+    const onLoadedMeta = () => { if (!mounted) return; setDuration(isFinite(v.duration) ? v.duration : 0); };
+    const onPlay = () => { if (!mounted) return; setPlaying(true); setBuffering(false); };
+    const onPause = () => { if (!mounted) return; setPlaying(false); };
+    const onEnded = () => { if (!mounted) return; setPlaying(false); };
     const onProgress = () => {
+      if (!mounted) return;
       try {
         const buf = v.buffered;
         if (buf && buf.length) setBufferedEnd(buf.end(buf.length - 1));
       } catch (err) {
-        void err; /* ignore buffer read errors */
+        void err;
       }
+      // if we have buffered enough, clear buffering flag
+      try {
+        if (v.buffered && v.buffered.length) {
+          const end = v.buffered.end(v.buffered.length - 1);
+          if (isFinite(end) && end > v.currentTime + 0.5) setBuffering(false);
+        }
+      } catch (err) { void err; }
     };
+
+    // buffering handlers
+    const onWaiting = () => { if (!mounted) return; setBuffering(true); };
+    const onCanPlay = () => { if (!mounted) return; setBuffering(false); };
+
     v.addEventListener("timeupdate", onTime);
     v.addEventListener("durationchange", onDuration);
     v.addEventListener("loadedmetadata", onLoadedMeta);
@@ -120,7 +138,27 @@ export default function VideoPlayer({
     v.addEventListener("pause", onPause);
     v.addEventListener("ended", onEnded);
     v.addEventListener("progress", onProgress);
+
+    v.addEventListener("waiting", onWaiting);
+    v.addEventListener("stalled", onWaiting);
+    v.addEventListener("canplay", onCanPlay);
+    v.addEventListener("playing", onCanPlay);
+    v.addEventListener("loadeddata", onCanPlay);
+
+    // initialize values right away (useful if metadata already loaded)
+    onTime();
+    onProgress();
+    onLoadedMeta();
+
+    // initial buffering state based on readyState (< 3 = HAVE_FUTURE_DATA)
+    try {
+      setBuffering(v.readyState < 3);
+    } catch (err) {
+      void err;
+    }
+
     return () => {
+      mounted = false;
       v.removeEventListener("timeupdate", onTime);
       v.removeEventListener("durationchange", onDuration);
       v.removeEventListener("loadedmetadata", onLoadedMeta);
@@ -128,8 +166,14 @@ export default function VideoPlayer({
       v.removeEventListener("pause", onPause);
       v.removeEventListener("ended", onEnded);
       v.removeEventListener("progress", onProgress);
+
+      v.removeEventListener("waiting", onWaiting);
+      v.removeEventListener("stalled", onWaiting);
+      v.removeEventListener("canplay", onCanPlay);
+      v.removeEventListener("playing", onCanPlay);
+      v.removeEventListener("loadeddata", onCanPlay);
     };
-  }, [videoRef]);
+  }, [url, open]);
   
   // Auto-play when url changes (or player opened) so "Next" starts playing immediately.
   useEffect(() => {
@@ -307,8 +351,32 @@ export default function VideoPlayer({
     };
   }, [open]);
 
-  if (!open) return null;
+  // lock background scroll when player is open (preserve scroll position)
+  const scrollYRef = useRef(0);
+  useEffect(() => {
+    if (!open) return;
+    const body = document.body;
+    scrollYRef.current = window.scrollY || window.pageYOffset || 0;
+    // prevent background scroll and keep page visually in place
+    body.style.position = "fixed";
+    body.style.top = `-${scrollYRef.current}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.overflow = "hidden";
 
+    return () => {
+      // restore
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.overflow = "";
+      window.scrollTo(0, scrollYRef.current);
+    };
+  }, [open]);
+  
+  if (!open) return null;
+  
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -322,14 +390,22 @@ export default function VideoPlayer({
         className="w-full max-w-4xl sm:max-w-2xl lg:max-w-4xl bg-black rounded-md shadow-2xl overflow-hidden relative"
         style={isMobile ? { height: "calc(100vh - 2rem)" } : { aspectRatio: "16/9", maxHeight: "90vh" }}
       >
-        <div className="absolute top-2 left-2 right-2 z-40 flex items-center justify-between gap-2 pointer-events-auto">
-          <div className="flex items-center gap-2 bg-black/40 px-2 py-1 rounded text-sm text-white/90">
-            <Film className="h-4 w-4" />
-            <div className="truncate max-w-xs">{title || "Untitled lesson"}</div>
+        <div
+          className={`absolute sm:top-2 top-4 left-2 right-2 z-40 flex items-center justify-between gap-2 transition-opacity duration-200 ${
+            showControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* make left area flexible but allow its contents to wrap; keep controls from shrinking */}
+          <div className="flex-1 min-w-0 flex items-center gap-2 bg-black/40 px-2 py-2 sm:py-1 rounded text-sm text-white/90">
+            <Film className="h-4 w-4 flex-shrink-0" />
+            {/* allow the title to wrap to new lines on small screens */}
+            <div className="whitespace-normal break-words max-w-full">
+              <div className="truncate-none">{title || "Untitled lesson"}</div>
+            </div>
           </div>
           
           {/* Keep previous/next hidden on very small screens and ensure Close is always the X icon */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-2">
               {hasPrevious && (
                 <button
@@ -382,11 +458,21 @@ export default function VideoPlayer({
           preload="metadata"
           controls={false}
           playsInline
-          onClick={(e) => {
-            e.stopPropagation();
-            togglePlay();
-          }}
+          onClick={(e) => e.stopPropagation()} /* don't toggle on video click */
         />
+
+        {/* Buffering / loading overlay (under controls) */}
+        {buffering && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+            <div className="flex flex-col items-center gap-2 bg-black/40 px-4 py-3 rounded">
+              <svg className="animate-spin h-12 w-12 text-white/90" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <div className="text-white/90 text-sm">Loading…</div>
+            </div>
+          </div>
+        )}
 
         <div
           className={`absolute left-0 right-0 bottom-0 z-40 transition-opacity duration-200 ${
@@ -398,6 +484,12 @@ export default function VideoPlayer({
             <div className="w-full flex items-center gap-3">
               <div className="flex-1 relative">
                 {/* visible input for accessibility, hidden pointer target behind it */}
+                {/* buffered bar (visualizes amount buffered behind the playable progress) */}
+                <div
+                  aria-hidden="true"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-2 sm:h-1 bg-white/20 rounded pointer-events-none"
+                  style={{ width: duration > 0 ? `${Math.min(100, (bufferedEnd / duration) * 100)}%` : "0%" }}
+                />
                 <input
                   aria-label="Seek"
                   type="range"
@@ -406,27 +498,23 @@ export default function VideoPlayer({
                   step="0.1"
                   value={currentTime || 0}
                   onChange={(e) => seek(parseFloat(e.target.value))}
-                  className="w-full h-2 sm:h-1 bg-muted-foreground/30 accent-primary relative z-10"
+                  className="w-full h-2 sm:h-1 bg-muted-foreground/30 accent-primary relative z-10 align-middle"
                 />
                 {/* clickable track overlay to support click+drag anywhere on track */}
                 <div
                   ref={progressRef}
                   role="presentation"
                   onPointerDown={onProgressPointerDown}
-                  className="absolute inset-x-0 top-0 h-10 sm:h-6 -mt-4 sm:-mt-2 cursor-pointer z-20"
+                  className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 sm:h-6 cursor-pointer z-20"
                 />
-                {bufferedEnd > 0 && duration > 0 && (
-                  <div className="text-xs text-white/60 mt-1">
-                    Buffered: {formatTime(bufferedEnd)} / {formatTime(duration)}
-                  </div>
-                )}
+                {/* buffered display removed */}
               </div>
-              <div className="text-xs text-white/90 ml-3 tabular-nums">
+              <div className="text-xs text-white/90 ml-3 tabular-nums flex items-center h-6">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </div>
             </div>
           </div>
-
+ 
           <div className="px-3 pb-3 pt-1 bg-black/40 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <button
@@ -496,10 +584,6 @@ export default function VideoPlayer({
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-sm text-white/90">
-                <Clock11 className="h-4 w-4" />
-                <span>{Math.round((currentTime / Math.max(1, duration)) * 100)}%</span>
-              </div>
 
               <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-sm text-white/90">
                 <div className="relative flex items-center">
