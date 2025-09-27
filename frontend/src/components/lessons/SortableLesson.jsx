@@ -116,10 +116,10 @@ const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLes
             <span className="text-xs sm:text-sm md:text-sm font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
               {index + 1}
             </span>
-            <div className="min-w-0">
+            <div className="w-full min-w-0 overflow-hidden">
               <h6
                 ref={titleRef}
-                className="text-xs sm:text-sm font-semibold leading-tight text-foreground break-words whitespace-normal"
+                className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-foreground"
               >
                 {lesson.title}
               </h6>
