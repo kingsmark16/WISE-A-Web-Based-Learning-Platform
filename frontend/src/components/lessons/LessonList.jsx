@@ -10,6 +10,7 @@ const LessonList = ({
   onPlayLesson,
   onEditLesson,
   onDeleteLesson,
+  editPending = false,
 }) => (
   <div>
     <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -31,6 +32,7 @@ const LessonList = ({
           onPlayLesson={onPlayLesson}
           onEditLesson={onEditLesson}
           onDeleteLesson={onDeleteLesson}
+          editPending={editPending}
         />
       ))}
     </div>

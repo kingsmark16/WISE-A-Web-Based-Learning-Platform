@@ -26,6 +26,7 @@ import {
 import { useGetModule } from "../../hooks/useModule";
 import { useReorderLessons } from "../../hooks/useLessson";
 import useDeleteFromDropbox from "../../hooks/uploads/useDeleteFromDropbox";
+import useEditFromDropbox from "../../hooks/uploads/useEditFromDropbox";
 
 import UploadActions from "../lessons/UploadActions";
 import LessonList from "../lessons/LessonList";
@@ -115,10 +116,38 @@ const SortableModule = ({
     if (currentLessonIndex > 0) setCurrentLessonIndex(currentLessonIndex - 1);
   };
 
-  const handleEditLessonLocal = (lesson, e) => {
-    e.stopPropagation();
-    onEditLesson?.(lesson);
+  const {
+    mutate: editDropboxLesson,
+    isPending
+  } = useEditFromDropbox();
+
+  // Example handler for editing a lesson
+  const handleEditLessonLocal = async (lesson, e, newTitle) => {
+    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+
+    // Only edit if lesson type is DROPBOX
+    if (String(lesson?.type || "").toUpperCase() === "DROPBOX") {
+      editDropboxLesson(
+        { lessonId: lesson.id, title: newTitle, type: lesson.type },
+        {
+          onSuccess: () => {
+            // Optionally update localLessons so UI updates immediately
+            setLocalLessons((prev) =>
+              prev.map((l) => (l.id === lesson.id ? { ...l, title: newTitle } : l))
+            );
+          },
+          onError: (err) => {
+            console.error("Failed to edit Dropbox lesson:", err);
+          },
+        }
+      );
+      return;
+    }
+
+    // For other lesson types, call the generic handler
+    onEditLesson?.(lesson, e, newTitle);
   };
+
   const deleteDropboxMutation = useDeleteFromDropbox();
 
   const handleDeleteLessonLocal = async (lesson, e) => {
@@ -237,6 +266,7 @@ const SortableModule = ({
                 onPlayLesson={handlePlayLesson}
                 onEditLesson={handleEditLessonLocal}
                 onDeleteLesson={handleDeleteLessonLocal}
+                editPending={isPending}
               />
             </SortableContext>
 

@@ -1,5 +1,5 @@
-import React from "react";
-import { Trash2, AlertTriangle } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Trash2, AlertTriangle, Edit3 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +10,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
+// Delete dialog (already present)
 export const DeleteLessonDialog = ({
   open,
   onOpenChange,
@@ -65,5 +75,122 @@ export const DeleteLessonDialog = ({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+};
+
+// Edit (rename) dialog
+export const EditLessonDialog = ({
+  open,
+  onOpenChange,
+  onConfirm,
+  lesson,
+  isLoading = false,
+}) => {
+  const [newTitle, setNewTitle] = useState(lesson?.title || "");
+  const [saving, setSaving] = useState(false);
+  const isLoadingRef = useRef(isLoading);
+
+  useEffect(() => {
+    setNewTitle(lesson?.title || "");
+  }, [lesson?.title]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  if (!lesson) return null;
+
+  const savingActive = saving || isLoading;
+
+  // Prevent dialog from closing while saving
+  const handleOpenChange = (val) => {
+    if (!val && savingActive) return;
+    onOpenChange?.(val);
+  };
+
+  const waitForIsLoadingFalse = (timeoutMs = 30000) =>
+    new Promise((resolve, reject) => {
+      const start = Date.now();
+      const id = setInterval(() => {
+        if (!isLoadingRef.current) {
+          clearInterval(id);
+          resolve();
+        } else if (Date.now() - start > timeoutMs) {
+          clearInterval(id);
+          reject(new Error("Timeout waiting for loading to finish"));
+        }
+      }, 100);
+    });
+
+  const handleSave = async () => {
+    if (!newTitle.trim()) return;
+    try {
+      setSaving(true);
+      const result = onConfirm ? onConfirm(lesson, newTitle) : null;
+
+      // If handler returned a promise, await it.
+      if (result && typeof result.then === "function") {
+        await result;
+      }
+
+      // If caller uses a tanstack mutation and passed its loading state via isLoading prop,
+      // wait for that to resolve as well (poll until isLoading becomes false).
+      if (isLoadingRef.current) {
+        await waitForIsLoadingFalse();
+      }
+
+      setSaving(false);
+      onOpenChange?.(false);
+    } catch (err) {
+      setSaving(false);
+      console.error("Failed to save lesson title:", err);
+      // keep dialog open so user can retry
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <Edit3 className="h-5 w-5 text-primary" />
+            <DialogTitle>Rename Lesson</DialogTitle>
+          </div>
+        </DialogHeader>
+        <div className="py-2">
+          <label className="block text-sm mb-2">New title:</label>
+          <input
+            className="w-full border rounded px-2 py-1"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            autoFocus
+            disabled={savingActive}
+          />
+        </div>
+        <DialogFooter>
+          {savingActive ? (
+            <button className="px-3 py-2 rounded bg-muted" type="button" disabled>
+              Cancel
+            </button>
+          ) : (
+            <DialogClose asChild>
+              <button className="px-3 py-2 rounded bg-muted" type="button" disabled={savingActive}>
+                Cancel
+              </button>
+            </DialogClose>
+          )}
+
+          <button
+            className="px-3 py-2 rounded bg-primary text-white flex items-center gap-2"
+            type="button"
+            disabled={savingActive || !newTitle.trim()}
+            onClick={handleSave}
+          >
+            <Edit3 className="h-4 w-4" />
+            {savingActive ? "Saving..." : "Save"}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

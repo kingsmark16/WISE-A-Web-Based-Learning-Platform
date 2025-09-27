@@ -2,9 +2,9 @@ import React, { useRef, useState, useLayoutEffect, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Play, Edit3, Trash2, MoreHorizontal } from "lucide-react";
-import { DeleteLessonDialog } from "./LessonDialog"; // <-- import here
+import { DeleteLessonDialog, EditLessonDialog } from "./LessonDialog"; // <-- import here
 
-const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLesson, onDeleteLesson }) => {
+const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLesson, onDeleteLesson, editPending = false }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
 
   // Ref to title node so we can read computed font-size when drag begins
@@ -15,6 +15,9 @@ const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLes
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
 
   // ensure only one lesson menu is open at a time across the list:
   // when this instance opens it will dispatch "lesson-menu-open" with its id,
@@ -173,7 +176,7 @@ const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLes
                   type="button"
                   role="menuitem"
                   className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-muted/10"
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEditLesson?.(lesson, e); }}
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setEditOpen(true); }}
                 >
                   <Edit3 className="h-4 w-4 text-primary" />
                   <span className="text-sm">Edit</span>
@@ -197,7 +200,7 @@ const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLes
               type="button"
               aria-label="edit-lesson"
               className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 p-1 sm:p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors"
-              onClick={(e) => { e.stopPropagation(); onEditLesson?.(lesson, e); }}
+              onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
             >
               <Edit3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
             </button>
@@ -221,6 +224,18 @@ const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLes
         onConfirm={onDeleteLesson}
         lesson={lesson}
         isLoading={false} // pass mutation.isLoading if needed
+      />
+
+      {/* Edit dialog (opens locally, onSave calls parent handler) */}
+      <EditLessonDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        lesson={lesson}
+        isLoading={editPending}
+        onConfirm={(l, newTitle) => {
+          // call the passed handler with (lesson, e=null, newTitle) to match parent's expected signature
+          onEditLesson?.(l, null, newTitle);
+        }}
       />
     </div>
   );
