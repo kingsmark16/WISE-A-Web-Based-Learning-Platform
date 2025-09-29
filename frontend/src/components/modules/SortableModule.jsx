@@ -25,14 +25,23 @@ import {
 
 import { useGetModule } from "../../hooks/useModule";
 import { useReorderLessons } from "../../hooks/useLessson";
-import useDeleteFromDropbox from "../../hooks/uploads/useDeleteFromDropbox";
-import useEditFromDropbox from "../../hooks/uploads/useEditFromDropbox";
+import useDeleteFromDropbox from "../../hooks/lessons/useDeleteFromDropbox";
+import useEditFromDropbox from "../../hooks/lessons/useEditFromDropbox";
+import useEditPdf from "../../hooks/lessons/useEditPdf";
+import { useDeletePdf } from "../../hooks/lessons/useDeletePdf";
 
 import UploadActions from "../lessons/UploadActions";
 import LessonList from "../lessons/LessonList";
 import PdfViewer from "../PdfViewer";
 import EmbedYt from "../EmbedYt";
 import VideoPlayer from "../videoPlayer";
+
+// added: upload hook import
+import { useUploadToDropbox } from "../../hooks/lessons/useUploadToDropbox";
+import { useQueryClient } from "@tanstack/react-query";
+
+// new import for modal
+import DropboxUploadModal from "../lessons/DropboxUploadModal";
 
 const SortableModule = ({
   item,
@@ -50,6 +59,15 @@ const SortableModule = ({
 }) => {
   const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  // file input + upload state (optional fallback if parent doesn't handle upload)
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [finalizing, setFinalizing] = useState(false);
+
+  // store abort function returned by the upload mutation so we can cancel
+  const abortRef = useRef(null);
+  const queryClient = useQueryClient();
 
   // local lessons and rollback ref for smooth drag (match module behaviour)
   const [localLessons, setLocalLessons] = useState([]);
@@ -83,6 +101,84 @@ const SortableModule = ({
     const sorted = lessons.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     setLocalLessons(sorted);
   }, [moduleData?.module?.lessons]);
+ 
+  // modal state for internal dropbox uploader
+  const [showDropboxModal, setShowDropboxModal] = useState(false);
+
+  // open hidden file picker
+  const openDropboxPicker = () => {
+    // prefer modal for nicer UX
+    setShowDropboxModal(true);
+    // keep legacy hidden input for fallback
+    // fileInputRef.current?.click();
+  };
+
+  // handle chosen files — call hook with same argument shape as other mutate calls
+  const handleDropboxFiles = async (e) => {
+    const files = e?.target?.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+    setFinalizing(false);
+    try {
+      const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      abortRef.current = () => {
+        try {
+          if (typeof cancelUpload === "function") cancelUpload(uploadId);
+        } catch { /* ignore */ }
+      };
+
+      await uploadDropboxAsync({
+        files,
+        moduleId,
+        uploadId,
+        onProgress: (p) => {
+          // if progress gets to 100 we are likely done streaming to server,
+          // mark finalizing so UI disables cancel (server may still be processing)
+          if (p >= 100) setFinalizing(true);
+          setUploadProgress(p);
+        },
+      });
+ 
+      if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+    } catch (err) {
+      console.error("Dropbox upload failed", err);
+      throw err;
+    } finally {
+      abortRef.current = null;
+      setUploading(false);
+      setFinalizing(false);
+      if (e && e.target) e.target.value = "";
+      setTimeout(() => setUploadProgress(0), 600);
+    }
+  };
+
+  const handleCancelUpload = () => {
+    // prefer the explicit abortRef (per-upload), fallback to using hook cancel without id if available
+    // if finalizing on server we can't reliably prevent DB save; consider calling server cleanup endpoint here
+    if (abortRef.current && typeof abortRef.current === "function") {
+      try {
+        abortRef.current();
+      } catch (e) {
+        console.warn("Failed to abort upload", e);
+      } finally {
+        abortRef.current = null;
+        setUploading(false);
+        setUploadProgress(0);
+        setFinalizing(false);
+      }
+      return;
+    }
+
+    // global fallback (if we somehow only have cancelUpload)
+    try {
+      if (typeof cancelUpload === "function") {
+        // can't know id here, so this is a no-op unless you store a global id
+        console.warn("No upload-specific abort available; call cancelUpload(uploadId) if you have the id");
+      }
+    } catch { /* ignore */ }
+  };
 
   // reorder hook (optimistic handled inside hook)
   const moduleId = moduleData?.module?.id;
@@ -118,40 +214,73 @@ const SortableModule = ({
   // pass moduleId so hook can optimistic-update the correct cache
   const {
     mutateAsync: editDropboxLessonAsync,
-    isPending
+    isPending: editDropboxPending
   } = useEditFromDropbox(moduleId);
 
+  const {
+    mutateAsync: editPdfLessonAsync,
+    isPending: editPdfPending
+  } = useEditPdf(moduleId);
+
+  const {
+    mutateAsync: deleteDropboxLessonAsync
+  } = useDeleteFromDropbox(moduleId);
+
+  const {
+    mutateAsync: deletePdfLessonAsync,
+  } = useDeletePdf(moduleId);
+
+  // upload hook (matches edit/delete pattern: returns mutateAsync + cancelUpload)
+  const { mutateAsync: uploadDropboxAsync, cancelUpload, isLoading: uploadDropboxPending } = useUploadToDropbox();
+  
   // Example handler for editing a lesson
   const handleEditLessonLocal = async (lesson, e, newTitle) => {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
 
-    // Only edit if lesson type is DROPBOX
-    if (String(lesson?.type || "").toUpperCase() === "DROPBOX") {
+    const type = String(lesson?.type || "").toUpperCase();
+    if (type === "DROPBOX") {
       // return the promise so callers (the dialog) can await and close on success
-      return editDropboxLessonAsync({ lessonId: lesson.id, title: newTitle, type: lesson.type })
-        .catch((err) => {
-          console.error("Failed to edit Dropbox lesson:", err);
-          throw err;
-        });
+      return editDropboxLessonAsync({ lessonId: lesson.id, title: newTitle, type: lesson.type }).catch((err) => {
+        console.error("Failed to edit Dropbox lesson:", err);
+        throw err;
+      });
+    }
+
+    if (type === "PDF") {
+      return editPdfLessonAsync({ lessonId: lesson.id, title: newTitle, type: lesson.type }).catch((err) => {
+        console.error("Failed to edit PDF lesson:", err);
+        throw err;
+      });
     }
 
     return null;
   };
 
-  const deleteDropboxMutation = useDeleteFromDropbox();
-
   const handleDeleteLessonLocal = async (lesson, e) => {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+
+    // Delete PDF lessons via PDF endpoint
+    if (String(lesson?.type || "").toUpperCase() === "PDF") {
+      try {
+        await deletePdfLessonAsync({ lessonId: lesson.id, type: lesson.type });
+       
+        return;
+      } catch (err) {
+        console.error("Failed to delete PDF lesson:", err);
+      }
+    }
+
     // Only delete from Dropbox if lesson type is DROPBOX
     if (String(lesson?.type || "").toUpperCase() === "DROPBOX") {
       try {
-        await deleteDropboxMutation.mutateAsync({ lessonId: lesson.id, type: lesson.type });
-        setLocalLessons((prev) => prev.filter((l) => l.id !== lesson.id));
+        await deleteDropboxLessonAsync({ lessonId: lesson.id, type: lesson.type });
+       
         return;
       } catch (err) {
         console.error("Failed to delete Dropbox lesson:", err);
       }
     }
+
     onDeleteLesson?.(lesson, e);
   };
 
@@ -234,12 +363,52 @@ const SortableModule = ({
 
         <UploadActions
           onUploadYoutube={() => onUploadYoutube?.(item)}
-          onUploadDropbox={() => onUploadDropbox?.(item)}
+          // prefer parent handler (same format as edit/delete). if none, fall back to internal picker.
+          onUploadDropbox={() => {
+            if (typeof onUploadDropbox === "function") return onUploadDropbox(item);
+            return openDropboxPicker();
+          }}
           onPasteLink={() => onPasteLink?.(item)}
           onUploadPdf={() => onUploadPdf?.(item)}
           onAddLink={() => onAddLink?.(item)}
           onCreateQuiz={() => onCreateQuiz?.(item)}
         />
+
+        {/* hidden file input fallback (used only when parent doesn't provide onUploadDropbox) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*"
+          multiple
+          onChange={handleDropboxFiles}
+          style={{ display: "none" }}
+          disabled={uploading}
+        />
+ 
+        {uploading && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${Math.min(Math.max(uploadProgress, 0), 100)}%` }}
+                />
+              </div>
+              <div className="text-sm text-muted-foreground tabular-nums w-12 text-right">
+                {uploadProgress}% 
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center px-2 py-1 text-xs rounded bg-destructive/10 text-destructive hover:bg-destructive/20"
+                onClick={handleCancelUpload}
+                disabled={finalizing || uploadDropboxPending || uploadProgress >= 100}
+              >
+                Cancel
+              </button>
+            </div>
+            {uploadDropboxPending && <div className="text-xs text-muted-foreground">Finalizing upload...</div>}
+          </div>
+        )}
 
         {lessons.length > 0 && (
           <DndContext
@@ -256,7 +425,7 @@ const SortableModule = ({
                 onPlayLesson={handlePlayLesson}
                 onEditLesson={handleEditLessonLocal}
                 onDeleteLesson={handleDeleteLessonLocal}
-                editPending={isPending}
+                editPending={Boolean(editDropboxPending || editPdfPending)}
               />
             </SortableContext>
 
@@ -401,6 +570,9 @@ const SortableModule = ({
           {renderModuleContent()}
         </AccordionContent>
       </AccordionItem>
+
+      {/* modal instance (open when user triggers upload and parent didn't handle upload) */}
+      <DropboxUploadModal open={showDropboxModal} onClose={() => setShowDropboxModal(false)} moduleId={moduleId} />
 
       {currentLesson && (
         <>

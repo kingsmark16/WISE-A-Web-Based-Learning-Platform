@@ -17,18 +17,16 @@ const UploadActions = ({
         Upload Video Lessons
       </h6>
       <div className="hidden md:flex gap-3">
-        <Button variant="outline" className="flex-1 h-10 bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800 dark:bg-red-950/30 dark:border-red-800/30 dark:text-red-300 dark:hover:bg-red-900/30 transition-all duration-200" onClick={onUploadYoutube}>
-          <Youtube className="h-4 w-4 mr-2" />
-          YouTube Video
-        </Button>
         <Button variant="outline" className="flex-1 h-10 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800 dark:bg-blue-950/30 dark:border-blue-800/30 dark:text-blue-300 dark:hover:bg-blue-900/30 transition-all duration-200" onClick={onUploadDropbox}>
           <Upload className="h-4 w-4 mr-2" />
           Dropbox Video
         </Button>
-        <Button variant="outline" className="flex-1 h-10 bg-green-50 hover:bg-green-100 border-green-200 text-green-700 hover:text-green-800 dark:bg-green-950/30 dark:border-green-800/30 dark:text-green-300 dark:hover:bg-green-900/30 transition-all duration-200" onClick={onPasteLink}>
-          <Link className="h-4 w-4 mr-2" />
-          Paste Video Link
+        <Button variant="outline" className="flex-1 h-10 bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800 dark:bg-red-950/30 dark:border-red-800/30 dark:text-red-300 dark:hover:bg-red-900/30 transition-all duration-200" onClick={onUploadYoutube}>
+          <Youtube className="h-4 w-4 mr-2" />
+          YouTube Video
         </Button>
+        
+       
       </div>
       <div className="md:hidden space-y-2">
         <Button variant="outline" className="w-full h-10 sm:h-11 bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800 dark:bg-red-950/30 dark:border-red-800/30 dark:text-red-300 dark:hover:bg-red-900/30 transition-all duration-200" onClick={onUploadYoutube}>

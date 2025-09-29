@@ -144,20 +144,20 @@ async function getDropboxClient() {
 }
 
 export const uploadToDropbox = async ({ buffer, filename, path = '' }) => {
-  const dropboxPath = `/${path}${filename}`;
-  try {
-    const dbx = await getDropboxClient();
-    const response = await dbx.filesUpload({
-      path: dropboxPath,
-      contents: buffer,
-      mode: 'add',
-      autorename: true,
-      mute: false
-    });
-    return response;
-  } catch (error) {
-    throw new Error('Dropbox upload failed: ' + (error?.message || String(error)));
-  }
+  const client = await getDropboxClient();
+  // normalize path: ensure folder path starts and ends without duplicated slashes
+  const folder = String(path || '').replace(/^\/+|\/+$/g, '');
+  const dropboxPath = `/${folder}/${filename}`.replace(/\/+/g, '/');
+
+  // call filesUpload with correct mode (add or overwrite as needed)
+  const res = await client.filesUpload({
+    path: dropboxPath,
+    contents: buffer,
+    mode: { '.tag': 'add' }
+  });
+
+  // return the metadata object so callers can use path_lower/path_display
+  return res.result ? res.result : res;
 };
 
 export const getPermanentLink = async (dropboxPath) => {
@@ -232,19 +232,23 @@ export const getVideoDuration = async (buffer) => {
 
 // new helper to delete a file from Dropbox
 export const deleteFromDropbox = async (dropboxPath) => {
+  if (!dropboxPath) return null;
+  const client = await getDropboxClient();
+  // normalize incoming path to start with a single slash
+  let normalized = String(dropboxPath).trim();
+  if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+  normalized = normalized.replace(/\/+/g, '/');
+
   try {
-    const dbx = await getDropboxClient();
-    const response = await dbx.filesDeleteV2({ path: dropboxPath });
-    return { deleted: true, response };
-  } catch (error) {
-    // Normalize detection of "not found" / already deleted situations.
-    const summary = error?.error?.error_summary || error?.error_summary || error?.message || String(error);
-    const s = String(summary).toLowerCase();
-    if (s.includes('not_found') || s.includes('not found') || s.includes('path/not_found') || s.includes('shared_link_already_exists')) {
-      // Indicate the file was already deleted / not present — not an error for DB deletion.
-      return { deleted: false, alreadyDeleted: true, info: summary };
+    const res = await client.filesDeleteV2({ path: normalized });
+    return { deleted: true, meta: res.result };
+  } catch (err) {
+    // If Dropbox reports path not found, mark as alreadyDeleted
+    const msg = String(err?.message || '');
+    if (/not_found/i.test(msg) || (err?.status && err.status === 409)) {
+      return { deleted: false, alreadyDeleted: true, error: err };
     }
-    throw new Error('Dropbox delete failed: ' + (error?.message || String(error)));
+    throw err;
   }
 };
 
