@@ -126,6 +126,9 @@ export const EditLessonDialog = ({
     if (!newTitle.trim()) return;
     try {
       setSaving(true);
+      // Close dialog immediately after clicking Save
+      onOpenChange?.(false);
+
       const result = onConfirm ? onConfirm(lesson, newTitle) : null;
 
       // If handler returned a promise, await it.
@@ -140,11 +143,11 @@ export const EditLessonDialog = ({
       }
 
       setSaving(false);
-      onOpenChange?.(false);
+      // dialog already closed above
     } catch (err) {
       setSaving(false);
       console.error("Failed to save lesson title:", err);
-      // keep dialog open so user can retry
+      // keep dialog closed (it was closed immediately) so user can re-open and retry
     }
   };
 

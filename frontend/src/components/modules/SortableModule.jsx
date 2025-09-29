@@ -40,7 +40,6 @@ const SortableModule = ({
   isOpen = false,
   onEdit,
   onDelete,
-  onEditLesson,
   onDeleteLesson,
   onUploadYoutube,
   onUploadDropbox,
@@ -116,10 +115,11 @@ const SortableModule = ({
     if (currentLessonIndex > 0) setCurrentLessonIndex(currentLessonIndex - 1);
   };
 
+  // pass moduleId so hook can optimistic-update the correct cache
   const {
-    mutate: editDropboxLesson,
+    mutateAsync: editDropboxLessonAsync,
     isPending
-  } = useEditFromDropbox();
+  } = useEditFromDropbox(moduleId);
 
   // Example handler for editing a lesson
   const handleEditLessonLocal = async (lesson, e, newTitle) => {
@@ -127,25 +127,15 @@ const SortableModule = ({
 
     // Only edit if lesson type is DROPBOX
     if (String(lesson?.type || "").toUpperCase() === "DROPBOX") {
-      editDropboxLesson(
-        { lessonId: lesson.id, title: newTitle, type: lesson.type },
-        {
-          onSuccess: () => {
-            // Optionally update localLessons so UI updates immediately
-            setLocalLessons((prev) =>
-              prev.map((l) => (l.id === lesson.id ? { ...l, title: newTitle } : l))
-            );
-          },
-          onError: (err) => {
-            console.error("Failed to edit Dropbox lesson:", err);
-          },
-        }
-      );
-      return;
+      // return the promise so callers (the dialog) can await and close on success
+      return editDropboxLessonAsync({ lessonId: lesson.id, title: newTitle, type: lesson.type })
+        .catch((err) => {
+          console.error("Failed to edit Dropbox lesson:", err);
+          throw err;
+        });
     }
 
-    // For other lesson types, call the generic handler
-    onEditLesson?.(lesson, e, newTitle);
+    return null;
   };
 
   const deleteDropboxMutation = useDeleteFromDropbox();

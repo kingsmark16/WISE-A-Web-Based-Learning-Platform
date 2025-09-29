@@ -237,13 +237,26 @@ export const deleteDropboxLesson = async (req, res) => {
     const deleted = await prisma.lesson.delete({ where });
 
     // Reorder remaining lessons within the module
-    await prisma.lesson.updateMany({
+    // Update positions one-by-one (ascending) to avoid transient unique constraint collisions
+    const siblings = await prisma.lesson.findMany({
       where: {
         moduleId: deleted.moduleId,
         position: { gt: deleted.position }
       },
-      data: { position: { decrement: 1 } }
+      orderBy: { position: 'asc' }
     });
+
+    for (const s of siblings) {
+      try {
+        await prisma.lesson.update({
+          where: { id: s.id },
+          data: { position: s.position - 1 }
+        });
+      } catch (err) {
+        // Log and continue — this should be rare, but avoid aborting the whole operation
+        console.error('Failed to update lesson position for id', s.id, err);
+      }
+    }
 
     return res.json({
       ok: true,

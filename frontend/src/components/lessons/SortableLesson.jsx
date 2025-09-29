@@ -232,10 +232,23 @@ const SortableLesson = ({ lesson, index, formatDuration, onPlayLesson, onEditLes
         onOpenChange={setEditOpen}
         lesson={lesson}
         isLoading={editPending}
-        onConfirm={(l, newTitle) => {
-          // call the passed handler with (lesson, e=null, newTitle) to match parent's expected signature
-          onEditLesson?.(l, null, newTitle);
-        }}
+        onConfirm={async (l, newTitle) => {
+          // call the passed handler and if it returns a promise, await it
+          const p = onEditLesson?.(l, null, newTitle);
+          if (p && typeof p.then === "function") {
+            // keep dialog open while pending; close on success
+            try {
+              await p;
+              setEditOpen(false);
+            } catch (err) {
+              // leave dialog open so user can see error; optionally show toast
+              console.error("Edit failed:", err);
+            }
+          } else {
+            // synchronous or no-return path — close immediately
+            setEditOpen(false);
+          }
+         }}
       />
     </div>
   );

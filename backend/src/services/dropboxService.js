@@ -171,8 +171,25 @@ export const getPermanentLink = async (dropboxPath) => {
     const url = createRes?.result?.url || createRes?.url || createRes?.link;
     if (url) return String(url).replace('?dl=0', '?dl=1');
   } catch (createErr) {
-    // continue to fallback attempts
-    console.warn('sharingCreateSharedLinkWithSettings failed (will try fallback):', createErr?.message || createErr);
+    // If shared link already exists (Dropbox returns 409 / shared_link_already_exists),
+    // immediately try to list existing shared links instead of only logging.
+    const summary = createErr?.error?.error_summary || createErr?.error_summary || createErr?.message || String(createErr);
+    const s = String(summary).toLowerCase();
+    if (s.includes('shared_link_already_exists') || s.includes('already_exists') || (createErr?.status === 409)) {
+      try {
+        const listRes = await dbx.sharingListSharedLinks({ path: dropboxPath, direct_only: true });
+        const links = listRes?.result?.links || listRes?.links;
+        if (Array.isArray(links) && links.length > 0) {
+          const url = links[0]?.url || links[0]?.link;
+          if (url) return String(url).replace('?dl=0', '?dl=1');
+        }
+      } catch (listErrInner) {
+        console.warn('sharingListSharedLinks after create 409 failed:', listErrInner?.message || listErrInner);
+      }
+    } else {
+      // continue to fallback attempts for other errors
+      console.warn('sharingCreateSharedLinkWithSettings failed (will try fallback):', createErr?.message || createErr);
+    }
   }
 
   // Fallback: list existing shared links
