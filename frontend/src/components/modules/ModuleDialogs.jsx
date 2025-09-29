@@ -142,10 +142,25 @@ export const EditModuleDialog = ({
     }
   }, [module]);
 
-  const handleSubmit = (e) => {
+  // Async submit: await onSubmit if it returns a promise, then close on success
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!module) return;
-    onSubmit({ id: module.id, title: title.trim(), description });
+
+    try {
+      const result = onSubmit({ id: module.id, title: title.trim(), description });
+
+      // If onSubmit returns a promise (e.g. mutateAsync), await it so we only close on success
+      if (result && typeof result.then === "function") {
+        await result;
+      }
+
+      // Close dialog after successful update
+      onOpenChange(false);
+    } catch (err) {
+      // Keep the dialog open so the user can see the error (error prop is shown by parent)
+      console.error("Failed to update module:", err);
+    }
   };
 
   return (
