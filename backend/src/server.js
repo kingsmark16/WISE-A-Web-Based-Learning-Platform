@@ -18,9 +18,14 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
 import forumNotificationRoutes from './routes/forumNotificationRoutes.js';
 import forumRoutes from './routes/forumRoutes.js';
+import moduleRoutes from './routes/moduleRoutes.js';
+import lessonsRoutes from './routes/lessonRoutes.js';
+import dropboxUploadRoutes from './routes/dropboxUploadRoutes.js';
+import dropboxAuthRoutes from './routes/dropboxAuthRoutes.js'
+import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 import youtubeAuthRoutes from './routes/youtubeAuthRoutes.js';
 import youtubeVideoRoutes from './routes/youtubeVideoRoutes.js';
-import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,16 +65,26 @@ app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
 app.use('/api/course', requireAuth(), courseRoutes);
 app.use('/api/stats',  requireAuth(), statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
-app.use('/api/youtube-auth',    requireAuth(), youtubeAuthRoutes);
-app.use('/api/youtube-lessons', requireAuth(), youtubeVideoRoutes);
+
 app.use('/api', requireAuth(), forumNotificationRoutes);
 app.use('/api', requireAuth(), updateLastActive, forumRoutes);
 
-// Public APIs 
+
+app.use('/api/module', requireAuth(), moduleRoutes)
+
+
+
+app.use('/api/youtube-lessons', youtubeVideoRoutes);
+app.use('/api/upload-dropbox', dropboxUploadRoutes);
+app.use('/api/upload-pdf', uploadPdfRoutes);
+app.use('/api/lessons', lessonsRoutes);
+
+app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
+app.use('/api/dropbox-auth', dropboxAuthRoutes);
+
+// ===== Public APIs =====
 app.use('/api', guestRoutes);
 
-// PDF upload endpoint (requireAuth() ta ini soon)
-app.use('/upload-pdf', uploadPdfRoutes);
 
 // Health / debug
 app.post('/api/_ping', (req, res) => res.json({ ok: true }));

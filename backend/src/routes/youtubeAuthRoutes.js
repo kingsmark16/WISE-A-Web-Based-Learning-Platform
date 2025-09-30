@@ -1,6 +1,4 @@
 import { Router } from 'express';
-
-
 import { start, callback } from '../controllers/youtubeAuthController.js';
 import { requireRole } from '../middlewares/authMiddleware.js';
 

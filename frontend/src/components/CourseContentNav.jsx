@@ -1,6 +1,5 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BookOpen, ExternalLink, MessageSquare, Users } from "lucide-react";
-import CourseAnalyticsCard from "./CourseAnalyticsCard";
 import ModuleContent from "./ModuleContent";
 
 const CourseContentNav = () => {
@@ -29,15 +28,6 @@ const CourseContentNav = () => {
         </TabsList>
 
         <TabsContent value="content" className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold text-lg">Course Content</h4>
-            </div>
-          </div>
-
-          {/* Analytics Cards */}
-          <CourseAnalyticsCard/>
 
           {/* Module Content with Analytics */}
           <ModuleContent/>
