@@ -66,8 +66,8 @@ app.use('/api/course', requireAuth(), courseRoutes);
 app.use('/api/stats',  requireAuth(), statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 
-app.use('/api', requireAuth(), forumNotificationRoutes);
-app.use('/api', requireAuth(), updateLastActive, forumRoutes);
+app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
+app.use('/api/forum', requireAuth(), updateLastActive, forumRoutes);
 
 
 app.use('/api/module', requireAuth(), moduleRoutes)
