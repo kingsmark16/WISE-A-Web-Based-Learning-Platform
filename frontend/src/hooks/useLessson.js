@@ -19,7 +19,7 @@ export const useReorderLessons = (moduleId) => {
     return useMutation({
         mutationFn: async ({ orderedLessons }) => {
             // orderedLessons: [{ id: string, position: number }, ...]
-            const response = await axiosInstance.post('lessons/reorder', { orderedLessons });
+            const response = await axiosInstance.post(`course/modules/${moduleId}/lessons/reorder`, { orderedLessons });
             return response.data;
         },
         onMutate: async ({ orderedLessons }) => {

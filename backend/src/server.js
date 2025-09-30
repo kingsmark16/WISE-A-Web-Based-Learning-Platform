@@ -18,8 +18,6 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
 import forumNotificationRoutes from './routes/forumNotificationRoutes.js';
 import forumRoutes from './routes/forumRoutes.js';
-import moduleRoutes from './routes/moduleRoutes.js';
-import lessonsRoutes from './routes/lessonRoutes.js';
 import dropboxUploadRoutes from './routes/dropboxUploadRoutes.js';
 import dropboxAuthRoutes from './routes/dropboxAuthRoutes.js'
 import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
@@ -70,14 +68,13 @@ app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
 app.use('/api/forum', requireAuth(), updateLastActive, forumRoutes);
 
 
-app.use('/api/module', requireAuth(), moduleRoutes)
+
 
 
 
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
 app.use('/api/upload-dropbox', dropboxUploadRoutes);
 app.use('/api/upload-pdf', uploadPdfRoutes);
-app.use('/api/lessons', lessonsRoutes);
 
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);

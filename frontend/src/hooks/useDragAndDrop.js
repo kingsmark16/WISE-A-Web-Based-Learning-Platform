@@ -6,12 +6,17 @@ export const useDragAndDrop = (modules, onReorder) => {
   const [localModules, setLocalModules] = useState([]);
   const [activeId, setActiveId] = useState(null);
 
-  // Use JSON.stringify to create a stable dependency for modules array comparison
-  const modulesStringified = JSON.stringify(modules);
-  
+  // Only update localModules when the incoming modules array actually differs
   useEffect(() => {
-    setLocalModules(modules);
-  }, [modulesStringified, modules]);
+    try {
+      const incoming = JSON.stringify(modules ?? []);
+      const current = JSON.stringify(localModules ?? []);
+      if (incoming !== current) setLocalModules(modules);
+    } catch {
+      // fallback: if stringify fails, still set once
+      setLocalModules(modules);
+    }
+  }, [modules, localModules]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
