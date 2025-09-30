@@ -68,10 +68,6 @@ app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
 app.use('/api/forum', requireAuth(), updateLastActive, forumRoutes);
 
 
-
-
-
-
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
 app.use('/api/upload-dropbox', dropboxUploadRoutes);
 app.use('/api/upload-pdf', uploadPdfRoutes);

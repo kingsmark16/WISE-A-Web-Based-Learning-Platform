@@ -6,7 +6,7 @@ import {
   uploadToYouTube, 
   remove,
   updateLesson
-} from '../controllers/youtubeVideoController.js';
+} from '../controllers/uploads/youtubeVideoController.js';
 
 const router = Router();
 

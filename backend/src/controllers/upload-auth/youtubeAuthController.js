@@ -1,4 +1,4 @@
-import { getAuthUrl, handleOAuthCallback } from '../services/googleAuth.js';
+import { getAuthUrl, handleOAuthCallback } from '../../services/googleAuth.js';
 
 export function start(req, res) {
   const url = getAuthUrl('yt-oauth');

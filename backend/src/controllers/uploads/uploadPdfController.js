@@ -1,7 +1,6 @@
 import path from "path";
-import { storage } from "../storage/index.js";
+import { storage } from "../../storage/index.js";
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;

@@ -1,6 +1,6 @@
-import { getYouTubeClient } from '../services/googleAuth.js';
+import { getYouTubeClient } from '../../services/googleAuth.js';
 
-import { toPhDateString } from '../utils/time.js';
+import { toPhDateString } from '../../utils/time.js';
 import { PrismaClient } from '@prisma/client';
 import { Readable } from 'stream';
 import multer from 'multer';

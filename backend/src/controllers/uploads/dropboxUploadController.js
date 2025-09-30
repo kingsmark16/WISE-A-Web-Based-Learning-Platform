@@ -3,8 +3,8 @@ import os from 'os';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import ffmpeg from 'fluent-ffmpeg';
-import { uploadToDropbox, getPermanentLink, getVideoDuration, deleteFromDropbox, renameDropboxFile, getStreamableLink } from '../services/dropboxService.js';
-import cloudinary from '../lib/cloudinary.js';
+import { uploadToDropbox, getPermanentLink, getVideoDuration, deleteFromDropbox, renameDropboxFile, getStreamableLink } from '../../services/dropboxService.js';
+import cloudinary from '../../lib/cloudinary.js';
 
 const prisma = new PrismaClient();
 
