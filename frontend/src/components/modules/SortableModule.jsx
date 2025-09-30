@@ -29,6 +29,9 @@ import useDeleteFromDropbox from "../../hooks/lessons/useDeleteFromDropbox";
 import useEditFromDropbox from "../../hooks/lessons/useEditFromDropbox";
 import useEditPdf from "../../hooks/lessons/useEditPdf";
 import { useDeletePdf } from "../../hooks/lessons/useDeletePdf";
+import useDeleteFromYoutube from "../../hooks/lessons/useDeleteFromYoutube";
+import useEditFromYoutube from "../../hooks/lessons/useEditFromYoutube";
+import { useUploadToYoutube } from "../../hooks/lessons/useUploadToYoutube";
 
 import UploadActions from "../lessons/UploadActions";
 import LessonList from "../lessons/LessonList";
@@ -42,6 +45,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 // new import for modal
 import DropboxUploadModal from "../lessons/DropboxUploadModal";
+import YoutubeUploadModal from "../lessons/YoutubeUploadModal";
+import PdfUploadModal from "../lessons/PdfUploadModal";
 
 const SortableModule = ({
   item,
@@ -61,13 +66,18 @@ const SortableModule = ({
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   // file input + upload state (optional fallback if parent doesn't handle upload)
   const fileInputRef = useRef(null);
+  const ytFileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [finalizing, setFinalizing] = useState(false);
 
   // store abort function returned by the upload mutation so we can cancel
   const abortRef = useRef(null);
+  const abortYoutubeRef = useRef(null);
   const queryClient = useQueryClient();
+  const [uploadingYt, setUploadingYt] = useState(false);
+  const [uploadProgressYt, setUploadProgressYt] = useState(0);
+  const [finalizingYt, setFinalizingYt] = useState(false);
 
   // local lessons and rollback ref for smooth drag (match module behaviour)
   const [localLessons, setLocalLessons] = useState([]);
@@ -104,7 +114,11 @@ const SortableModule = ({
  
   // modal state for internal dropbox uploader
   const [showDropboxModal, setShowDropboxModal] = useState(false);
-
+  // modal state for internal youtube uploader
+  const [showYoutubeModal, setShowYoutubeModal] = useState(false);
+  // modal state for internal pdf uploader
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  
   // open hidden file picker
   const openDropboxPicker = () => {
     // prefer modal for nicer UX
@@ -113,6 +127,31 @@ const SortableModule = ({
     // fileInputRef.current?.click();
   };
 
+  // open hidden file picker for YouTube upload (prefers parent handler)
+  const openYoutubePicker = () => {
+    if (typeof onUploadYoutube === "function") {
+      try {
+        return onUploadYoutube(item);
+      } catch {
+        // fallthrough to internal picker
+      }
+    }
+    // show internal YouTube modal fallback instead of opening file picker directly
+    setShowYoutubeModal(true);
+  };
+ 
+  // open internal PDF modal (prefers parent handler)
+  const openPdfPicker = () => {
+    if (typeof onUploadPdf === "function") {
+      try {
+        return onUploadPdf(item);
+      } catch {
+        // fallthrough to internal modal
+      }
+    }
+    setShowPdfModal(true);
+  };
+  
   // handle chosen files — call hook with same argument shape as other mutate calls
   const handleDropboxFiles = async (e) => {
     const files = e?.target?.files ? Array.from(e.target.files) : [];
@@ -154,6 +193,67 @@ const SortableModule = ({
     }
   };
 
+  const handleYoutubeFiles = async (e) => {
+    const files = e?.target?.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    setUploadingYt(true);
+    setUploadProgressYt(0);
+    setFinalizingYt(false);
+
+    try {
+      const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      abortYoutubeRef.current = () => {
+        try {
+          if (typeof cancelUploadYoutube === "function") cancelUploadYoutube(uploadId);
+        } catch { /* ignore */ }
+      };
+
+      await uploadYoutubeAsync({
+        files,
+        moduleId,
+        uploadId,
+        onProgress: (p) => {
+          if (p >= 100) setFinalizingYt(true);
+          setUploadProgressYt(p);
+        },
+      });
+
+      if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+    } catch (err) {
+      console.error("YouTube upload failed", err);
+      throw err;
+    } finally {
+      abortYoutubeRef.current = null;
+      setUploadingYt(false);
+      setFinalizingYt(false);
+      if (e && e.target) e.target.value = "";
+      setTimeout(() => setUploadProgressYt(0), 600);
+    }
+  };
+
+  const handleCancelYoutubeUpload = () => {
+    if (abortYoutubeRef.current && typeof abortYoutubeRef.current === "function") {
+      try {
+        abortYoutubeRef.current();
+      } catch (e) {
+        console.warn("Failed to abort YouTube upload", e);
+      } finally {
+        abortYoutubeRef.current = null;
+        setUploadingYt(false);
+        setUploadProgressYt(0);
+        setFinalizingYt(false);
+      }
+      return;
+    }
+
+    try {
+      if (typeof cancelUploadYoutube === "function") {
+        console.warn("No upload-specific abort available; call cancelUploadYoutube(uploadId) if you have the id");
+      }
+    } catch { /* ignore */ }
+  };
+
   const handleCancelUpload = () => {
     // prefer the explicit abortRef (per-upload), fallback to using hook cancel without id if available
     // if finalizing on server we can't reliably prevent DB save; consider calling server cleanup endpoint here
@@ -170,7 +270,7 @@ const SortableModule = ({
       }
       return;
     }
-
+ 
     // global fallback (if we somehow only have cancelUpload)
     try {
       if (typeof cancelUpload === "function") {
@@ -218,6 +318,11 @@ const SortableModule = ({
   } = useEditFromDropbox(moduleId);
 
   const {
+    mutateAsync: editYoutubeLessonAsync,
+    isPending: editYoutubePending
+  } = useEditFromYoutube(moduleId);
+
+  const {
     mutateAsync: editPdfLessonAsync,
     isPending: editPdfPending
   } = useEditPdf(moduleId);
@@ -227,12 +332,17 @@ const SortableModule = ({
   } = useDeleteFromDropbox(moduleId);
 
   const {
+    mutateAsync: deleteYoutubeLessonAsync
+  } = useDeleteFromYoutube(moduleId);
+  
+  const {
     mutateAsync: deletePdfLessonAsync,
   } = useDeletePdf(moduleId);
 
   // upload hook (matches edit/delete pattern: returns mutateAsync + cancelUpload)
   const { mutateAsync: uploadDropboxAsync, cancelUpload, isLoading: uploadDropboxPending } = useUploadToDropbox();
-  
+  const { mutateAsync: uploadYoutubeAsync, cancelUpload: cancelUploadYoutube, isLoading: uploadYoutubePending } = useUploadToYoutube();
+
   // Example handler for editing a lesson
   const handleEditLessonLocal = async (lesson, e, newTitle) => {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
@@ -242,6 +352,13 @@ const SortableModule = ({
       // return the promise so callers (the dialog) can await and close on success
       return editDropboxLessonAsync({ lessonId: lesson.id, title: newTitle, type: lesson.type }).catch((err) => {
         console.error("Failed to edit Dropbox lesson:", err);
+        throw err;
+      });
+    }
+
+    if (type === "YOUTUBE") {
+      return editYoutubeLessonAsync({ lessonId: lesson.id, title: newTitle, type: lesson.type }).catch((err) => {
+        console.error("Failed to edit YouTube lesson:", err);
         throw err;
       });
     }
@@ -267,6 +384,16 @@ const SortableModule = ({
         return;
       } catch (err) {
         console.error("Failed to delete PDF lesson:", err);
+      }
+    }
+
+    // Delete YouTube lessons via hook (optimistic update handled in hook)
+    if (String(lesson?.type || "").toUpperCase() === "YOUTUBE") {
+      try {
+        await deleteYoutubeLessonAsync({ lessonId: lesson.id, type: lesson.type });
+        return;
+      } catch (err) {
+        console.error("Failed to delete YouTube lesson:", err);
       }
     }
 
@@ -362,14 +489,21 @@ const SortableModule = ({
         )}
 
         <UploadActions
-          onUploadYoutube={() => onUploadYoutube?.(item)}
+          onUploadYoutube={() => {
+            // prefer parent handler; fallback to internal picker
+            if (typeof onUploadYoutube === "function") return onUploadYoutube(item);
+            return openYoutubePicker();
+          }}
           // prefer parent handler (same format as edit/delete). if none, fall back to internal picker.
           onUploadDropbox={() => {
             if (typeof onUploadDropbox === "function") return onUploadDropbox(item);
             return openDropboxPicker();
           }}
           onPasteLink={() => onPasteLink?.(item)}
-          onUploadPdf={() => onUploadPdf?.(item)}
+          onUploadPdf={() => {
+            if (typeof onUploadPdf === "function") return onUploadPdf(item);
+            return openPdfPicker();
+          }}
           onAddLink={() => onAddLink?.(item)}
           onCreateQuiz={() => onCreateQuiz?.(item)}
         />
@@ -384,29 +518,49 @@ const SortableModule = ({
           style={{ display: "none" }}
           disabled={uploading}
         />
+        {/* hidden file input for YouTube uploads (fallback) */}
+        <input
+          ref={ytFileInputRef}
+          type="file"
+          accept="video/*"
+          multiple
+          onChange={handleYoutubeFiles}
+          style={{ display: "none" }}
+          disabled={uploadingYt}
+        />
  
         {uploading && (
           <div className="mt-3 space-y-2">
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${Math.min(Math.max(uploadProgress, 0), 100)}%` }}
-                />
-              </div>
-              <div className="text-sm text-muted-foreground tabular-nums w-12 text-right">
-                {uploadProgress}% 
-              </div>
+              <div className="text-sm text-muted-foreground">Uploading…</div>
               <button
                 type="button"
                 className="inline-flex items-center px-2 py-1 text-xs rounded bg-destructive/10 text-destructive hover:bg-destructive/20"
                 onClick={handleCancelUpload}
-                disabled={finalizing || uploadDropboxPending || uploadProgress >= 100}
+                disabled={finalizing || uploadDropboxPending}
               >
                 Cancel
               </button>
             </div>
             {uploadDropboxPending && <div className="text-xs text-muted-foreground">Finalizing upload...</div>}
+          </div>
+        )}
+
+        {/* YouTube upload state UI (internal fallback) */}
+        {uploadingYt && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-muted-foreground">Uploading to YouTube…</div>
+              <button
+                type="button"
+                className="inline-flex items-center px-2 py-1 text-xs rounded bg-destructive/10 text-destructive hover:bg-destructive/20"
+                onClick={handleCancelYoutubeUpload}
+                disabled={finalizingYt || uploadYoutubePending}
+              >
+                Cancel
+              </button>
+            </div>
+            {uploadYoutubePending && <div className="text-xs text-muted-foreground">Finalizing upload...</div>}
           </div>
         )}
 
@@ -425,7 +579,7 @@ const SortableModule = ({
                 onPlayLesson={handlePlayLesson}
                 onEditLesson={handleEditLessonLocal}
                 onDeleteLesson={handleDeleteLessonLocal}
-                editPending={Boolean(editDropboxPending || editPdfPending)}
+                editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
               />
             </SortableContext>
 
@@ -573,6 +727,8 @@ const SortableModule = ({
 
       {/* modal instance (open when user triggers upload and parent didn't handle upload) */}
       <DropboxUploadModal open={showDropboxModal} onClose={() => setShowDropboxModal(false)} moduleId={moduleId} />
+      <YoutubeUploadModal open={showYoutubeModal} onClose={() => setShowYoutubeModal(false)} moduleId={moduleId} />
+      <PdfUploadModal open={showPdfModal} onClose={() => setShowPdfModal(false)} moduleId={moduleId} />
 
       {currentLesson && (
         <>

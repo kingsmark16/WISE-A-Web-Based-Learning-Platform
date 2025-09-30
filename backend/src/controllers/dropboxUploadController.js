@@ -9,13 +9,6 @@ import cloudinary from '../lib/cloudinary.js';
 const prisma = new PrismaClient();
 
 export const uploadDropboxVideo = async (req, res) => {
-  // track client aborts
-  let aborted = false;
-  req.on?.('aborted', () => {
-    aborted = true;
-    console.warn('Request aborted by client');
-  });
-
   try {
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'No file uploaded' });
@@ -25,130 +18,59 @@ export const uploadDropboxVideo = async (req, res) => {
 
     const results = [];
     for (const file of req.files) {
-      if (aborted) {
-        // stop early if client already aborted
-        return res.status(499).json({ error: 'Client aborted upload' });
-      }
-
-      // Get duration (fast check) — bail out if aborted immediately after
+      // Get duration
       const duration = await getVideoDuration(file.buffer);
-      if (aborted) return res.status(499).json({ error: 'Client aborted upload' });
 
       // Write buffer to temp file for ffmpeg
       const tempVideoPath = path.join(os.tmpdir(), `${Date.now()}_${file.originalname}`);
       fs.writeFileSync(tempVideoPath, file.buffer);
-      if (aborted) {
-        try { fs.unlinkSync(tempVideoPath); } catch (e) {}
-        return res.status(499).json({ error: 'Client aborted upload' });
-      }
 
       // Transcode video to optimized MP4 (H.264, lower bitrate)
       const transcodedVideoPath = path.join(os.tmpdir(), `${Date.now()}_transcoded_${file.originalname}`);
-      // keep reference so we can kill ffmpeg if client aborts
-      let ffmpegCmd = null;
-      try {
-        await new Promise((resolve, reject) => {
-          ffmpegCmd = ffmpeg(tempVideoPath)
-            .outputOptions([
-              '-c:v libx264',
-              '-preset fast',
-              '-crf 28',
-              '-c:a aac',
-              '-b:a 128k'
-            ])
-            .save(transcodedVideoPath)
-            .on('end', resolve)
-            .on('error', reject);
-
-          // if client aborts while ffmpeg runs, try to stop it and reject
-          req.on?.('aborted', () => {
-            try {
-              if (ffmpegCmd && typeof ffmpegCmd.kill === 'function') ffmpegCmd.kill('SIGKILL');
-            } catch (e) { /* ignore */ }
-            reject(new Error('aborted'));
-          });
-        });
-      } catch (err) {
-        // cleanup temp files if any and bail with 499 when aborted
-        try { fs.unlinkSync(tempVideoPath); } catch (e) {}
-        try { if (fs.existsSync(transcodedVideoPath)) fs.unlinkSync(transcodedVideoPath); } catch (e) {}
-        if (aborted || /aborted/i.test(String(err?.message || ''))) {
-          return res.status(499).json({ error: 'Client aborted upload during processing' });
-        }
-        throw err;
-      }
-
-      if (aborted) {
-        try { fs.unlinkSync(tempVideoPath); } catch (e) {}
-        try { fs.unlinkSync(transcodedVideoPath); } catch (e) {}
-        return res.status(499).json({ error: 'Client aborted upload' });
-      }
+      await new Promise((resolve, reject) => {
+        ffmpeg(tempVideoPath)
+          .outputOptions([
+            '-c:v libx264',
+            '-preset fast',
+            '-crf 28',
+            '-c:a aac',
+            '-b:a 128k'
+          ])
+          .save(transcodedVideoPath)
+          .on('end', resolve)
+          .on('error', reject);
+      });
 
       // Read transcoded video buffer
       const transcodedBuffer = fs.readFileSync(transcodedVideoPath);
 
-      // Generate thumbnail (first frame)
+      // Generate thumbnail (first frame) using ffmpeg
       const tempThumbPath = path.join(os.tmpdir(), `${Date.now()}_thumb.png`);
-      try {
-        await new Promise((resolve, reject) => {
-          const thumbCmd = ffmpeg(transcodedVideoPath)
-            .screenshots({
-              timestamps: [0],
-              filename: path.basename(tempThumbPath),
-              folder: path.dirname(tempThumbPath),
-              size: '500x300'
-            })
-            .on('end', resolve)
-            .on('error', reject);
-
-          req.on?.('aborted', () => {
-            try { if (thumbCmd && typeof thumbCmd.kill === 'function') thumbCmd.kill('SIGKILL'); } catch (e) {}
-            reject(new Error('aborted'));
-          });
-        });
-      } catch (err) {
-        // cleanup and abort if client cancelled
-        try { fs.unlinkSync(tempVideoPath); } catch (e) {}
-        try { fs.unlinkSync(transcodedVideoPath); } catch (e) {}
-        try { if (fs.existsSync(tempThumbPath)) fs.unlinkSync(tempThumbPath); } catch (e) {}
-        if (aborted || /aborted/i.test(String(err?.message || ''))) {
-          return res.status(499).json({ error: 'Client aborted upload during thumbnail generation' });
-        }
-        throw err;
-      }
+      await new Promise((resolve, reject) => {
+        ffmpeg(transcodedVideoPath)
+          .screenshots({
+            timestamps: [0],
+            filename: path.basename(tempThumbPath),
+            folder: path.dirname(tempThumbPath),
+            size: '500x300'
+          })
+          .on('end', resolve)
+          .on('error', reject);
+      });
       const thumbnailBuffer = fs.readFileSync(tempThumbPath);
 
-      // Clean up processing temp files (keep transcodedBuffer in memory)
-      try { fs.unlinkSync(tempVideoPath); } catch (e) {}
-      try { fs.unlinkSync(transcodedVideoPath); } catch (e) {}
-      try { fs.unlinkSync(tempThumbPath); } catch (e) {}
+      // Clean up temp files
+      fs.unlinkSync(tempVideoPath);
+      fs.unlinkSync(transcodedVideoPath);
+      fs.unlinkSync(tempThumbPath);
 
-      if (aborted) return res.status(499).json({ error: 'Client aborted upload' });
-
-      // Generate unique filename and upload to Dropbox
+      // Generate a unique filename for each upload (using timestamp)
       const safeName = path.parse(file.originalname).name.replace(/[^\w\-]+/g, "_");
       const ext = path.extname(file.originalname);
       const uniqueSuffix = Date.now();
       const videoFilename = `${safeName}_${uniqueSuffix}${ext}`;
       const videoDropboxPath = `/wise_uploads/${videoFilename}`;
-
-      // Upload to Dropbox
-      try {
-        await uploadToDropbox({ buffer: transcodedBuffer, filename: videoFilename, path: 'wise_uploads/' });
-      } catch (err) {
-        // If upload failed, continue cleanup and bubble error
-        console.error('Dropbox upload failed for', videoFilename, err);
-        throw err;
-      }
-
-      // If client aborted after Dropbox upload, try to delete the uploaded file and skip DB save
-      if (aborted) {
-        try {
-          await deleteFromDropbox(videoDropboxPath).catch(() => {});
-        } catch (e) { /* ignore */ }
-        return res.status(499).json({ error: 'Client aborted upload after upload to Dropbox; cleaned up' });
-      }
-
+      await uploadToDropbox({ buffer: transcodedBuffer, filename: videoFilename, path: 'wise_uploads/' });
       const videoUrl = await getPermanentLink(videoDropboxPath);
       const streamableVideoUrl = getStreamableLink(videoUrl);
 
@@ -158,7 +80,13 @@ export const uploadDropboxVideo = async (req, res) => {
           {
             folder: 'video-thumbnails',
             resource_type: 'image',
-            transformation: [{ width: 500, height: 300, crop: 'fill' }]
+            transformation: [
+              {
+                width: 500,
+                height: 300,
+                crop: 'fill'
+              }
+            ]
           },
           (error, result) => {
             if (error) reject(error);
@@ -167,13 +95,6 @@ export const uploadDropboxVideo = async (req, res) => {
         );
         uploadStream.end(thumbnailBuffer);
       });
-
-      if (aborted) {
-        // cleanup Dropbox file if client aborted after thumbnail upload
-        try { await deleteFromDropbox(videoDropboxPath).catch(() => {}); } catch (e) {}
-        return res.status(499).json({ error: 'Client aborted upload; cleaned up' });
-      }
-
       const thumbnailLink = uploadedThumbnail.secure_url;
 
       let nextPosition = 1;
@@ -183,12 +104,7 @@ export const uploadDropboxVideo = async (req, res) => {
       });
       if (lastLesson) nextPosition = lastLesson.position + 1;
 
-      // Save lesson in DB (only if not aborted)
-      if (aborted) {
-        try { await deleteFromDropbox(videoDropboxPath).catch(() => {}); } catch (e) {}
-        return res.status(499).json({ error: 'Client aborted upload' });
-      }
-
+      // Save lesson in DB
       const lesson = await prisma.lesson.create({
         data: {
           moduleId,
@@ -209,10 +125,6 @@ export const uploadDropboxVideo = async (req, res) => {
     return res.json({ results });
   } catch (e) {
     console.error('Controller error:', e);
-    // If client aborted, express may have already closed; if not, respond with 500
-    if (req.aborted || /aborted/i.test(String(e?.message || ''))) {
-      return res.status(499).json({ error: 'Client aborted upload' });
-    }
     return res.status(500).json({ error: e.message || String(e) });
   }
 };

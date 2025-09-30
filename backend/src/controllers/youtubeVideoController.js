@@ -4,10 +4,17 @@ import { toPhDateString } from '../utils/time.js';
 import { PrismaClient } from '@prisma/client';
 import { Readable } from 'stream';
 import multer from 'multer';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import https from 'https';
 
 
 const prisma = new PrismaClient();
 const upload = multer(); // Initialize multer for file uploads
+
+// enable keep-alive for long uploads
+https.globalAgent.keepAlive = true;
 
 // ---------- time helpers ----------
 function safePH(input) {
@@ -228,20 +235,70 @@ export async function uploadToYouTube(req, res) {
 
         console.log(`Uploading file ${i + 1}/${files.length}: ${file.originalname}`);
 
-        const uploadResponse = await yt.videos.insert({
-          part: ['snippet', 'status'],
-          requestBody: {
-            snippet: {
-              title: metadata.title || file.originalname.replace(/\.[^/.]+$/, ""),
-              description: metadata.description || '',
-            },
-            status: { privacyStatus: 'unlisted' }
-          },
-          media: {
-            body: Readable.from(file.buffer)
-          }
-        })
+        // compute + sanitize title/description to avoid YouTube API rejection
+        let computedTitle = (metadata && typeof metadata.title === 'string') ? metadata.title.trim() : '';
+        if (!computedTitle) {
+          computedTitle = (file && file.originalname) ? file.originalname.replace(/\.[^/.]+$/, "").trim() : '';
+        }
+        // strip control characters and collapse whitespace
+        if (computedTitle) {
+          computedTitle = computedTitle.replace(/[\x00-\x1F\x7F]+/g, '').replace(/\s+/g, ' ').trim();
+        }
+        if (!computedTitle) computedTitle = 'Untitled';
+        // enforce YouTube title length limits (100 chars)
+        if (computedTitle.length > 100) computedTitle = computedTitle.slice(0, 100).trim();
+
+        const computedDescription = (metadata && typeof metadata.description === 'string') ? metadata.description : '';
+
+        const snippet = {
+          title: computedTitle,
+          description: computedDescription,
+        };
+
+        console.log('YouTube upload snippet:', { titleLength: (snippet.title || '').length, titlePreview: snippet.title.slice(0, 60) });
+
+        // write upload to a temp file and stream from disk to YouTube to reduce memory pressure
+        const tmpDir = os.tmpdir();
+        const safeName = file.originalname.replace(/[^\w\-_.]/g, '_');
+        const tmpPath = path.join(tmpDir, `${Date.now()}-${Math.random().toString(36).slice(2,9)}-${safeName}`);
+        await fs.promises.writeFile(tmpPath, file.buffer);
         
+        // retry transient network errors (ECONNRESET, EPIPE, socket hang up)
+        const maxRetries = 3;
+        let attempt = 0;
+        let uploadResponse = null;
+        while (attempt < maxRetries) {
+          attempt++;
+          try {
+            const mediaStream = fs.createReadStream(tmpPath);
+            uploadResponse = await yt.videos.insert({
+              part: ['snippet', 'status'],
+              requestBody: {
+                snippet,
+                status: { privacyStatus: 'unlisted' }
+              },
+              media: {
+                body: mediaStream
+              }
+            });
+            break;
+          } catch (err) {
+            const msg = String(err?.message || err);
+            const transient = err?.code === 'ECONNRESET' || /ECONNRESET|socket hang up|EPIPE|ENETUNREACH/i.test(msg);
+            console.error(`YouTube upload attempt ${attempt} failed for ${file.originalname}:`, err?.code || msg);
+            if (!transient || attempt >= maxRetries) {
+              // cleanup and rethrow
+              try { await fs.promises.unlink(tmpPath); } catch {}
+              console.error('YouTube upload failed permanently for file:', file.originalname, { snippet });
+              throw err;
+            }
+            // backoff before retry
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+          }
+        }
+        // cleanup temp file after successful upload
+        try { await fs.promises.unlink(tmpPath); } catch (e) { /* ignore */ }
+ 
         const videoId = uploadResponse?.data?.id;
         if (!videoId) throw new Error('Upload returned no video ID');
 
@@ -258,7 +315,14 @@ export async function uploadToYouTube(req, res) {
         const meta = {
           title: videoMeta?.snippet?.title,
           description: videoMeta?.snippet?.description,
-          thumbnail: videoMeta?.snippet?.thumbnails?.medium?.url || '',
+          // pick first available thumbnail size to avoid 404 for mqdefault
+          thumbnail:
+            videoMeta?.snippet?.thumbnails?.maxres?.url ||
+            videoMeta?.snippet?.thumbnails?.standard?.url ||
+            videoMeta?.snippet?.thumbnails?.high?.url ||
+            videoMeta?.snippet?.thumbnails?.medium?.url ||
+            videoMeta?.snippet?.thumbnails?.default?.url ||
+            null,
           duration: parseDuration(videoMeta?.contentDetails?.duration || 'PT0S')
         };
 

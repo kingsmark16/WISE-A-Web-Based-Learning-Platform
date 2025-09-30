@@ -75,17 +75,44 @@ export const uploadPdf = async (req, res) => {
       const download_api_url = `${API_BASE}/api/upload-pdf/download?id=${encodeURIComponent(key)}&name=${encodeURIComponent(filename)}`;
 
       // Save as lesson in DB - persist storageKey for future deletes
-      const lesson = await prisma.lesson.create({
-        data: {
-          moduleId,
-          title: title || base,
-          description: description || "",
-          type: "PDF",
-          url: preview_api_url, // or direct_download_url if you prefer
-          position,
-          storageKey: key
+      // concurrent uploads can race on computing the next position; retry on unique constraint failure
+      const maxRetries = 5;
+      let attempt = 0;
+      let lesson;
+      while (attempt < maxRetries) {
+        try {
+          // recalculate position for this attempt to reduce race window
+          const lastLocal = await prisma.lesson.findFirst({
+            where: { moduleId },
+            orderBy: { position: "desc" }
+          });
+          const currentPosition = lastLocal ? lastLocal.position + 1 : 1; 
+
+          lesson = await prisma.lesson.create({
+            data: {
+              moduleId,
+              title: title || base,
+              description: description || "",
+              type: "PDF",
+              url: preview_api_url,
+              position: currentPosition,
+              storageKey: key
+            }
+          });
+
+          break; // success
+        } catch (err) {
+          // If unique constraint on (moduleId, position) happened, retry a few times
+          const isUniqueConstraint = err?.code === "P2002" && err?.meta?.target && String(err.meta.target).includes("moduleId") && String(err.meta.target).includes("position");
+          attempt++;
+          if (!isUniqueConstraint || attempt >= maxRetries) {
+            // bubble up if not recoverable
+            throw err;
+          }
+          // small backoff to reduce contention
+          await new Promise((r) => setTimeout(r, 80 * attempt));
         }
-      });
+      }
 
       results.push({
         message: "PDF uploaded",
@@ -99,7 +126,8 @@ export const uploadPdf = async (req, res) => {
         lesson, // include lesson info
       });
 
-      position++; // increment for next file
+      // increment for local loop only (next iteration will recalc anyway)
+      position++;
     }
 
     return res.json({ results });

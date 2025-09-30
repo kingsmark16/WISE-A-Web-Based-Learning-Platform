@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { X, UploadCloud, Trash2 } from "lucide-react";
-import { useUploadToDropbox } from "../../hooks/lessons/useUploadToDropbox";
+import { useUploadToYoutube } from "../../hooks/lessons/useUploadToYoutube";
 import { useQueryClient } from "@tanstack/react-query";
 
 const bytesToSize = (bytes) => {
@@ -10,14 +10,43 @@ const bytesToSize = (bytes) => {
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
 };
 
-export default function DropboxUploadModal({ open, onClose, moduleId }) {
+export default function YoutubeUploadModal({ open, onClose, moduleId }) {
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
-  // now also get cancelUpload from the hook
-  const { mutateAsync: uploadDropboxAsync, cancelUpload } = useUploadToDropbox();
-  const [items, setItems] = useState([]); // { id, file, progress, status, abortId }
+  const { mutateAsync: uploadYoutubeAsync, cancelUpload } = useUploadToYoutube();
+  const [items, setItems] = useState([]); // { id, file, progress, status, abortId, error, errorDetails }
+  const [expanded, setExpanded] = useState(new Set());
 
   if (!open) return null;
+
+  const getCircularReplacer = () => {
+    const seen = new WeakSet();
+    return (_key, value) => {
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) return "[Circular]";
+        seen.add(value);
+      }
+      return value;
+    };
+  };
+
+  const extractErrorMessage = (err) => {
+    // common places for useful messages (axios / gaxios / fetch nested)
+    const short =
+      err?.response?.data?.error?.message ||
+      err?.response?.data?.message ||
+      err?.cause?.message ||
+      err?.message ||
+      String(err);
+    // produce a safe JSON dump for details
+    let details = "";
+    try {
+      details = JSON.stringify(err, getCircularReplacer(), 2);
+    } catch {
+      details = String(err);
+    }
+    return { short, details };
+  };
 
   const addFiles = (files) => {
     const arr = Array.from(files || []);
@@ -30,7 +59,6 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
       error: null,
     }));
     setItems((s) => [...s, ...newItems]);
-    // auto-start upload for newly added files
     startUploads(newItems);
   };
 
@@ -52,12 +80,11 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
 
   const startUploads = (itemsToStart) => {
     itemsToStart.forEach(async (it) => {
-      // set to uploading and assign abortId (we use the item's id)
-      setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "uploading", progress: 0, abortId: it.id } : x)));
+      setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "uploading", progress: 0, abortId: it.id, error: null } : x)));
 
       try {
-        // pass uploadId so the hook can expose a cancel handle for this upload
-        await uploadDropboxAsync({
+        // call mutation and inspect response for per-file failures (server may return 200 with partial failures)
+        const result = await uploadYoutubeAsync({
           files: [it.file],
           moduleId,
           uploadId: it.id,
@@ -66,16 +93,68 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
           },
         });
 
-        // success
-        setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "done", progress: 100, abortId: null } : x)));
-        if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+        const payload = result?.data ?? result;
+
+        // If server returned a failedUploads array, prefer its per-file error messages.
+        const failedUploads = Array.isArray(payload?.failedUploads) ? payload.failedUploads : null;
+        if (failedUploads && failedUploads.length) {
+          // try to find entry that matches this file (exact name, uploadId, or contains name)
+          const match = failedUploads.find((f) => {
+            if (!f) return false;
+            if (f.uploadId && f.uploadId === it.id) return true;
+            if (f.originalFilename && f.originalFilename === it.file.name) return true;
+            if (f.originalFilename && it.file.name && f.originalFilename.includes(it.file.name)) return true;
+            return false;
+          });
+          if (match) {
+            const msg = match.error || match.message || "Upload failed";
+            setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "error", progress: x.progress || 0, abortId: null, error: msg } : x)));
+            return;
+          }
+        }
+
+        // heuristics to detect server-side failure for this file:
+        const hasGlobalError = !!(payload?.error || payload?.errors || (Array.isArray(payload?.failed) && payload.failed.length) || (Array.isArray(payload?.failedUploads) && payload.failedUploads.length));
+        // some servers return an array with per-upload results
+        const perResults = payload?.uploadResults || payload?.results || payload?.uploaded || payload?.uploadedVideos || payload?.uploads || null;
+
+        // find specific entry for this file (check originalname, filename, or uploadId)
+        let entryForFile = null;
+        if (Array.isArray(perResults)) {
+          entryForFile = perResults.find((r) => {
+            if (!r) return false;
+            if (r.uploadId && r.uploadId === it.id) return true;
+            if (r.originalFilename && r.originalFilename === it.file.name) return true;
+            if (r.originalname && r.originalname === it.file.name) return true;
+            if (r.filename && it.file.name && r.filename === it.file.name) return true;
+            // fallback: match by presence of video/lesson in success entry
+            return false;
+          });
+        }
+
+        // determine final state & message
+        if (hasGlobalError && !entryForFile) {
+          // some global error, show message
+          const { short, details } = extractErrorMessage(payload);
+          setItems((s) =>
+            s.map((x) => (x.id === it.id ? { ...x, status: "error", progress: 0, abortId: null, error: short || "Upload failed", errorDetails: details } : x))
+          );
+        } else if (entryForFile && (entryForFile.error || entryForFile.success === false || entryForFile.status === "error")) {
+          const { short, details } = extractErrorMessage(entryForFile.error ? entryForFile.error : (entryForFile.message || payload));
+          const msg = entryForFile.error || entryForFile.message || short || "Upload failed";
+          setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "error", progress: x.progress || 0, abortId: null, error: msg, errorDetails: details } : x)));
+        } else {
+          // success path
+          setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "done", progress: 100, abortId: null, error: null } : x)));
+          if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+        }
       } catch (err) {
-        // if request was aborted client-side, status will be 'canceled' here
         const canceled = err?.name === "CanceledError" || /aborted|canceled/i.test(String(err?.message || err));
+        const { short, details } = extractErrorMessage(err);
         setItems((s) =>
           s.map((x) =>
             x.id === it.id
-              ? { ...x, status: canceled ? "canceled" : "error", error: canceled ? null : (err?.message || String(err)), abortId: null }
+              ? { ...x, status: canceled ? "canceled" : "error", error: canceled ? null : short, errorDetails: canceled ? null : details, abortId: null }
               : x
           )
         );
@@ -87,16 +166,13 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
     const it = items.find((i) => i.id === id);
     if (!it) return;
     if (it.abortId) {
-      // call cancelUpload from hook using the uploadId stored on item
       const ok = cancelUpload(it.abortId);
       if (ok) {
         setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled", abortId: null } : x)));
       } else {
-        // fallback mark canceled locally (server might still complete)
         setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled", abortId: null } : x)));
       }
     } else {
-      // not started or already finished — just remove locally
       setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled" } : x)));
     }
   };
@@ -105,7 +181,6 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
     setItems((s) => s.filter((x) => x.id !== id));
   };
 
-
   const allFinished = items.every((i) => i.status === "done" || i.status === "error" || i.status === "canceled") && items.length > 0;
 
   return (
@@ -113,7 +188,7 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative z-10 w-full max-w-2xl bg-card rounded-lg shadow-lg overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="text-lg font-semibold">Upload to Dropbox</h3>
+          <h3 className="text-lg font-semibold">Upload to YouTube</h3>
           <div className="flex items-center gap-2">
             <button onClick={onClose} title="Close" className="p-1 rounded hover:bg-muted/10">
               <X className="h-5 w-5" />
@@ -133,7 +208,7 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
             <div className="flex items-center justify-center gap-3">
               <UploadCloud className="h-6 w-6 text-muted-foreground" />
               <div>
-                <div className="font-semibold">Click to select or drop video files here</div>
+                <div className="font-semibold">Click to select or drop video files to upload to YouTube</div>
                 <div className="text-sm text-muted-foreground">Multiple files supported. Each file uploads separately and shows its own progress.</div>
               </div>
             </div>
@@ -149,6 +224,33 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
                     <div className="min-w-0">
                       <div className="font-medium text-sm truncate">{it.file.name}</div>
                       <div className="text-xs text-muted-foreground">{bytesToSize(it.file.size)}</div>
+                      {it.status === "error" && it.error && (
+                        <>
+                          <div className="text-xs text-destructive mt-1 truncate" title={it.error}>
+                            {it.error}
+                          </div>
+                          {it.errorDetails && (
+                            <div className="mt-1 flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  const next = new Set(expanded);
+                                  if (next.has(it.id)) next.delete(it.id);
+                                  else next.add(it.id);
+                                  setExpanded(next);
+                                }}
+                                className="text-xs underline text-muted-foreground"
+                              >
+                                {expanded.has(it.id) ? "Hide details" : "Show details"}
+                              </button>
+                            </div>
+                          )}
+                          {expanded.has(it.id) && it.errorDetails && (
+                            <pre className="mt-1 p-2 bg-muted/5 text-xs rounded max-h-40 overflow-auto text-ellipsis" title="Raw error">
+                              {it.errorDetails}
+                            </pre>
+                          )}
+                        </>
+                      )}
                     </div>
                     <div className="text-xs ml-3 w-20 text-right">
                       {it.status === "uploading" && <span>Uploading…</span>}
