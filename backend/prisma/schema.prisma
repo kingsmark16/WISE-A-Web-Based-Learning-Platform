@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  
 }
 
 model User {
@@ -24,6 +24,7 @@ model User {
   createdCourses Course[] @relation("CourseCreator")
   managedCourses Course[] @relation("CourseFaculty")
 
+  uploadedLessons Lesson[] @relation("UserUploadedVideos")
 
   dailyActivities     DailyUserActivity[]
   enrollments      Enrollment[]
@@ -32,7 +33,6 @@ model User {
   
   quizSubmissions  QuizSubmission[]
 
-  // Forum relations - if you decide to add these
   forumPosts       ForumPost[]
   forumReplies     ForumReply[]
 }
@@ -65,7 +65,7 @@ model Course {
   enrollments        Enrollment[]
   
   // Course content
-  chapters           Chapter[]
+  modules            Module[]
   
   // Completion tracking
   completions        CourseCompletion[]
@@ -79,7 +79,7 @@ model Course {
   @@index([category])
 }
 
-model Chapter {
+model Module {
   id          String    @id @default(ulid())
   title       String
   description String?
@@ -91,31 +91,34 @@ model Chapter {
   courseId    String
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  videoLessons VideoLesson[]
+  lessons Lesson[]
   quiz         Quiz?
-  attachments  Attachment[]
 
   @@unique([courseId, position])
   @@index([courseId])
 }
-
-model VideoLesson {
+model Lesson {
   id          String   @id @default(ulid())
   title       String
   description String?
-  videoUrl    String
+  thumbnail   String?
+  youtubeId   String?
+  dropboxPath String?
+  storageKey  String?
+  type        LessonType
+  url         String
   position    Int
   duration    Int?     // in seconds
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  uploadedBy User? @relation("UserUploadedVideos", fields: [uploadedById], references: [id])
+  uploadedById String?
 
-  chapterId   String
-  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  @@unique([chapterId, position])
-  @@index([chapterId])
+  @@unique([moduleId, position])
+  @@index([moduleId])
 }
+
 
 model Quiz {
   id          String   @id @default(ulid())
@@ -126,8 +129,8 @@ model Quiz {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  chapterId   String   @unique
-  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  moduleId    String   @unique
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   questions    QuizQuestion[]
   submissions  QuizSubmission[]
@@ -186,20 +189,6 @@ model QuizAnswer {
   @@index([questionId])
 }
 
-model Attachment {
-  id        String     @id @default(ulid())
-  name      String
-  url       String
-  fileType  FileType
-  size      Int        // in bytes
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  chapterId String
-  chapter   Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-
-  @@index([chapterId])
-}
 
 // Forum models
 model ForumPost {
@@ -295,6 +284,14 @@ model Enrollment {
   @@index([courseId])
 }
 
+model DropboxToken {
+  id          String   @id @default(ulid())
+  access_token String
+  refresh_token String?
+  expires_at  DateTime?
+  updatedAt   DateTime @updatedAt
+}
+
 enum Role {
   ADMIN
   FACULTY
@@ -307,12 +304,9 @@ enum QuestionType {
   SHORT_ANSWER
 }
 
-enum FileType {
+enum LessonType {
   PDF
-  IMAGE
-  DOCUMENT
-  SPREADSHEET
-  PRESENTATION
-  ARCHIVE
-  OTHER
+  YOUTUBE
+  DROPBOX
+  LINK
 }

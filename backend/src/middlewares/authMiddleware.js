@@ -1,5 +1,4 @@
 import { clerkClient } from '@clerk/express';
-
 export const requireRole = (allowedRole) => async (req, res, next) => {
     try {
         const auth = req.auth();

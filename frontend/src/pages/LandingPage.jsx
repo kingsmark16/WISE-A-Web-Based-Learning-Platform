@@ -1,148 +1,352 @@
 import { NavLink } from "react-router-dom"
-import { Separator } from "@/components/ui/separator"
-import Feature from "../components/Feature"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import RandomCourse from "../components/RandomCourse"
-import { useEffect, useRef } from "react"
-import { gsap } from "gsap"
-import { ScrollTrigger } from "gsap/ScrollTrigger"
-
-gsap.registerPlugin(ScrollTrigger);
+import { useRef } from "react"
+import { ArrowRight, GraduationCap, Sparkles, Users, BookOpen, Award, Target, Zap, Globe, Youtube, Facebook, UserCheck, Lightbulb, Clock } from "lucide-react"
 
 const LandingPage = () => {
-  const separator1Ref = useRef(null);
-  const separator2Ref = useRef(null);
-
-  useEffect(() => {
-    
-    if (separator1Ref.current) {
-      const flowElement = separator1Ref.current.querySelector('.flow-element');
-      
-      gsap.set(flowElement, { x: "-100%", opacity: 0 });
-      
-      gsap.to(flowElement, {
-        x: "600%",
-        opacity: 1,
-        duration: 3,
-        ease: "power2.inOut",
-        repeat: -1,
-        repeatDelay: 1,
-        keyframes: [
-          { opacity: 0, duration: 0 },
-          { opacity: 1, duration: 0.5 },
-          { opacity: 1, duration: 2 },
-          { opacity: 0, duration: 0.5 }
-        ]
-      });
-    }
-
-    
-    if (separator2Ref.current) {
-      const flowElement = separator2Ref.current.querySelector('.flow-element');
-      
-      gsap.set(flowElement, { x: "-100%", opacity: 0 });
-      
-      gsap.to(flowElement, {
-        x: "600%",
-        opacity: 1,
-        duration: 3,
-        ease: "power2.inOut",
-        repeat: -1,
-        repeatDelay: 1,
-        keyframes: [
-          { opacity: 0, duration: 0 },
-          { opacity: 1, duration: 0.5 },
-          { opacity: 1, duration: 2 },
-          { opacity: 0, duration: 0.5 }
-        ]
-      });
-    }
-
-  }, []);
+  const heroRef = useRef(null);
+  const floatingElementsRef = useRef(null);
 
   return (
-    <div className="min-h-screen">
-      
-      <header className="flex justify-between items-center py-3 px-5 sm:py-6 sm:px-28 bg-foreground/5 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
-
-          <div className="flex justify-center items-center gap-3">
-              
-            <h2 className="text-md md:text-2xl sm:text-2xl font-semibold tracking-widest">WISE</h2>
-          </div>
-            
-          <div className="flex justify-center items-center gap-1 sm:gap-5">
-              <NavLink className={({isActive}) => `text-sm sm:tracking-widest px-3.5 py-1.5 rounded-md hover:bg-secondary hover:underline transition duration-300 ${isActive}`} to='/sign-in'>Login</NavLink>
-          </div>
-      </header>
-     
-      <div className="flex justify-center items-center flex-col gap-5 text-center pt-25 sm:pt-30 md:pt-45 md:pb-10 mx-auto">
-        <h1 className="text-2xl px-2 leading-10 tracking-wide md:px-0 md:text-4xl lg:text-5xl md:tracking-normal font-bold md:mb-5"><span className="text-primary">Learning</span> Without Limits</h1>
-        <div className="w-[90%] xl:w-[60%] flex justify-center items-center flex-col mt-5 gap-6">
-          <div>
-            <img src="PSU_LOGO.png" alt="" className="w-40 h-40" />
-          </div>
-          <p className="text-sm md:text-base lg:text-lg font-light leading-6 md:leading-7 mt-3">WISE is Partido State University’s dedicated platform for accessible, modern, and skill-focused education. Explore, enroll, and excel in micro-credential courses designed to prepare you for today’s dynamic world.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden transition-colors duration-700">
+      {/* Floating Background Elements */}
+      <div ref={floatingElementsRef} className="fixed inset-0 pointer-events-none z-0">
+        {/* BookOpen - Top Left */}
+        <div className="floating-element absolute top-26 left-4 sm:top-29 sm:left-10 lg:top-35 lg:left-16 opacity-20 sm:opacity-25 lg:opacity-30 transition-all duration-700">
+          <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 text-primary" />
         </div>
-        <div className="mt-6 md:mt-8">
-          <button className="group relative inline-flex items-center justify-center px-6 py-3 text-base md:text-lg font-medium text-white bg-gradient-to-r from-primary to-primary/80 rounded-lg shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 ease-out hover:scale-105 active:scale-95 overflow-hidden">
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <span className="relative z-10 flex items-center gap-2">
-              Get Started
-              <svg 
-                className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
+        {/* Award - Top Right */}
+        <div className="floating-element absolute top-24 right-4 sm:top-32 sm:right-12 md:top-40 md:right-16 lg:top-40 lg:right-20 opacity-15 sm:opacity-20 lg:opacity-25 transition-all duration-700">
+          <Award className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-primary" />
+        </div>
+        {/* Target - Bottom Left */}
+        <div className="floating-element absolute bottom-32 left-4 sm:bottom-36 sm:left-8 md:bottom-40 md:left-12 lg:bottom-40 lg:left-20 opacity-20 sm:opacity-25 lg:opacity-30 transition-all duration-700">
+          <Target className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 text-primary" />
+        </div>
+        {/* Zap - Bottom Right */}
+        <div className="floating-element absolute bottom-16 right-4 sm:bottom-20 sm:right-8 md:bottom-24 md:right-12 lg:bottom-20 lg:right-10 opacity-15 sm:opacity-20 lg:opacity-25 transition-all duration-700">
+          <Zap className="h-6 w-6 sm:h-8 sm:w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 text-primary" />
+        </div>
+        {/* Globe - Center Left (Hidden on mobile) */}
+        <div className="floating-element absolute top-1/2 left-1/6 hidden sm:block md:left-1/5 lg:left-1/4 opacity-10 sm:opacity-15 lg:opacity-20 transition-all duration-700">
+          <Globe className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 text-primary" />
+        </div>
+        {/* Users - Center Right (Hidden on mobile) */}
+        <div className="floating-element absolute top-1/3 right-1/6 hidden sm:block md:right-1/5 lg:right-1/4 opacity-10 sm:opacity-15 lg:opacity-20 transition-all duration-700">
+          <Users className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 xl:h-18 xl:w-18 text-primary" />
+        </div>
+        {/* Additional elements for larger screens */}
+        <div className="floating-element absolute top-3/4 left-1/3 hidden lg:block opacity-10 transition-all duration-700">
+          <Sparkles className="h-8 w-8 lg:h-10 lg:w-10 text-primary" />
+        </div>
+        <div className="floating-element absolute top-1/6 right-1/3 hidden lg:block opacity-10 transition-all duration-700">
+          <GraduationCap className="h-10 w-10 lg:h-12 lg:w-12 text-primary" />
+        </div>
+        {/* Small decorative elements for mobile */}
+        <div className="floating-element absolute top-1/4 left-1/2 block sm:hidden opacity-15 transition-all duration-700">
+          <div className="h-2 w-2 rounded-full bg-primary"></div>
+        </div>
+        <div className="floating-element absolute bottom-1/4 right-1/3 block sm:hidden opacity-15 transition-all duration-700">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+        </div>
+        <div className="floating-element absolute top-2/3 left-1/4 block sm:hidden opacity-10 transition-all duration-700">
+          <div className="h-1 w-1 rounded-full bg-primary"></div>
+        </div>
+        {/* More figures for mobile */}
+        <div className="floating-element absolute top-8 right-8 block sm:hidden opacity-20 transition-all duration-700">
+          <Award className="h-6 w-6 text-primary" />
+        </div>
+        <div className="floating-element absolute bottom-8 left-8 block sm:hidden opacity-20 transition-all duration-700">
+          <BookOpen className="h-6 w-6 text-primary" />
+        </div>
+        <div className="floating-element absolute top-1/2 right-6 block sm:hidden opacity-15 transition-all duration-700">
+          <Zap className="h-5 w-5 text-primary" />
+        </div>
+        <div className="floating-element absolute bottom-1/2 left-6 block sm:hidden opacity-15 transition-all duration-700">
+          <Target className="h-5 w-5 text-primary" />
+        </div>
+        <div className="floating-element absolute top-1/3 left-10 block sm:hidden opacity-10 transition-all duration-700">
+          <Sparkles className="h-4 w-4 text-primary" />
+        </div>
+        <div className="floating-element absolute bottom-1/3 right-10 block sm:hidden opacity-10 transition-all duration-700">
+          <GraduationCap className="h-4 w-4 text-primary" />
+        </div>
+      </div>
+
+      {/* Header */}
+      <header className="fixed top-0 left-0 w-full z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-700">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-8 lg:px-24">
+          {/* Brand as Logo */}
+          <NavLink to="/" className="group select-none">
+            <span
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-extrabold tracking-tight uppercase transition-transform group-hover:scale-105
+                bg-gradient-to-r from-primary via-blue-600 to-foreground bg-clip-text text-transparent drop-shadow-lg"
+              style={{
+                letterSpacing: '0.08em',
+                fontFamily: 'Montserrat, Inter, Arial, sans-serif'
+              }}
+            >
+              WISE
             </span>
-          </button>
+          </NavLink>
+          {/* Navigation */}
+          <nav className="flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="relative overflow-hidden font-semibold transition-all duration-200
+                border-primary rounded-full px-6 py-3 text-base
+                bg-gradient-to-r from-background via-muted to-background
+                hover:bg-primary hover:text-primary
+                focus:bg-primary focus:text-primary
+                active:bg-primary active:text-primary
+                focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                shadow-sm hover:shadow-lg active:shadow-lg group w-full sm:w-auto"
+            >
+              <NavLink
+                to="/sign-in"
+                className="flex items-center justify-center w-full transition-colors duration-200 group-hover:text-primary-foreground group-focus:text-primary-foreground group-active:text-primary-foreground"
+              >
+                <span className="relative z-10">Login</span>
+                {/* Animated background effect */}
+                <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/30 opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-active:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
+              </NavLink>
+            </Button>
+          </nav>
         </div>
-      </div>
-      
-      
-   
-      <div ref={separator1Ref} className="relative py-16 sm:py-20 overflow-hidden">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-muted-foreground/20 to-transparent"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <div className="relative overflow-hidden">
-            <div className="bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 h-px w-32 sm:w-48"></div>
-            <div className="flow-element absolute top-0 left-0 h-px w-8 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+      </header>
+
+      {/* Hero Section */}
+      <section
+        className="w-full flex items-center justify-center"
+        style={{ minHeight: 'calc(100vh - 0rem)' }}
+      >
+        <div
+          ref={heroRef}
+          className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 text-center px-4 sm:px-8"
+        >
+          <Badge variant="secondary" className="psu-platform-badge mb-2 sm:mb-3 text-xs sm:text-sm transition-all duration-700">
+            <Sparkles className="mr-1 sm:mr-2 h-3 w-3" />
+            Partido State University Platform
+          </Badge>
+          
+          <div className="space-y-2 sm:space-y-3 transition-all duration-700">
+            <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
+              <span className="bg-gradient-to-br from-foreground via-foreground to-foreground/40 bg-clip-text text-transparent">
+                Learning
+              </span>{" "}
+              <span className="bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+                Without Limits
+              </span>
+            </h1>
+          </div>
+
+          {/* Adjusted space below the heading */}
+          <div className="mt-2 sm:mt-4 transition-all duration-700">
+            <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
+              WISE is Partido State University's dedicated platform for accessible, modern, and skill-focused education. 
+              Engage in your subjects and micro-credential courses by exploring, enrolling, and excelling in programs built for the needs of the modern world.
+            </p>
+          </div>
+
+          {/* School Logo - Bigger and no card */}
+          <div className="flex items-center justify-center my-6">
+            <img 
+              src="PSU_LOGO.png" 
+              alt="PSU Logo" 
+              className="h-32 w-32 sm:h-40 sm:w-40 lg:h-48 lg:w-48 object-contain" 
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row w-full sm:w-auto justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="relative overflow-hidden font-semibold transition-all duration-200
+                border-primary rounded-full px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base
+                bg-gradient-to-r from-background via-muted to-background
+                hover:bg-primary hover:text-primary
+                focus:bg-primary focus:text-primary
+                active:bg-primary active:text-primary
+                focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                shadow-sm hover:shadow-lg active:shadow-lg group w-fit mx-auto sm:mx-0"
+            >
+              <span className="relative z-10">Get Started</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-primary/30 opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-active:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
+            </Button>
           </div>
         </div>
-      </div>
-      
-    
-      <div className="flex justify-center items-center flex-col">
-        <h2 className="text-xl md:text-2xl font-bold">Unlock Your Potential with WISE</h2>
-        <div className="mt-16 flex justify-center items-center flex-wrap gap-10 mx-14">
-          <Feature/>
-        </div>
-      </div>
+      </section>
 
+      {/* Features Section */}
+      <section className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-7xl">
+          {/* Section Header */}
+          <div className="text-center space-y-4 sm:space-y-6 mb-12 sm:mb-16 lg:mb-20">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
+                 <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                   Unlock Your Potential
+                 </span>
+                 <br />
+                 <span className="bg-gradient-to-r from-primary via-blue-600 to-primary/80 bg-clip-text text-transparent">
+                   with WISE
+                 </span>
+               </h2>
+              <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
+                 Discover the features that make WISE the perfect platform for your learning journey at Partido State University
+               </p>
+             </div>
+           </div>
 
-      <div className="flex justify-center items-center flex-col mt-20 md:mt-28 lg:mt-32">
-        <h1 className="font-bold text-2xl mb-8">Discover Courses</h1>
-        <RandomCourse/>
-      </div>
+          {/* Feature Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
+            {/* Community Support Card */}
+            <Card className="group relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 active:border-primary/50 focus-within:border-primary/50 hover:shadow-xl active:shadow-xl focus-within:shadow-xl hover:shadow-primary/10 active:shadow-primary/10 focus-within:shadow-primary/10">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/20 mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300">
+                  <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary group-active:text-primary group-focus:text-primary transition-colors duration-300">
+                  Community Support
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Connect with peers, mentors, and instructors for guidance and collaboration in our vibrant learning community.
+                </p>
+              </CardContent>
+              {/* Subtle gradient overlay on hover / touch */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 group-focus:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
 
-      
-      <div ref={separator2Ref} className="relative py-16 sm:py-20 overflow-hidden">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-muted-foreground/20 to-transparent"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <div className="relative overflow-hidden">
-            <div className="bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 h-px w-32 sm:w-48"></div>
-            <div className="flow-element absolute top-0 left-0 h-px w-8 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+            {/* Expert Instructor Card */}
+            <Card className="group relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-background to-muted/30 hover:border-primary/50 active:border-primary/50 focus-within:border-primary/50 hover:shadow-xl active:shadow-xl focus-within:shadow-xl hover:shadow-primary/10 active:shadow-primary/10 focus-within:shadow-primary/10">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/20 mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300">
+                  <UserCheck className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-emerald-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary group-active:text-primary group-focus:text-primary transition-colors duration-300">
+                  Expert Instructors
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Learn from industry leaders and experienced educators who bring real-world expertise to every lesson.
+                </p>
+              </CardContent>
+              {/* Subtle gradient overlay on hover / touch */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 group-focus:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
+
+            {/* Flexible Learning Card */}
+            <Card className="group relative overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-background to-muted/30 md:col-span-2 lg:col-span-1 hover:border-primary/50 active:border-primary/50 focus-within:border-primary/50 hover:shadow-xl active:shadow-xl focus-within:shadow-xl hover:shadow-primary/10 active:shadow-primary/10 focus-within:shadow-primary/10">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/20 mb-4 group-hover:scale-110 group-active:scale-110 transition-transform duration-300">
+                  <Clock className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary group-active:text-primary group-focus:text-primary transition-colors duration-300">
+                  Flexible Learning
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Access courses anytime, anywhere, on any device with our responsive platform designed for modern learners.
+                </p>
+              </CardContent>
+              {/* Subtle gradient overlay on hover / touch */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 group-focus:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
           </div>
         </div>
-      </div>
-     
-        
+      </section>
+
+      {/* Courses Section */}
+      <section className="w-full flex items-center justify-center py-12 sm:py-16 px-4 sm:px-6 transition-all duration-700">
+        <div className="w-full max-w-4xl mx-auto space-y-6 sm:space-y-8 text-center">
+          <div className="text-center space-y-3 sm:space-y-4">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
+              Discover Courses
+            </h2>
+            <p className="mx-auto max-w-[300px] sm:max-w-[500px] lg:max-w-[600px] text-sm sm:text-base text-muted-foreground">
+              Explore our curated selection of courses designed to advance your skills
+            </p>
+          </div>
+          <div className="mt-12 sm:mt-16 transition-all duration-700">
+            <RandomCourse />
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-muted/50 relative z-10 transition-all duration-700">
+        <div className="container px-4 sm:px-6 py-12 sm:py-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+            {/* Brand Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <GraduationCap className="h-5 w-5" />
+                </div>
+                <h3 className="text-xl font-bold">WISE</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Partido State University's dedicated platform for accessible, modern, and skill-focused education.
+              </p>
+            </div>
+
+            {/* Social Media Section */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold">Follow Us</h4>
+              <div className="flex gap-4">
+                <Button variant="outline" size="icon" asChild className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors">
+                  <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                    <Youtube className="h-5 w-5" />
+                  </a>
+                </Button>
+                <Button variant="outline" size="icon" asChild className="hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors">
+                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Stay updated with our latest courses and educational content
+              </p>
+            </div>
+
+            {/* CTA Section */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold">Ready to Start Learning?</h4>
+              <p className="text-sm text-muted-foreground">
+                Join thousands of students already advancing their careers
+              </p>
+              <Button className="w-full sm:w-auto">
+                Get Started Today
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="mt-12 pt-8 border-t border-border/40">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-xs text-muted-foreground">
+                © 2024 Partido State University. All rights reserved.
+              </p>
+              <div className="flex gap-6 text-xs text-muted-foreground">
+                <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
+                <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
+                <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

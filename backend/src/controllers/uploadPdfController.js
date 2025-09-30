@@ -1,6 +1,8 @@
-import fs from "fs";
 import path from "path";
 import { storage } from "../storage/index.js";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 const EXPIRES_SEC = 60 * 60 * 4; // 4 hours
@@ -9,60 +11,126 @@ const safeBase = (name) =>
   (path.parse(name).name || "document").replace(/[^\w\-]+/g, "_");
 
 // Minimal PDF signature check: file starts with "%PDF-"
-function isPdfMagic(filePath) {
-  try {
-    const fd = fs.openSync(filePath, "r");
-    const buf = Buffer.alloc(5);
-    fs.readSync(fd, buf, 0, 5, 0);
-    fs.closeSync(fd);
-    return buf.toString() === "%PDF-";
-  } catch {
-    return false;
-  }
+function isPdfMagicBuffer(buffer) {
+  return buffer.slice(0, 5).toString() === "%PDF-";
 }
 
-// POST /upload-pdf  (multer puts temp file at req.file.path)
+// POST /upload-pdf
 export const uploadPdf = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No PDF uploaded" });
+    if (!req.files || req.files.length === 0)
+      return res.status(400).json({ message: "No PDF uploaded" });
 
-    // Optional hardening
-    if (!isPdfMagic(req.file.path)) {
-      try { fs.unlinkSync(req.file.path); } catch {}
-      return res.status(400).json({ message: "Invalid PDF file." });
+    // Get moduleId, title, description from body (for all files)
+    const { moduleId, title, description } = req.body;
+
+    if(!moduleId) return res.status(400).json({message: 'moduleId is undefined'})
+
+    const module = await prisma.module.findUnique({
+      where: { id: moduleId },
+      include: {
+        course: {
+          select: {
+            createdById: true,
+            facultyId: true
+          }
+        }
+      }
+    });
+    if (!module) return res.status(400).json({ message: "moduleId is required" });
+
+    // Find next position in module
+    const last = await prisma.lesson.findFirst({
+      where: { moduleId },
+      orderBy: { position: "desc" }
+    });
+    let position = last ? last.position + 1 : 1;
+
+    const results = [];
+
+    for (const file of req.files) {
+      // Check PDF magic number in buffer
+      if (!isPdfMagicBuffer(file.buffer)) {
+        results.push({ error: "Invalid PDF file.", originalname: file.originalname });
+        continue;
+      }
+
+      const base = safeBase(file.originalname);
+      // make filename unique using timestamp only (no uuid)
+      const unique = `${base}-${Date.now()}`;
+      const filename = `${unique}.pdf`;
+      const key = `pdfs/${filename}`;
+
+      // upload with explicit upsert:false (unique key means no conflict)
+      await storage.uploadPdf({ key, buffer: file.buffer, upsert: false });
+
+      // Short-lived direct links
+      const { url: view_url } = await storage.getViewUrl({ key, seconds: EXPIRES_SEC });
+      const { url: direct_download_url } = await storage.getDownloadUrl({
+        key, filename, seconds: EXPIRES_SEC
+      });
+
+      // Stable API endpoints
+      const preview_api_url  = `${API_BASE}/api/upload-pdf/preview?id=${encodeURIComponent(key)}`;
+      const download_api_url = `${API_BASE}/api/upload-pdf/download?id=${encodeURIComponent(key)}&name=${encodeURIComponent(filename)}`;
+
+      // Save as lesson in DB - persist storageKey for future deletes
+      // concurrent uploads can race on computing the next position; retry on unique constraint failure
+      const maxRetries = 5;
+      let attempt = 0;
+      let lesson;
+      while (attempt < maxRetries) {
+        try {
+          // recalculate position for this attempt to reduce race window
+          const lastLocal = await prisma.lesson.findFirst({
+            where: { moduleId },
+            orderBy: { position: "desc" }
+          });
+          const currentPosition = lastLocal ? lastLocal.position + 1 : 1; 
+
+          lesson = await prisma.lesson.create({
+            data: {
+              moduleId,
+              title: title || base,
+              description: description || "",
+              type: "PDF",
+              url: preview_api_url,
+              position: currentPosition,
+              storageKey: key
+            }
+          });
+
+          break; // success
+        } catch (err) {
+          // If unique constraint on (moduleId, position) happened, retry a few times
+          const isUniqueConstraint = err?.code === "P2002" && err?.meta?.target && String(err.meta.target).includes("moduleId") && String(err.meta.target).includes("position");
+          attempt++;
+          if (!isUniqueConstraint || attempt >= maxRetries) {
+            // bubble up if not recoverable
+            throw err;
+          }
+          // small backoff to reduce contention
+          await new Promise((r) => setTimeout(r, 80 * attempt));
+        }
+      }
+
+      results.push({
+        message: "PDF uploaded",
+        key,
+        filename,
+        view_url,
+        direct_download_url,
+        preview_api_url,
+        download_api_url,
+        originalname: file.originalname,
+        lesson, // include lesson info
+      });
+
+      // increment for local loop only (next iteration will recalc anyway)
+      position++;
     }
 
-    const base = safeBase(req.file.originalname);
-    const filename = `${Date.now()}-${base}.pdf`;
-    const key = `pdfs/${filename}`;
-
-    const buffer = fs.readFileSync(req.file.path);
-    await storage.uploadPdf({ key, buffer });
-
-    // cleanup temp file
-    try { fs.unlinkSync(req.file.path); } catch {}
-
-    // Short-lived direct links (good for immediate use)
-    const { url: view_url } = await storage.getViewUrl({ key, seconds: EXPIRES_SEC });
-    const { url: direct_download_url } = await storage.getDownloadUrl({
-      key, filename, seconds: EXPIRES_SEC
-    });
-
-    // Stable API endpoints (recommended in your app/UI)
-    const preview_api_url  = `${API_BASE}/upload-pdf/preview?id=${encodeURIComponent(key)}`;
-    const download_api_url = `${API_BASE}/upload-pdf/download?id=${encodeURIComponent(key)}&name=${encodeURIComponent(filename)}`;
-
-    return res.json({
-      message: "PDF uploaded",
-      key,
-      filename,
-      // short-lived direct links:
-      view_url,
-      direct_download_url,
-      // stable backend links (mint fresh signed URLs on demand):
-      preview_api_url,
-      download_api_url,
-    });
+    return res.json({ results });
   } catch (e) {
     return res.status(500).json({ error: e.message || String(e) });
   }
@@ -81,18 +149,169 @@ export const previewPdf = async (req, res) => {
 };
 
 // GET /upload-pdf/download?id=<key>&name=<filename.pdf>
-export const downloadPdf = async (req, res) => {
-  try {
-    const key = req.query.id;
-    const name = (req.query.name || "document.pdf").replace(/[^\w\-.]+/g, "_");
-    if (!key) return res.status(400).json({ error: "Missing id" });
+// export const downloadPdf = async (req, res) => {
+//   try {
+//     const key = req.query.id;
+//     const name = (req.query.name || "document.pdf").replace(/[^\w\-.]+/g, "_");
+//     if (!key) return res.status(400).json({ error: "Missing id" });
 
-    const { url } = await storage.getDownloadUrl({
-      key,
-      filename: name,
-      seconds: EXPIRES_SEC,
+//     const { url } = await storage.getDownloadUrl({
+//       key,
+//       filename: name,
+//       seconds: EXPIRES_SEC,
+//     });
+//     return res.redirect(302, url); // forces browser download with proper filename
+//   } catch (e) {
+//     return res.status(500).json({ error: e.message || String(e) });
+//   }
+// };
+
+// PUT /upload-pdf/:lessonId  -> edit title only
+export const editPdf = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const { title } = req.body;
+
+    if (!title || String(title).trim() === '') {
+      return res.status(400).json({ error: "title is required" });
+    }
+
+    const where = /^\d+$/.test(lessonId) ? { id: Number(lessonId) } : { id: lessonId };
+
+    const lesson = await prisma.lesson.findUnique({ where });
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const rawType = lesson.type;
+    const lessonType = (rawType == null) ? "" : String(rawType).trim().toUpperCase();
+    if (lessonType !== "PDF") {
+      return res.status(403).json({ error: "Only PDF lessons can be edited via this endpoint" });
+    }
+
+    const updated = await prisma.lesson.update({
+      where,
+      data: { title: String(title).trim() }
     });
-    return res.redirect(302, url); // forces browser download with proper filename
+
+    return res.json({ lesson: updated });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || String(e) });
+  }
+};
+
+// DELETE /upload-pdf/:lessonId  -> delete storage file + DB record + reorder positions
+export const deletePdf = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const where = /^\d+$/.test(lessonId) ? { id: Number(lessonId) } : { id: lessonId };
+
+    const lesson = await prisma.lesson.findUnique({ where });
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const rawType = lesson.type;
+    const lessonType = (rawType == null) ? "" : String(rawType).trim().toUpperCase();
+    if (lessonType !== "PDF") {
+      return res.status(403).json({ error: "Only PDF lessons can be deleted via this endpoint" });
+    }
+
+    // Resolve storage key: prefer stored storageKey, else try to parse from lesson.url query 'id'
+    let key = lesson.storageKey || null;
+    if (!key && lesson.url) {
+      try {
+        const u = new URL(lesson.url);
+        key = u.searchParams.get('id') || null;
+      } catch (err) {
+        // try treat as relative URL with API_BASE
+        try {
+          const base = API_BASE.endsWith('/') ? API_BASE : `${API_BASE}/`;
+          const u = new URL(lesson.url, base);
+          key = u.searchParams.get('id') || null;
+        } catch (e) {
+          key = null;
+        }
+      }
+    }
+
+    let storageDeleted = false;
+    let storageAlreadyDeleted = false;
+    if (key) {
+      // Attempt several possible delete function names on storage for robustness
+      const deleteFns = [
+        'deletePdf',
+        'delete',
+        'remove',
+        'deleteObject',
+        'delete_file',
+        'deleteFile',
+        'removeObject'
+      ];
+
+      let attempted = false;
+      for (const fn of deleteFns) {
+        if (typeof storage[fn] === 'function') {
+          attempted = true;
+          try {
+            // many storage.delete variants accept an object { key } or (key)
+            const res = storage[fn].length === 1 ? await storage[fn](key) : await storage[fn]({ key });
+            storageDeleted = true;
+            break;
+          } catch (err) {
+            const msg = String(err?.message || err || '');
+            const lower = msg.toLowerCase();
+            if (lower.includes('not found') || lower.includes('no such') || lower.includes('404')) {
+              storageAlreadyDeleted = true;
+              break;
+            } else {
+              // log and continue trying other delete functions
+              console.warn(`storage.${fn} failed:`, err?.message || err);
+            }
+          }
+        }
+      }
+
+      // If none attempted, try generic delete/remove with object argument
+      if (!attempted) {
+        try {
+          if (typeof storage.delete === 'function') {
+            await storage.delete({ key });
+            storageDeleted = true;
+          } else if (typeof storage.remove === 'function') {
+            await storage.remove({ key });
+            storageDeleted = true;
+          } else {
+            // nothing to call; leave as not attempted
+          }
+        } catch (err) {
+          const m = String(err?.message || err || '').toLowerCase();
+          if (m.includes('not found') || m.includes('no such') || m.includes('404')) {
+            storageAlreadyDeleted = true;
+          } else {
+            console.warn('Generic storage delete attempt failed:', err?.message || err);
+          }
+        }
+      }
+    }
+
+    // Delete DB record
+    const deleted = await prisma.lesson.delete({ where });
+
+    // Reorder remaining lessons within the module
+    await prisma.lesson.updateMany({
+      where: {
+        moduleId: deleted.moduleId,
+        position: { gt: deleted.position }
+      },
+      data: { position: { decrement: 1 } }
+    });
+
+    return res.json({
+      ok: true,
+      storage: {
+        attempted: !!key,
+        deleted: storageDeleted,
+        alreadyDeleted: storageAlreadyDeleted,
+        key: key || null
+      }
+    });
   } catch (e) {
     return res.status(500).json({ error: e.message || String(e) });
   }
