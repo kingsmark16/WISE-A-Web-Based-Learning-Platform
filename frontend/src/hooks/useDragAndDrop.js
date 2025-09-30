@@ -1,22 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 
 export const useDragAndDrop = (modules, onReorder) => {
   const [localModules, setLocalModules] = useState([]);
   const [activeId, setActiveId] = useState(null);
+  const prevModulesJsonRef = useRef(null);
 
   // Only update localModules when the incoming modules array actually differs
   useEffect(() => {
+    // don't overwrite local ordering while user is dragging
+    if (activeId) return;
+
     try {
       const incoming = JSON.stringify(modules ?? []);
-      const current = JSON.stringify(localModules ?? []);
-      if (incoming !== current) setLocalModules(modules);
+      if (prevModulesJsonRef.current !== incoming) {
+        prevModulesJsonRef.current = incoming;
+        setLocalModules(modules ?? []);
+      }
     } catch {
-      // fallback: if stringify fails, still set once
-      setLocalModules(modules);
+      // fallback: set once when safe (not dragging)
+      setLocalModules(modules ?? []);
     }
-  }, [modules, localModules]);
+  }, [modules, activeId]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
