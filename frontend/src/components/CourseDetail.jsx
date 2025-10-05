@@ -214,7 +214,7 @@ const CourseDetail = () => {
             </div>
 
             {/* Navigation Section */}
-              <CourseContentNav/>
+              <CourseContentNav courseId={id}/>
 
           </div>
         </CardContent>

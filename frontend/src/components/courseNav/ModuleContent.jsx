@@ -5,13 +5,13 @@ import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 // Components
-import SortableModule from "./modules/SortableModule";
-import { AddModuleDialog, EditModuleDialog, DeleteModuleDialog } from "./modules/ModuleDialogs";
-import ModuleStats from "./modules/ModuleStats";
+import SortableModule from "../modules/SortableModule";
+import { AddModuleDialog, EditModuleDialog, DeleteModuleDialog } from "../modules/ModuleDialogs";
+import ModuleStats from "../modules/ModuleStats";
 
 // Hooks
-import { useModuleManagement } from "../hooks/useModuleManagement";
-import { useDragAndDrop } from "../hooks/useDragAndDrop";
+import { useModuleManagement } from "../../hooks/useModuleManagement";
+import { useDragAndDrop } from "../../hooks/useDragAndDrop";
 
 const ModuleContent = () => {
   // keep Accordion controlled for its whole lifetime by initializing to empty string

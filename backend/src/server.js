@@ -17,7 +17,6 @@ import facultyRoutes from './routes/facultyRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import uploadPdfRoutes from './routes/uploadPdfRoutes.js';
 import forumNotificationRoutes from './routes/forumNotificationRoutes.js';
-import forumRoutes from './routes/forumRoutes.js';
 import dropboxUploadRoutes from './routes/dropboxUploadRoutes.js';
 import dropboxAuthRoutes from './routes/dropboxAuthRoutes.js'
 import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
@@ -44,7 +43,7 @@ app.use(
   cors({
     origin: [
       'http://localhost:5173',
-      'http://192.168.254.180:5173',
+      //'http://192.168.254.180:5173',
     ],
     credentials: true,
   })
@@ -60,12 +59,12 @@ app.use('/api/upload', requireAuth(), uploadRoutes);
 app.use('/api/admin',   requireAuth(), updateLastActive, adminRoutes);
 app.use('/api/student', requireAuth(), updateLastActive, studentRoutes);
 app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
-app.use('/api/course', requireAuth(), courseRoutes);
+app.use('/api/course', requireAuth(), updateLastActive, courseRoutes);
 app.use('/api/stats',  requireAuth(), statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 
 app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
-app.use('/api/forum', requireAuth(), updateLastActive, forumRoutes);
+
 
 
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
