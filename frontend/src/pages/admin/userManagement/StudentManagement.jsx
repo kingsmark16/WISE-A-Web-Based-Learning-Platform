@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight, User, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useGetAllFaculty } from "../../../hooks/analytics/adminAnalytics/useGetFaculty";
+import { useGetStudents } from "../../../hooks/userManagement/useStudents";
 
 // Updated formatRelativeTime function to show "Active now"
 const formatRelativeTime = (date) => {
@@ -80,37 +80,37 @@ const LiveRelativeTime = ({ date }) => {
   );
 };
 
-const FacultyManagement = () => {
+const StudentManagement = () => {
   const [page, setPage] = useState(1);
   const limit = 10;
   const [search, setSearch] = useState("");
-  const [selectedFaculty, setSelectedFaculty] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [sortBy, setSortBy] = useState("totalManagedCourses");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortBy, setSortBy] = useState("fullName");
+  const [sortOrder, setSortOrder] = useState("asc");
   const navigate = useNavigate();
   const searchRef = useRef(null);
 
   // API call without search filter
-  const { data, isLoading, error } = useGetAllFaculty(page, limit, "", sortBy, sortOrder);
+  const { data, isLoading, error } = useGetStudents(page, limit, "", sortBy, sortOrder);
 
-  // Get all faculty for suggestions
-  const { data: allFacultyData } = useGetAllFaculty(1, 1000, "", "fullName", "asc");
+  // Get all students for suggestions
+  const { data: allStudentsData } = useGetStudents(1, 1000, "", "fullName", "asc");
 
-  const faculty = useMemo(() => data?.data || [], [data]);
-  const total = data?.totalFaculty || 0;
+  const students = useMemo(() => data?.data || [], [data]);
+  const total = data?.totalStudents || 0;
   const totalPages = data?.totalPages || 1;
 
   // Filter suggestions based on search input
   const suggestions = useMemo(() => {
     if (!search.trim()) return [];
     
-    const allFaculty = allFacultyData?.data || [];
-    return allFaculty.filter(fac => 
-      fac.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      fac.emailAddress.toLowerCase().includes(search.toLowerCase())
+    const allStudents = allStudentsData?.data || [];
+    return allStudents.filter(student => 
+      student.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      student.emailAddress.toLowerCase().includes(search.toLowerCase())
     ).slice(0, 5); // Limit to 5 suggestions
-  }, [search, allFacultyData]);
+  }, [search, allStudentsData]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -126,7 +126,7 @@ const FacultyManagement = () => {
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
-    setSelectedFaculty(null);
+    setSelectedStudent(null);
     setShowSuggestions(true);
     setPage(1); // Reset to first page
   };
@@ -141,15 +141,15 @@ const FacultyManagement = () => {
     setPage(1); // Reset to first page on sort
   };
 
-  const handleSuggestionClick = (fac) => {
-    setSelectedFaculty(fac);
-    setSearch(fac.fullName);
+  const handleSuggestionClick = (student) => {
+    setSelectedStudent(student);
+    setSearch(student.fullName);
     setShowSuggestions(false);
   };
 
   const clearFilters = () => {
     setSearch("");
-    setSelectedFaculty(null);
+    setSelectedStudent(null);
     setShowSuggestions(false);
     setPage(1);
   };
@@ -170,15 +170,15 @@ const FacultyManagement = () => {
     }
   };
 
-  const hasActiveFilters = search || selectedFaculty;
+  const hasActiveFilters = search || selectedStudent;
 
-  // Display filtered faculty
-  const displayedFaculty = useMemo(() => {
-    if (selectedFaculty) {
-      return [selectedFaculty];
+  // Display filtered students
+  const displayedStudents = useMemo(() => {
+    if (selectedStudent) {
+      return [selectedStudent];
     }
-    return faculty;
-  }, [selectedFaculty, faculty]);
+    return students;
+  }, [selectedStudent, students]);
 
   if (isLoading) {
     return (
@@ -214,8 +214,8 @@ const FacultyManagement = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Faculty Management</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage and view faculty members</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Student Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage and view student members</p>
         </div>
       </div>
 
@@ -224,7 +224,7 @@ const FacultyManagement = () => {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Error loading faculty: {error.message}
+            Error loading students: {error.message}
           </AlertDescription>
         </Alert>
       )}
@@ -235,7 +235,7 @@ const FacultyManagement = () => {
           <div className="relative w-full min-w-3xs" ref={searchRef}>
             <Input
               type="text"
-              placeholder="Search faculty by name or email..."
+              placeholder="Search students by name or email..."
               value={search}
               onChange={handleSearchChange}
               onFocus={() => setShowSuggestions(true)}
@@ -246,28 +246,28 @@ const FacultyManagement = () => {
             {showSuggestions && suggestions.length > 0 && (
               <Card className="absolute top-full left-0 right-0 z-50 max-h-60 sm:max-h-80 overflow-y-auto shadow-lg">
                 <CardContent className="p-2">
-                  {suggestions.map((fac) => (
+                  {suggestions.map((student) => (
                     <div
-                      key={fac.id}
-                      onClick={() => handleSuggestionClick(fac)}
+                      key={student.id}
+                      onClick={() => handleSuggestionClick(student)}
                       className="flex items-center gap-3 p-2 sm:p-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
                     >
                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        {fac.imageUrl ? (
+                        {student.imageUrl ? (
                           <img 
-                            src={fac.imageUrl} 
-                            alt={fac.fullName} 
+                            src={student.imageUrl} 
+                            alt={student.fullName} 
                             className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover" 
                           />
                         ) : (
                           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-semibold">
-                            {getInitials(fac.fullName)}
+                            {getInitials(student.fullName)}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{fac.fullName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{fac.emailAddress}</p>
+                        <p className="font-medium text-sm truncate">{student.fullName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{student.emailAddress}</p>
                       </div>
                     </div>
                   ))}
@@ -278,19 +278,19 @@ const FacultyManagement = () => {
           <div className="hidden lg:flex flex-row gap-2">
             <Button
               variant="outline"
-              onClick={() => handleSortToggle("totalManagedCourses")}
+              onClick={() => handleSortToggle("totalEnrolledCourses")}
               className="flex items-center justify-center gap-2 border-2 text-sm"
             >
               <ArrowUpDown className="h-4 w-4" />
-              Sort by Managed Courses {sortBy === "totalManagedCourses" && (sortOrder === "asc" ? "↑" : "↓")}
+              Sort by Enrolled Courses {sortBy === "totalEnrolledCourses" && (sortOrder === "asc" ? "↑" : "↓")}
             </Button>
             <Button
               variant="outline"
-              onClick={() => handleSortToggle("totalCreatedCourses")}
+              onClick={() => handleSortToggle("totalCertificates")}
               className="flex items-center justify-center gap-2 border-2 text-sm"
             >
               <ArrowUpDown className="h-4 w-4" />
-              Sort by Created Courses {sortBy === "totalCreatedCourses" && (sortOrder === "asc" ? "↑" : "↓")}
+              Sort by Certificates {sortBy === "totalCertificates" && (sortOrder === "asc" ? "↑" : "↓")}
             </Button>
             {hasActiveFilters && (
               <Button 
@@ -311,26 +311,26 @@ const FacultyManagement = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[200px] text-xs sm:text-sm">Faculty Name</TableHead>
+              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[200px] text-xs sm:text-sm">Student Name</TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[250px] text-xs sm:text-sm">Email Address</TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
                 <Button
                   variant="ghost"
-                  onClick={() => handleSortToggle("totalManagedCourses")}
+                  onClick={() => handleSortToggle("totalEnrolledCourses")}
                   className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold mx-auto text-xs sm:text-sm"
                 >
-                  Managed Courses
-                  {sortBy === "totalManagedCourses" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
+                  Enrolled Courses
+                  {sortBy === "totalEnrolledCourses" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
                 </Button>
               </TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
                 <Button
                   variant="ghost"
-                  onClick={() => handleSortToggle("totalCreatedCourses")}
+                  onClick={() => handleSortToggle("totalCertificates")}
                   className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold mx-auto text-xs sm:text-sm"
                 >
-                  Created Courses
-                  {sortBy === "totalCreatedCourses" && (sortOrder === "asc" ? "↑" : "↓")}
+                  Certificates
+                  {sortBy === "totalCertificates" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
                 </Button>
               </TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
@@ -346,50 +346,50 @@ const FacultyManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayedFaculty.length === 0 ? (
+            {displayedStudents.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 sm:h-32 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <User className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 mb-2" />
-                    <p className="font-medium text-sm sm:text-base">No faculty found</p>
+                    <p className="font-medium text-sm sm:text-base">No students found</p>
                     <p className="text-xs sm:text-sm">Try adjusting your search</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              displayedFaculty.map((fac) => (
+              displayedStudents.map((student) => (
                 <TableRow
-                  key={fac.id}
+                  key={student.id}
                   className="border-b hover:bg-accent cursor-pointer transition-colors"
-                  onClick={() => navigate(`/admin/faculty-management/view/${fac.id}`)}
+                  onClick={() => navigate(`/admin/student-management/view/${student.id}`)}
                 >
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[200px]">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      {fac.imageUrl ? (
+                      {student.imageUrl ? (
                         <img 
-                          src={fac.imageUrl} 
-                          alt={fac.fullName} 
+                          src={student.imageUrl} 
+                          alt={student.fullName} 
                           className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover flex-shrink-0" 
                         />
                       ) : (
                         <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                          {getInitials(fac.fullName)}
+                          {getInitials(student.fullName)}
                         </div>
                       )}
-                      <span className="font-medium text-sm sm:text-base">{fac.fullName}</span>
+                      <span className="font-medium text-sm sm:text-base">{student.fullName}</span>
                     </div>
                   </TableCell>
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[250px]">
-                    <span className="text-xs sm:text-sm">{fac.emailAddress}</span>
+                    <span className="text-xs sm:text-sm">{student.emailAddress}</span>
                   </TableCell>
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px]">
-                    <span className="font-medium text-sm sm:text-base">{fac.totalManagedCourses}</span>
+                    <span className="font-medium text-sm sm:text-base">{student.totalEnrolledCourses}</span>
                   </TableCell>
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px]">
-                    <span className="font-medium text-sm sm:text-base">{fac.totalCreatedCourses}</span>
+                    <span className="font-medium text-sm sm:text-base">{student.totalCertificates}</span>
                   </TableCell>
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 min-w-[100px] sm:min-w-[150px] flex justify-center">
-                    <LiveRelativeTime date={fac.lastActiveAt} />
+                    <LiveRelativeTime date={student.lastActiveAt} />
                   </TableCell>
                 </TableRow>
               ))
@@ -399,10 +399,10 @@ const FacultyManagement = () => {
       </div>
 
       {/* Pagination */}
-      {!selectedFaculty && (
+      {!selectedStudent && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
           <div className="flex-1 text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
-            Showing {displayedFaculty.length} of {total} faculty
+            Showing {displayedStudents.length} of {total} students
           </div>
           <div className="flex items-center space-x-2 sm:space-x-6 lg:space-x-8">
             <div className="flex items-center justify-center text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 bg-primary/10 rounded-lg">
@@ -437,4 +437,4 @@ const FacultyManagement = () => {
   );
 };
 
-export default FacultyManagement;
+export default StudentManagement;

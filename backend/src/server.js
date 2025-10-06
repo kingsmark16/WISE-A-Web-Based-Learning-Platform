@@ -43,7 +43,7 @@ app.use(
   cors({
     origin: [
       'http://localhost:5173',
-      //'http://192.168.254.180:5173',
+      'http://192.168.254.180:5173',
     ],
     credentials: true,
   })
@@ -55,12 +55,12 @@ app.use(clerkMiddleware());
 // Static files 
 app.use('/files', express.static(UPLOADS_DIR));
 
-app.use('/api/upload', requireAuth(), uploadRoutes);
+app.use('/api/upload', requireAuth(), updateLastActive, uploadRoutes);
 app.use('/api/admin',   requireAuth(), updateLastActive, adminRoutes);
 app.use('/api/student', requireAuth(), updateLastActive, studentRoutes);
 app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
 app.use('/api/course', requireAuth(), updateLastActive, courseRoutes);
-app.use('/api/stats',  requireAuth(), statsRoutes);
+app.use('/api/stats',  requireAuth(),updateLastActive, statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 
 app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);

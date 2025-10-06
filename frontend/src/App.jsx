@@ -1,4 +1,5 @@
-import { Route, Routes } from "react-router-dom"
+import { Route, Routes, useLocation } from "react-router-dom"
+import { useEffect } from "react"
 import SignIn from "./pages/SignIn"
 import LandingPage from "./pages/LandingPage"
 import AuthCallbackPage from "./pages/AuthCallbackPage"
@@ -15,8 +16,18 @@ import FacultyInfo from "./pages/admin/userManagement/FacultyInfo"
 import MainLayout from "./pages/MainLayout"
 import HomePage from "./pages/student/HomePage"
 import CoursePage from "./pages/student/CoursePage"
+import FacultyHomePage from "./pages/faculty/FacultyHomePage"
+import StudentInfo from "./pages/admin/userManagement/StudentInfo"
+import StudentManagement from "./pages/admin/userManagement/StudentManagement"
 
 const App = () => {
+  const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <div className="overflow-hidden">
 
@@ -52,6 +63,8 @@ const App = () => {
           <Route path="courses/edit/:id" element={<EditCourse/>}/>
           <Route path="faculty-management" element={<FacultyManagement/>}/>
           <Route path="faculty-management/view/:id" element={<FacultyInfo/>}/>
+          <Route path="student-management" element={<StudentManagement/>}/>
+          <Route path="student-management/view/:id" element={<StudentInfo/>}/>
 
         </Route>
 
@@ -77,7 +90,8 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          
+          <Route index element={<FacultyHomePage/>}/>
+          <Route path="homepage" element={<FacultyHomePage/>}/>
 
         </Route>
         

@@ -277,7 +277,7 @@ model Enrollment {
   enrolledAt DateTime @default(now())
 
   student User @relation(fields: [studentId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)  // Added onDelete: Cascade
 
   @@unique([studentId, courseId])
   @@index([studentId])
