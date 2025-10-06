@@ -68,7 +68,7 @@ const LiveRelativeTime = ({ date }) => {
   }, [date]);
 
   return (
-    <span className="flex items-center gap-2">
+    <span className="inline-flex items-center gap-2">
       {isActive && (
         <span className="flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
@@ -388,7 +388,7 @@ const StudentManagement = () => {
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px]">
                     <span className="font-medium text-sm sm:text-base">{student.totalCertificates}</span>
                   </TableCell>
-                  <TableCell className="py-2 sm:py-4 px-3 sm:px-6 min-w-[100px] sm:min-w-[150px] flex justify-center">
+                  <TableCell className="py-2 sm:py-4 px-3 sm:px-6 min-w-[100px] sm:min-w-[150px] text-center">
                     <LiveRelativeTime date={student.lastActiveAt} />
                   </TableCell>
                 </TableRow>
