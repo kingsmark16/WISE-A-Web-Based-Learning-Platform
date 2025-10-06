@@ -413,19 +413,19 @@ const Courses = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="min-w-[150px]">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
                       {course.createdBy.imageUrl ? (
                         <img
                           src={course.createdBy.imageUrl}
                           alt={getCreatorDisplayName(course)}
-                          className="h-8 w-8 rounded-full object-cover"
+                          className="h-8 w-8 rounded-full object-cover flex-shrink-0"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-semibold">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                           {getCreatorDisplayName(course).charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="text-sm font-medium">{getCreatorDisplayName(course)}</span>
+                      <span className="text-sm font-medium truncate">{getCreatorDisplayName(course)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="min-w-[120px] sm:min-w-[150px]">
