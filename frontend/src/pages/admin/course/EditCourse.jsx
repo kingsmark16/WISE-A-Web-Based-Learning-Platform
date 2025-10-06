@@ -13,6 +13,19 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useUser } from "@clerk/clerk-react";
 
 const categories = [
   "Technology",
@@ -40,14 +53,15 @@ const EditCourse = () => {
     const {mutate: uploadImage, isPending: isUploading, error: uploadError} = useUploadImage();
     const {mutate: deleteImage, isPending: isDeleting} = useDeleteImage();
     const { data: facultyList = [], isLoading: facultyLoading, error: facultyError } = useGetFacultyId();
+    const { user } = useUser();
 
     const [formData, setFormData] = useState({
         title: "",
         description: "",
         category: "",
         thumbnail: "",
-        isPublished: false,
-        facultyId: ""
+        facultyId: "",
+        assignSelfAsInstructor: false
     });
 
     const [thumbnailPreview, setThumbnailPreview] = useState("");
@@ -55,6 +69,8 @@ const EditCourse = () => {
     const [newImageSelected, setNewImageSelected] = useState(false);
     const [facultySearch, setFacultySearch] = useState("");
     const [showInstructorList, setShowInstructorList] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [instructorChanged, setInstructorChanged] = useState(false); // Add this state to track changes
 
     useEffect(() => {
         if(data?.course) {
@@ -63,8 +79,8 @@ const EditCourse = () => {
                 description: data.course.description || "",
                 category: data.course.category || "",
                 thumbnail: data.course.thumbnail || "",
-                isPublished: data.course.isPublished || false,
-                facultyId: data.course.managedBy?.id || ""
+                facultyId: data.course.managedBy?.id || "",
+                assignSelfAsInstructor: false
             });
 
             setThumbnailPreview(data.course.thumbnail || "");
@@ -73,6 +89,9 @@ const EditCourse = () => {
                 const publicId = extractPublicIdFromUrl(data.course.thumbnail);
                 setThumbnailPublicId(publicId);
             }
+            
+            // Reset instructor changed flag when loading course data
+            setInstructorChanged(false);
         }
     }, [data]);
 
@@ -149,6 +168,7 @@ const EditCourse = () => {
         setFormData(prev => ({...prev, facultyId: instructorId}));
         setShowInstructorList(false);
         setFacultySearch("");
+        setInstructorChanged(true); // Mark that instructor was changed
     };
 
     const handleSubmit = (e) => {
@@ -159,16 +179,93 @@ const EditCourse = () => {
             return;
         }
 
-        updateCourse({id, courseData: formData}, {
+        // Build update data
+        const updateData = {
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            thumbnail: formData.thumbnail,
+        };
+
+        // Only include facultyId if instructor was changed or self-assignment was toggled
+        if (formData.assignSelfAsInstructor) {
+            updateData.assignSelfAsInstructor = true;
+            updateData.facultyId = ""; // Backend will use current user's ID
+        } else if (instructorChanged) {
+            updateData.facultyId = formData.facultyId;
+        }
+        // If instructor wasn't changed, don't include facultyId in update
+
+        updateCourse({id, courseData: updateData}, {
             onSuccess: () => {
                 navigate('/admin/courses');
             }
         });
-    }
+    };
+
+    // Include the current category in the options if not already present
 
     if(isLoading) return (
-        <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-border"></div>
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+            {/* Header Skeleton */}
+            <div className="flex items-center gap-3 mb-2">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <Skeleton className="h-6 w-32" />
+            </div>
+            <Skeleton className="h-4 w-64" />
+
+            {/* Form Container Skeleton */}
+            <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                <div className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column Skeleton */}
+                        <div className="space-y-6">
+                            {/* Course Title Skeleton */}
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+
+                            {/* Category Skeleton */}
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-16" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+
+                            {/* Description Skeleton */}
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-32 w-full" />
+                            </div>
+                        </div>
+
+                        {/* Right Column Skeleton */}
+                        <div className="space-y-6">
+                            {/* Thumbnail Skeleton */}
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-28" />
+                                <Skeleton className="h-36 w-full rounded-lg" />
+                            </div>
+
+                            {/* Instructor Selection Skeleton */}
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-32" />
+                                <div className="space-y-3">
+                                    <Skeleton className="h-4 w-48" />
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-24" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Form Actions Skeleton */}
+                    <div className="flex items-center justify-end gap-4 pt-8 border-t border-border mt-8">
+                        <Skeleton className="h-10 w-20" />
+                        <Skeleton className="h-10 w-28" />
+                    </div>
+                </div>
+            </div>
         </div>
     );
     
@@ -179,24 +276,22 @@ const EditCourse = () => {
     );
 
     return (
-        <div className="bg-background mt-8 px-2">
+        <div className="space-y-4 sm:space-y-6 px-0">
             {/* Header */}
-            <div className="mb-5">
-                <div className="flex items-center gap-3 mb-2">
-                    <button 
-                        onClick={() => navigate('/admin/courses')}
-                        className="p-2 text-foreground/60 hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </button>
-                    <h1 className="text-xl font-bold text-foreground">Edit Course</h1>
-                </div>
-                <p className="text-foreground/80 ml-12">Update course information and settings</p>
+            <div className="flex items-center gap-3 mb-2">
+                <button 
+                    onClick={() => navigate('/admin/courses')}
+                    className="p-2 text-foreground/60 hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                </button>
+                <h1 className="text-xl font-bold text-foreground">Edit Course</h1>
             </div>
+            <p className="text-foreground/80">Update course information and settings</p>
 
             {/* Form Container */}
-            <div className="bg-foreground/5 rounded-xl shadow-lg border overflow-hidden">
-                <form onSubmit={handleSubmit} className="p-6">
+            <div className="space-y-4 sm:space-y-6 px-0 sm:px-6">
+                <form onSubmit={handleSubmit} className="p-4 sm:p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Left Column */}
                         <div className="space-y-6">
@@ -205,9 +300,7 @@ const EditCourse = () => {
                                 <label className="block text-sm font-semibold text-foreground">
                                     Course Title *
                                 </label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-3 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none text-foreground transition-all duration-200"
+                                <Input
                                     placeholder="Enter course title"
                                     value={formData.title}
                                     onChange={(e) => setFormData({...formData, title: e.target.value})}
@@ -220,17 +313,20 @@ const EditCourse = () => {
                                 <label className="block text-sm font-semibold text-foreground">
                                     Category *
                                 </label>
-                                <select
-                                    className="w-full px-4 py-3 text-foreground bg-accent rounded-lg border focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200"
+                                <Select
+                                    key={formData.category} // Add key to force re-render
                                     value={formData.category}
-                                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                                    required
+                                    onValueChange={(value) => setFormData({...formData, category: value})}
                                 >
-                                    <option value="">Select a category</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Description */}
@@ -238,35 +334,13 @@ const EditCourse = () => {
                                 <label className="block text-sm font-semibold text-foreground">
                                     Description
                                 </label>
-                                <textarea
-                                    className="w-full px-4 py-3 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200 text-foreground resize-none"
+                                <Textarea
                                     placeholder="Enter course description"
                                     rows={6}
                                     value={formData.description}
                                     onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                    className="resize-none h-32"
                                 />
-                            </div>
-
-                            {/* Published Status */}
-                            <div className="space-y-3">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    Course Status
-                                </label>
-                                <div className="flex items-center space-x-3 p-3 bg-accent rounded-lg border">
-                                    <input
-                                        type="checkbox"
-                                        id="isPublished"
-                                        className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
-                                        checked={formData.isPublished}
-                                        onChange={(e) => setFormData({...formData, isPublished: e.target.checked})}
-                                    />
-                                    <label htmlFor="isPublished" className="text-sm font-medium text-foreground cursor-pointer">
-                                        Publish this course
-                                    </label>
-                                </div>
-                                <p className="text-xs text-foreground/60">
-                                    {formData.isPublished ? "This course is visible to students" : "This course is hidden from students"}
-                                </p>
                             </div>
                         </div>
 
@@ -279,7 +353,27 @@ const EditCourse = () => {
                                 </label>
                                 <div className="relative">
                                     {!thumbnailPreview ? (
-                                        <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-border border-dashed rounded-lg cursor-pointer bg-accent hover:bg-accent/70 transition-colors">
+                                        <label 
+                                            className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer bg-accent hover:bg-accent/70 transition-colors ${
+                                                isDragOver ? "border-primary bg-primary/5" : "border-border"
+                                            }`}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                setIsDragOver(true);
+                                            }}
+                                            onDragLeave={(e) => {
+                                                e.preventDefault();
+                                                setIsDragOver(false);
+                                            }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                setIsDragOver(false);
+                                                const file = e.dataTransfer.files[0];
+                                                if (file) {
+                                                    handleImageUpload({ target: { files: [file] } });
+                                                }
+                                            }}
+                                        >
                                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                                 <ImageIcon className="w-8 h-8 mb-4 text-foreground/70" />
                                                 <p className="mb-2 text-sm text-foreground/50">
@@ -300,7 +394,7 @@ const EditCourse = () => {
                                             <img 
                                                 src={thumbnailPreview}
                                                 alt="Thumbnail preview"
-                                                className="w-full h-48 object-cover rounded-lg border border-border"
+                                                className="w-full h-36 object-contain rounded-lg border border-border"
                                             />
                                             <button
                                                 type="button"
@@ -355,28 +449,53 @@ const EditCourse = () => {
                                 <label className="block text-sm font-semibold text-foreground">
                                     Course Instructor
                                 </label>
+                                
+                                {/* Self-Assign Checkbox */}
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <Checkbox
+                                        id="assignSelf"
+                                        checked={formData.assignSelfAsInstructor}
+                                        onCheckedChange={(checked) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                assignSelfAsInstructor: checked,
+                                                facultyId: checked ? "" : prev.facultyId
+                                            }));
+                                        }}
+                                        className="border-2"
+                                    />
+                                    <label htmlFor="assignSelf" className="text-sm text-foreground cursor-pointer">
+                                        Assign myself as instructor
+                                    </label>
+                                </div>
+
                                 <div className="relative">
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 relative">
                                             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/60" />
-                                            <input
-                                                type="text"
-                                                className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-accent text-foreground focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200"
-                                                value={formData.facultyId ? filteredFaculty.find(f => f.id === formData.facultyId)?.fullName : data?.course?.managedBy?.fullName}
+                                            <Input
+                                                className="pl-10 pr-4 py-3 border border-border rounded-lg bg-accent text-foreground focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200"
+                                                value={
+                                                    formData.assignSelfAsInstructor 
+                                                        ? user?.fullName || "You (Admin)" 
+                                                        : (filteredFaculty.find(f => f.id === formData.facultyId)?.fullName || data?.course?.managedBy?.fullName || "")
+                                                }
                                                 readOnly
                                                 placeholder="No instructor assigned"
+                                                disabled={formData.assignSelfAsInstructor}
                                             />
                                         </div>
                                         
                                         <Dialog open={showInstructorList} onOpenChange={setShowInstructorList}>
                                             <DialogTrigger asChild>
-                                                <button
+                                                <Button
                                                     type="button"
-                                                    className="px-4 py-2 bg-primary text-foreground rounded-lg hover:bg-primary/60 transition-colors font-medium flex items-center gap-2"
+                                                    className="flex items-center gap-2"
+                                                    disabled={formData.assignSelfAsInstructor}
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                     {formData.facultyId ? "Change" : "Assign"}
-                                                </button>
+                                                </Button>
                                             </DialogTrigger>
                                             <DialogContent className="max-w-md">
                                                 <DialogHeader>
@@ -388,6 +507,7 @@ const EditCourse = () => {
                                                     </DialogDescription>
                                                 </DialogHeader>
                                                 
+
                                                 <div className="space-y-4">
                                                     <div className="relative">
                                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -402,9 +522,17 @@ const EditCourse = () => {
 
                                                     <div className="max-h-64 overflow-y-auto space-y-1">
                                                         {facultyLoading ? (
-                                                            <div className="text-center py-8">
-                                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-                                                                <p className="text-sm text-muted-foreground mt-2">Loading instructors...</p>
+                                                            <div className="space-y-2 py-2">
+                                                                {[...Array(5)].map((_, index) => (
+                                                                    <div key={index} className="flex items-center gap-3 px-3 py-3">
+                                                                        <Skeleton className="h-10 w-10 rounded-full" />
+                                                                        <div className="flex-1 space-y-2">
+                                                                            <Skeleton className="h-4 w-[60%]" />
+                                                                            <Skeleton className="h-3 w-[40%]" />
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+
                                                             </div>
                                                         ) : facultyError ? (
                                                             <div className="text-destructive text-center py-8">
@@ -451,17 +579,16 @@ const EditCourse = () => {
                     </div>
 
                     {/* Form Actions */}
-                    <div className="flex items-center justify-end gap-4 pt-8 border-t border-border mt-8">
-                        <button
+                    <div className="flex items-center justify-end gap-4 border-t border-border mt-8">
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => navigate('/admin/courses')}
-                            className="px-6 py-2 border border-border text-foreground rounded-lg hover:bg-accent transition-colors font-medium"
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
-                            className="px-6 py-2 bg-primary text-foreground rounded-lg hover:bg-primary/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
                             disabled={isUpdating || isUploading || isDeleting}
                         >
                             {isUpdating ? (
@@ -474,7 +601,7 @@ const EditCourse = () => {
                                     Update Course
                                 </>
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>

@@ -66,7 +66,7 @@ router.delete('/modules/:id', deleteModule);
 //Course routes
 router.post('/', requireRole(['ADMIN', 'FACULTY']), createCourse);
 router.get('/:id', getCourse);
-router.get('/', getCourses);
+router.get('/',requireRole(['ADMIN']), getCourses);
 router.patch('/:id', requireRole(['ADMIN', 'FACULTY']), updateCourse);
 router.delete('/:id', requireRole(['ADMIN']), deleteCourse);
 router.patch('/:id/publish', requireRole(['ADMIN', 'FACULTY']), publishCourse);

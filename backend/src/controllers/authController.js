@@ -41,7 +41,7 @@ export const authCallback = async (req, res) => {
            return res.status(200).json({message: "User successfully sync to the database", user: newUser})
         } else{
             const updates = {};
-            const newFullName = `${firstName} ${lastName}`;
+            const newFullName = `${firstName} ${lastName || ""}`;
 
             if(user.fullName !== newFullName) updates.fullName = newFullName;
             if(user.emailAddress !== emailAddress) updates.emailAddress = emailAddress;
