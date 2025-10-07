@@ -5,6 +5,7 @@ import LandingPage from "./pages/LandingPage"
 import AuthCallbackPage from "./pages/AuthCallbackPage"
 import SSOCallbackPage from "./pages/SSOCallbackPage"
 import ProtectedRoute from "./components/ProtectedRoute"
+import RoleProtectedRoute from "./components/RoleProtectedRoute"
 import RedirectIfSignedIn from "./components/RedirectIfSignedIn"
 import Courses from "./pages/admin/course/Courses"
 import CreateCourse from "./pages/admin/course/CreateCourse"
@@ -47,11 +48,14 @@ const App = () => {
         <Route path="/sso-callback" element={<SSOCallbackPage/>}/>
         <Route path="/auth-callback" element={<AuthCallbackPage/>}/>
 
+        {/* Admin Routes - Only accessible by ADMIN */}
         <Route
           path="/admin"
           element={
             <ProtectedRoute>
-              <MainLayout />
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
+                <MainLayout />
+              </RoleProtectedRoute>
             </ProtectedRoute>
           }
         >
@@ -59,43 +63,44 @@ const App = () => {
           <Route path="analytics" element={<Analytics/>}/>
           <Route path="courses" element={<Courses/>}/>
           <Route path="courses/create" element={<CreateCourse/>}/>
-          <Route path= "courses/view/:id" element={<CourseDetail/>}/>
+          <Route path="courses/view/:id" element={<CourseDetail/>}/>
           <Route path="courses/edit/:id" element={<EditCourse/>}/>
           <Route path="faculty-management" element={<FacultyManagement/>}/>
           <Route path="faculty-management/view/:id" element={<FacultyInfo/>}/>
           <Route path="student-management" element={<StudentManagement/>}/>
           <Route path="student-management/view/:id" element={<StudentInfo/>}/>
-
         </Route>
 
+        {/* Student Routes - Only accessible by STUDENT */}
         <Route 
           path="/student"
           element={
             <ProtectedRoute>
-              <MainLayout/>
+              <RoleProtectedRoute allowedRoles={['STUDENT']}>
+                <MainLayout/>
+              </RoleProtectedRoute>
             </ProtectedRoute>
           }
         >
           <Route index element={<HomePage/>}/>
-          <Route path="homepage" element={<HomePage/>}/>
+          <Route path="student-homepage" element={<HomePage/>}/>
           <Route path="homepage/:id/selected-course" element={<CoursePage/>}/>
-
-
         </Route>
+
+        {/* Faculty Routes - Only accessible by FACULTY and ADMIN */}
         <Route 
           path="/faculty"
           element={
             <ProtectedRoute>
-              <MainLayout/>
+              <RoleProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+                <MainLayout/>
+              </RoleProtectedRoute>
             </ProtectedRoute>
           }
         >
           <Route index element={<FacultyHomePage/>}/>
-          <Route path="homepage" element={<FacultyHomePage/>}/>
-
+          <Route path="faculty-homepage" element={<FacultyHomePage/>}/>
         </Route>
-        
-
       </Routes>
       
     </div>
