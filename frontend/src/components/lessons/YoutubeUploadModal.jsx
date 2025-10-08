@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, UploadCloud, Trash2 } from "lucide-react";
 import { useUploadToYoutube } from "../../hooks/lessons/useUploadToYoutube";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from 'react-toastify';
 
 const bytesToSize = (bytes) => {
   if (!bytes) return "0 B";
@@ -14,7 +15,7 @@ export default function YoutubeUploadModal({ open, onClose, moduleId }) {
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
   const { mutateAsync: uploadYoutubeAsync, cancelUpload } = useUploadToYoutube();
-  const [items, setItems] = useState([]); // { id, file, progress, status, abortId, error, errorDetails }
+  const [items, setItems] = useState([]); // { id, file, progress, status, abortId, error }
   const [expanded, setExpanded] = useState(new Set());
 
   if (!open) return null;
@@ -139,14 +140,20 @@ export default function YoutubeUploadModal({ open, onClose, moduleId }) {
           setItems((s) =>
             s.map((x) => (x.id === it.id ? { ...x, status: "error", progress: 0, abortId: null, error: short || "Upload failed", errorDetails: details } : x))
           );
+          toast.error(`Failed to upload video "${it.file.name}". ${short || "Please try again."}`);
         } else if (entryForFile && (entryForFile.error || entryForFile.success === false || entryForFile.status === "error")) {
           const { short, details } = extractErrorMessage(entryForFile.error ? entryForFile.error : (entryForFile.message || payload));
           const msg = entryForFile.error || entryForFile.message || short || "Upload failed";
           setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "error", progress: x.progress || 0, abortId: null, error: msg, errorDetails: details } : x)));
+          toast.error(`Failed to upload video "${it.file.name}". ${msg}`);
         } else {
           // success path
           setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "done", progress: 100, abortId: null, error: null } : x)));
-          if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+          // Let the hook handle immediate cache update, then invalidate to ensure fresh data
+          setTimeout(() => {
+            if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+          }, 1000);
+          toast.success(`Video "${it.file.name}" uploaded successfully!`);
         }
       } catch (err) {
         const canceled = err?.name === "CanceledError" || /aborted|canceled/i.test(String(err?.message || err));
@@ -158,6 +165,9 @@ export default function YoutubeUploadModal({ open, onClose, moduleId }) {
               : x
           )
         );
+        if (!canceled) {
+          toast.error(`Failed to upload video "${it.file.name}". ${short || "Please try again."}`);
+        }
       }
     });
   };

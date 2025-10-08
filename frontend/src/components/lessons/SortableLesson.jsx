@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Play, Edit3, Trash2, MoreHorizontal } from "lucide-react";
 import { DeleteLessonDialog, EditLessonDialog } from "./LessonDialog"; // <-- import here
+import { formatDuration } from "../../lib/utils";
 
 const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLesson, editPending = false }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
@@ -24,6 +25,9 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
   // menu position for fixed positioning
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
+  // thumbnail error state
+  const [thumbnailError, setThumbnailError] = useState(false);
+
   // ensure only one lesson menu is open at a time across the list:
   // when this instance opens it will dispatch "lesson-menu-open" with its id,
   // other instances listen and will close if the id doesn't match.
@@ -34,6 +38,11 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
     document.addEventListener("lesson-menu-open", onExternalOpen);
     return () => document.removeEventListener("lesson-menu-open", onExternalOpen);
   }, [lesson.id]);
+
+  // reset thumbnail error when lesson changes
+  useEffect(() => {
+    setThumbnailError(false);
+  }, [lesson.thumbnail]);
   // close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
@@ -220,11 +229,28 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
         </div>
 
         {/* thumbnail / icon - hidden on very small screens, visible from sm+ */}
-        <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 rounded-md overflow-hidden bg-muted items-center justify-center">
+        <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 rounded-md overflow-hidden bg-muted items-center justify-center group">
           {lesson.type && String(lesson.type).toLowerCase() === "pdf" ? (
             <img src="/pdf.png" alt="PDF" className="w-full h-full object-contain" />
-          ) : lesson.thumbnail ? (
-            <img src={lesson.thumbnail} alt={lesson.title} className="w-full h-full object-cover" />
+          ) : lesson.thumbnail && !thumbnailError ? (
+            <>
+              <img 
+                src={lesson.thumbnail} 
+                alt={lesson.title} 
+                className="w-full h-full object-cover" 
+                onError={() => setThumbnailError(true)}
+              />
+              {/* Play icon overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Play className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white drop-shadow-lg" />
+              </div>
+              {/* Duration overlay */}
+              {lesson.duration && lesson.duration > 0 && (
+                <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded font-medium">
+                  {formatDuration(lesson.duration)}
+                </div>
+              )}
+            </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
               <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />

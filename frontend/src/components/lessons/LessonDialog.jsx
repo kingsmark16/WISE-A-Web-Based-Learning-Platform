@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Trash2, AlertTriangle, Edit3 } from "lucide-react";
+import { Trash2, AlertTriangle, Edit3, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,12 +14,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 
 // Delete dialog (already present)
@@ -85,14 +86,17 @@ export const EditLessonDialog = ({
   onConfirm,
   lesson,
   isLoading = false,
+  error,
 }) => {
   const [newTitle, setNewTitle] = useState(lesson?.title || "");
   const [saving, setSaving] = useState(false);
   const isLoadingRef = useRef(isLoading);
 
   useEffect(() => {
-    setNewTitle(lesson?.title || "");
-  }, [lesson?.title]);
+    if (lesson) {
+      setNewTitle(lesson.title || "");
+    }
+  }, [lesson]);
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
@@ -122,14 +126,16 @@ export const EditLessonDialog = ({
       }, 100);
     });
 
-  const handleSave = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!newTitle.trim()) return;
+
     try {
       setSaving(true);
       // Close dialog immediately after clicking Save
       onOpenChange?.(false);
 
-      const result = onConfirm ? onConfirm(lesson, newTitle) : null;
+      const result = onConfirm ? onConfirm(lesson, newTitle.trim()) : null;
 
       // If handler returned a promise, await it.
       if (result && typeof result.then === "function") {
@@ -153,46 +159,58 @@ export const EditLessonDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <Edit3 className="h-5 w-5 text-primary" />
-            <DialogTitle>Rename Lesson</DialogTitle>
-          </div>
+          <DialogTitle>Edit Lesson</DialogTitle>
+          <DialogDescription>
+            Update the lesson title.
+          </DialogDescription>
         </DialogHeader>
-        <div className="py-2">
-          <label className="block text-sm mb-2">New title:</label>
-          <input
-            className="w-full border rounded px-2 py-1"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            autoFocus
-            disabled={savingActive}
-          />
-        </div>
-        <DialogFooter>
-          {savingActive ? (
-            <button className="px-3 py-2 rounded bg-muted" type="button" disabled>
-              Cancel
-            </button>
-          ) : (
-            <DialogClose asChild>
-              <button className="px-3 py-2 rounded bg-muted" type="button" disabled={savingActive}>
-                Cancel
-              </button>
-            </DialogClose>
+
+        <form onSubmit={handleSubmit} className="grid gap-4 py-2">
+          <div className="grid gap-1">
+            <label className="text-sm font-medium">Title</label>
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value.slice(0, 100))}
+              placeholder="Lesson title"
+              required
+              disabled={savingActive}
+              maxLength={100}
+              autoFocus
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              {newTitle.length}/100 characters
+            </div>
+          </div>
+
+          {error && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {error?.message || String(error)}
+            </div>
           )}
 
-          <button
-            className="px-3 py-2 rounded bg-primary text-white flex items-center gap-2"
-            type="button"
-            disabled={savingActive || !newTitle.trim()}
-            onClick={handleSave}
-          >
-            <Edit3 className="h-4 w-4" />
-            {savingActive ? "Saving..." : "Save"}
-          </button>
-        </DialogFooter>
+          <DialogFooter>
+            <div className="flex gap-2 justify-end w-full">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={savingActive}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={savingActive || !newTitle.trim()}
+                className="flex items-center gap-2"
+              >
+                {savingActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit3 className="h-4 w-4" />}
+                {savingActive ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

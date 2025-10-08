@@ -2,6 +2,7 @@ import SortableLesson from "./SortableLesson";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, FileText } from "lucide-react";
+import { formatDuration } from "../../lib/utils";
 
 /* 
   LessonList now simply renders SortableLesson items.
@@ -17,6 +18,11 @@ const LessonList = ({
   const pdfCount = lessons.filter(lesson => lesson.type && String(lesson.type).toLowerCase() === "pdf").length;
   const videoCount = lessons.filter(lesson => !lesson.type || String(lesson.type).toLowerCase() !== "pdf").length;
 
+  // Calculate total duration of video lessons
+  const totalDuration = lessons
+    .filter(lesson => lesson.type !== "PDF" && lesson.duration && lesson.duration > 0)
+    .reduce((total, lesson) => total + lesson.duration, 0);
+
   return (
     <div className="w-full overflow-hidden">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -25,7 +31,7 @@ const LessonList = ({
         </h5>
         <div className="flex items-center gap-2">
           <Badge variant="default" className="text-white">
-            {videoCount} video{videoCount !== 1 ? "s" : ""}
+            {videoCount} video{videoCount !== 1 ? "s" : ""}{totalDuration > 0 && ` (${formatDuration(totalDuration)})`}
           </Badge>
           {pdfCount > 0 && (
             <Badge variant="destructive">

@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, UploadCloud, Trash2 } from "lucide-react";
 import { useUploadToDropbox } from "../../hooks/lessons/useUploadToDropbox";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from 'react-toastify';
 
 const bytesToSize = (bytes) => {
   if (!bytes) return "0 B";
@@ -69,6 +70,7 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
         // success
         setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "done", progress: 100, abortId: null } : x)));
         if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+        toast.success(`File "${it.file.name}" uploaded successfully!`);
       } catch (err) {
         // if request was aborted client-side, status will be 'canceled' here
         const canceled = err?.name === "CanceledError" || /aborted|canceled/i.test(String(err?.message || err));
@@ -79,6 +81,9 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
               : x
           )
         );
+        if (!canceled) {
+          toast.error(`Failed to upload file "${it.file.name}". Please try again.`);
+        }
       }
     });
   };

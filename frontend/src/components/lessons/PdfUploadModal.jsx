@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, UploadCloud, Trash2 } from "lucide-react";
 import { useUploadPdf } from "../../hooks/lessons/useUploadPdf";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from 'react-toastify';
 
 const bytesToSize = (bytes) => {
   if (!bytes) return "0 B";
@@ -64,6 +65,7 @@ export default function PdfUploadModal({ open, onClose, moduleId }) {
 
         setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "done", progress: 100, abortId: null } : x)));
         if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+        toast.success(`PDF "${it.file.name}" uploaded successfully!`);
       } catch (err) {
         const canceled = err?.name === "CanceledError" || /aborted|canceled/i.test(String(err?.message || err));
         setItems((s) =>
@@ -73,6 +75,9 @@ export default function PdfUploadModal({ open, onClose, moduleId }) {
               : x
           )
         );
+        if (!canceled) {
+          toast.error(`Failed to upload PDF "${it.file.name}". Please try again.`);
+        }
       }
     });
   };
