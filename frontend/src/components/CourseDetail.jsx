@@ -116,7 +116,7 @@ const CourseDetail = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-0">
+    <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
       {/* Header with Back Button */}
       <div className="flex flex-row items-center justify-between gap-4">
         <Button 
@@ -131,7 +131,7 @@ const CourseDetail = () => {
 
       {/* Main Course Card */}
       <Card className="shadow-lg overflow-hidden">
-        <CardContent className="px-3 sm:px-6">
+        <CardContent className="px-3 sm:px-6 w-full overflow-hidden">
           <div className="flex flex-col gap-6">
             {/* Thumbnail and Course Info Row */}
             <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
@@ -304,7 +304,7 @@ const CourseDetail = () => {
           </div>
 
           {/* Course Content Navigation */}
-          <div className="mt-2 border-t">
+          <div className="mt-2 border-t w-full overflow-hidden">
             <CourseContentNav courseId={id} />
           </div>
         </CardContent>

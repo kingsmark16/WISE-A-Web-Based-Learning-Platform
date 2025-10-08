@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Edit3, Trash2, Loader2, Play, GripVertical } from "lucide-react";
+import { Edit3, Trash2, Loader2, Play, GripVertical, FileText } from "lucide-react";
 import {
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
 import { CSS } from "@dnd-kit/utilities";
 
 import {
@@ -85,7 +86,6 @@ const SortableModule = ({
 
   // active id + overlay size
   const [activeLessonId, setActiveLessonId] = useState(null);
-  const [overlaySize, setOverlaySize] = useState(null); // { width, height }
 
   // ---------- MODULE sortable (re-added) ----------
   // useSortable for the module item itself so modules can be dragged by the header handle
@@ -416,25 +416,10 @@ const SortableModule = ({
     const id = event.active?.id;
     setActiveLessonId(id || null);
     prevLessonsRef.current = localLessons.slice();
-
-    if (id) {
-      // find the original lesson DOM node and measure it
-      const node = document.querySelector(`[data-lesson-id="${id}"]`);
-      if (node) {
-        const rect = node.getBoundingClientRect();
-        setOverlaySize({
-          width: Math.round(rect.width) + "px",
-          height: Math.round(rect.height) + "px"
-        });
-      } else {
-        setOverlaySize(null);
-      }
-    }
   };
 
   const handleDragEnd = (event) => {
     setActiveLessonId(null);
-    setOverlaySize(null);
 
     const { active, over } = event;
     if (!active || !over) return;
@@ -481,7 +466,7 @@ const SortableModule = ({
     const lessons = localLessons;
 
     return (
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full overflow-hidden">
         {moduleData.module.description ? (
           <p className="text-sm text-muted-foreground break-words leading-relaxed">{moduleData.module.description}</p>
         ) : (
@@ -564,7 +549,7 @@ const SortableModule = ({
           </div>
         )}
 
-        {lessons.length > 0 && (
+        {lessons.length > 0 ? (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -572,92 +557,135 @@ const SortableModule = ({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={lessons.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-              <LessonList
-                lessons={lessons}
-                activeLessonId={activeLessonId}
-                formatDuration={formatDuration}
-                onPlayLesson={handlePlayLesson}
-                onEditLesson={handleEditLessonLocal}
-                onDeleteLesson={handleDeleteLessonLocal}
-                editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
-              />
+              <div className="w-full overflow-hidden">
+                <LessonList
+                  lessons={lessons}
+                  activeLessonId={activeLessonId}
+                  formatDuration={formatDuration}
+                  onPlayLesson={handlePlayLesson}
+                  onEditLesson={handleEditLessonLocal}
+                  onDeleteLesson={handleDeleteLessonLocal}
+                  editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
+                />
+              </div>
             </SortableContext>
 
             <DragOverlay>
               {activeLessonId ? (() => {
                 const active = lessons.find(l => l.id === activeLessonId);
-                if (!active) return null;
-                // apply measured size so overlay matches original responsive sizing
-                const overlayStyle = overlaySize ? { width: overlaySize.width, height: overlaySize.height } : { minWidth: "220px" };
-
-                return (
-                  // pointer-events-none so the overlay won't block pointer movement
-                  <div
-                    className="pointer-events-none z-[99999] rounded-lg shadow-lg border-2 border-input bg-card overflow-hidden"
-                    style={overlayStyle}
-                  >
-                    <div className="w-full p-1.5 sm:p-2 md:p-3 lg:p-4">
-                      <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-                        <div className="flex-shrink-0 mr-1 sm:mr-2 w-6 sm:w-8 p-1 rounded-md flex items-center justify-center">
-                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                return active ? (
+                  <div className="w-full max-w-full p-2 xs:p-2.5 sm:p-2.5 md:p-3 rounded-lg border-2 bg-card shadow-lg border-input">
+                    <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2 md:gap-3 w-full max-w-full overflow-hidden">
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex-shrink-0 w-8 xs:w-10 sm:w-10 md:w-12 h-8 xs:h-10 sm:h-10 md:h-12 p-1 sm:p-2 rounded-md flex items-center justify-center">
+                          <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                         </div>
+                      </div>
 
-                        <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 lg:w-24 lg:h-16 rounded-md overflow-hidden bg-muted items-center justify-center">
-                          {active.type && String(active.type).toLowerCase() === "pdf" ? (
-                            <img src="/pdf.png" alt="PDF" className="w-full h-full object-contain" />
-                          ) : active.thumbnail ? (
-                            <img src={active.thumbnail} alt={active.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
-                              <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-                            </div>
-                          )}
+                      <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 rounded-md overflow-hidden bg-muted items-center justify-center">
+                        {active.type && String(active.type).toLowerCase() === "pdf" ? (
+                          <img src="/pdf.png" alt="PDF" className="w-full h-full object-contain" />
+                        ) : active.thumbnail ? (
+                          <img src={active.thumbnail} alt={active.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
+                            <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                          </div>
+                        )}
+                      </div>
 
-                          {active.duration && formatDuration && (
-                            <div className="absolute bottom-0 right-0 text-xs px-1 sm:px-1.5 py-0.5 rounded-bl-md bg-black/70 text-white">
-                              {formatDuration(active.duration)}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <span className="text-xs sm:text-sm md:text-sm font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                              { /* optional position badge */ }
-                            </span>
-                            <div className="min-w-0">
-                              <h6 className="text-xs sm:text-sm md:text-base font-semibold leading-tight text-foreground break-words whitespace-normal">
-                                {active.title}
-                              </h6>
-                            </div>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex items-start gap-1.5 xs:gap-2 sm:gap-2 md:gap-3">
+                          <span className="text-xs xs:text-xs sm:text-sm md:text-sm font-semibold text-primary bg-primary/10 px-1.5 xs:px-2 sm:px-2 py-0.5 rounded-full flex-shrink-0 leading-none">
+                            {/* Position will be set by parent */}
+                          </span>
+                          <div className="flex-1 overflow-hidden">
+                            <h6 className="line-clamp-1 text-xs xs:text-sm sm:text-sm font-semibold leading-tight text-foreground break-words overflow-hidden text-ellipsis">
+                              {active.title}
+                            </h6>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                );
+                ) : null;
               })() : null}
             </DragOverlay>
           </DndContext>
-        )}
-
-        {moduleData.module.quiz && (
-          <div>{/* quiz UI (unchanged) */}</div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-border">
-          <div className="text-center sm:text-left">
-            <div className="text-lg font-bold text-primary">{lessons.length}</div>
-            <div className="text-xs text-muted-foreground">Video{lessons.length !== 1 ? "s" : ""}</div>
+        ) : (
+          <div className="w-full overflow-hidden">
+            <LessonList
+              lessons={lessons}
+              activeLessonId={activeLessonId}
+              formatDuration={formatDuration}
+              onPlayLesson={handlePlayLesson}
+              onEditLesson={handleEditLessonLocal}
+              onDeleteLesson={handleDeleteLessonLocal}
+              editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
+            />
           </div>
+        )}
 
-          <div className="text-center sm:text-left">
-            <div className="text-lg font-bold text-green-600">
-              {formatDuration(lessons.reduce((total, lesson) => total + (lesson.duration || 0), 0)) || "0:00"}
+        {/* External Links Section */}
+        <div className="space-y-2">
+          <h4 className="text-sm md:text-base font-semibold text-foreground">External Links</h4>
+          {moduleData.module.links && moduleData.module.links.length > 0 ? (
+            <div className="space-y-2">
+              {moduleData.module.links.map((link, index) => (
+                <a
+                  key={index}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-2 rounded-md border border-input bg-card hover:bg-accent/50 transition-colors"
+                >
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm">{link.title || link.url}</span>
+                </a>
+              ))}
             </div>
-            <div className="text-xs text-muted-foreground">Duration</div>
-          </div>
+          ) : (
+            <Card className="w-full">
+              <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                <div className="rounded-full bg-blue-100 p-4 mb-4">
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
+                  No external links
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground max-w-sm">
+                  Add useful resources and references.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
+        {/* Quiz Section */}
+        <div className="space-y-2">
+          <h4 className="text-sm md:text-base font-semibold text-foreground">Quiz</h4>
+          {moduleData.module.quiz ? (
+            <div className="p-4 rounded-md border border-input bg-card">
+              <p className="text-sm text-muted-foreground">Quiz available for this module.</p>
+              {/* Add quiz UI here */}
+            </div>
+          ) : (
+            <Card className="w-full">
+              <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                <div className="rounded-full bg-green-100 p-4 mb-4">
+                  <Play className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
+                  No quiz yet
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground max-w-sm">
+                  Create a quiz to test student knowledge.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
       </div>
     );
   };
@@ -679,10 +707,10 @@ const SortableModule = ({
         value={item.id}
         key={item.id}
         ref={setModuleNodeRef}
-        className="relative rounded-lg overflow-hidden border-2 bg-card shadow-lg hover:shadow-xl border-input transition-all duration-200 hover:border-primary/30 w-full min-w-0 overflow-x-hidden box-border"
+        className="relative rounded-lg border-2 bg-card shadow-lg hover:shadow-xl border-input transition-all duration-200 hover:border-primary/30 [&[data-state=open]]:border-primary/50 w-full overflow-hidden"
         style={style}
       >
-        <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full min-w-0 overflow-hidden box-border">
+        <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden">
           <div
             className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-grab active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
             {...(listenersDisabled ? {} : { ...moduleAttributes })}
@@ -694,13 +722,21 @@ const SortableModule = ({
             <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground hover:text-foreground transition-colors" />
           </div>
 
-          <div className="flex flex-col gap-1 min-w-0 flex-1 pr-2 sm:pr-3 md:pr-40">
-            <div className="text-xs sm:text-sm md:text-base font-semibold leading-tight text-left overflow-hidden min-w-0">
+          <div className="flex flex-col gap-1 min-w-0 flex-1 pr-2 sm:pr-3 md:pr-40 overflow-hidden">
+            <div className="text-xs sm:text-sm md:text-base font-semibold leading-tight text-left overflow-hidden">
               <span className="text-xs sm:text-xs md:text-sm flex-shrink-0 mr-1">Module {item.position}:</span>
-              <span className="block whitespace-wrap break-words overflow-hidden min-w-0" title={item.title}>{item.title}</span>
+              <span className="block overflow-hidden text-ellipsis" title={item.title}>{item.title}</span>
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground sm:hidden">
-              {(item._count?.lessons ?? 0) + (item._count?.attachments ?? 0)} lessons
+            <div className="flex items-center justify-between gap-2">
+              {/* Buttons for small screens */}
+              <div className="flex items-center gap-2 sm:hidden transition-all duration-200 opacity-100 scale-100" onClick={(e) => e.stopPropagation()}>
+                <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary active:bg-primary/20 focus:bg-primary/10 focus:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors cursor-pointer touch-manipulation" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
+                  <Edit3 className="h-4 w-4" />
+                </div>
+                <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive active:bg-destructive/20 focus:bg-destructive/10 focus:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive/50 transition-colors cursor-pointer touch-manipulation" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
+                  <Trash2 className="h-4 w-4" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -709,7 +745,7 @@ const SortableModule = ({
               {(item._count?.lessons ?? 0) + (item._count?.attachments ?? 0)} lessons
             </div>
 
-            <div className={`flex items-center gap-2 transition-all duration-200 ${isOpen ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center gap-2 transition-all duration-200 opacity-100 scale-100`} onClick={(e) => e.stopPropagation()}>
               <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
                 <Edit3 className="h-4 w-4" />
               </div>
@@ -720,7 +756,7 @@ const SortableModule = ({
           </div>
         </AccordionTrigger>
 
-        <AccordionContent className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-5 bg-gradient-to-b from-muted/20 to-transparent">
+        <AccordionContent className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-5 bg-gradient-to-b from-muted/20 to-transparent w-full overflow-hidden">
           {renderModuleContent()}
         </AccordionContent>
       </AccordionItem>

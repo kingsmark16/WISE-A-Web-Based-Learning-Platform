@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ExternalLink, Loader2, Trash2, AlertTriangle } from "lucide-react"; // Add Trash2 and AlertTriangle
+import { Plus, Loader2, Trash2, AlertTriangle } from "lucide-react"; // Changed ExternalLink to Plus
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,12 +46,12 @@ export const AddModuleDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           className="flex items-center gap-2"
         >
-          <ExternalLink className="h-4 w-4" />
-          Add Modules
+          <Plus className="h-4 w-4" />
+          Add Module
         </Button>
       </DialogTrigger>
 
@@ -87,7 +87,7 @@ export const AddModuleDialog = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short summary of the module"
-              rows={4}
+              className="h-24 resize-none"
               disabled={isLoading}
             />
           </div>
@@ -190,6 +190,7 @@ export const EditModuleDialog = ({
             <Textarea 
               value={description} 
               onChange={(e) => setDescription(e.target.value)} 
+              className="h-24 resize-none"
               rows={4} 
             />
           </div>
@@ -262,32 +263,12 @@ export const DeleteModuleDialog = ({
             <div className="space-y-3 px-6">
               <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
                 <p className="text-sm font-medium text-destructive mb-2">
-                  This action cannot be undone. This will permanently delete:
+                  This action cannot be undone.
                 </p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
-                    The module and all its content
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
-                    {module._count?.videoLessons || 0} video lesson(s)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
-                    {module._count?.attachments || 0} attachment(s)
-                  </li>
-                  {module._count?.quiz > 0 && (
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-destructive rounded-full"></span>
-                      Associated quiz(es)
-                    </li>
-                  )}
-                </ul>
+                <p className="text-sm text-muted-foreground">
+                  This will permanently delete the module and all its content.
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                All remaining modules will be repositioned automatically.
-              </p>
             </div>
             
             <AlertDialogFooter>
