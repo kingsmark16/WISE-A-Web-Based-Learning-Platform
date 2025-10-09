@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Edit3, Trash2, Loader2, Play, GripVertical, FileText } from "lucide-react";
+import { Edit3, Trash2, Loader2, Play, GripVertical, FileText, Link as LinkIcon, HelpCircle } from "lucide-react";
 import {
   AccordionItem,
   AccordionTrigger,
@@ -26,6 +26,7 @@ import {
 
 import { useGetModule } from "../../hooks/useModule";
 import { useReorderLessons } from "../../hooks/useLessson";
+import { useReorderLinks } from "../../hooks/useLessson";
 import useDeleteFromDropbox from "../../hooks/lessons/useDeleteFromDropbox";
 import useEditFromDropbox from "../../hooks/lessons/useEditFromDropbox";
 import useEditPdf from "../../hooks/lessons/useEditPdf";
@@ -33,9 +34,12 @@ import { useDeletePdf } from "../../hooks/lessons/useDeletePdf";
 import useDeleteFromYoutube from "../../hooks/lessons/useDeleteFromYoutube";
 import useEditFromYoutube from "../../hooks/lessons/useEditFromYoutube";
 import { useUploadToYoutube } from "../../hooks/lessons/useUploadToYoutube";
+import useEditLink from "../../hooks/lessons/useEditLink";
+import useDeleteLink from "../../hooks/lessons/useDeleteLink";
 
 import UploadActions from "../lessons/UploadActions";
 import LessonList from "../lessons/LessonList";
+import LinkList from "../lessons/LinkList";
 import PdfViewer from "../PdfViewer";
 import EmbedYt from "../EmbedYt";
 import VideoPlayer from "../videoPlayer";
@@ -48,6 +52,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import DropboxUploadModal from "../lessons/DropboxUploadModal";
 import YoutubeUploadModal from "../lessons/YoutubeUploadModal";
 import PdfUploadModal from "../lessons/PdfUploadModal";
+import LinkUploadModal from "../lessons/LinkUploadModal";
 
 const SortableModule = ({
   item,
@@ -84,8 +89,13 @@ const SortableModule = ({
   const [localLessons, setLocalLessons] = useState([]);
   const prevLessonsRef = useRef(null);
 
+  // local links and rollback ref for smooth drag
+  const [localLinks, setLocalLinks] = useState([]);
+  const prevLinksRef = useRef(null);
+
   // active id + overlay size
   const [activeLessonId, setActiveLessonId] = useState(null);
+  const [activeLinkId, setActiveLinkId] = useState(null);
 
   // ---------- MODULE sortable (re-added) ----------
   // useSortable for the module item itself so modules can be dragged by the header handle
@@ -111,6 +121,13 @@ const SortableModule = ({
     const sorted = lessons.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     setLocalLessons(sorted);
   }, [moduleData?.module?.lessons]);
+
+  // sync server links into localLinks (sorted by position)
+  useEffect(() => {
+    const links = moduleData?.module?.links || [];
+    const sorted = links.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    setLocalLinks(sorted);
+  }, [moduleData?.module?.links]);
  
   // modal state for internal dropbox uploader
   const [showDropboxModal, setShowDropboxModal] = useState(false);
@@ -118,6 +135,8 @@ const SortableModule = ({
   const [showYoutubeModal, setShowYoutubeModal] = useState(false);
   // modal state for internal pdf uploader
   const [showPdfModal, setShowPdfModal] = useState(false);
+  // modal state for internal link uploader
+  const [showLinkModal, setShowLinkModal] = useState(false);
   
   // open hidden file picker
   const openDropboxPicker = () => {
@@ -150,6 +169,18 @@ const SortableModule = ({
       }
     }
     setShowPdfModal(true);
+  };
+
+  // open internal link modal (prefers parent handler)
+  const openLinkModal = () => {
+    if (typeof onAddLink === "function") {
+      try {
+        return onAddLink(item);
+      } catch {
+        // fallthrough to internal modal
+      }
+    }
+    setShowLinkModal(true);
   };
   
   // handle chosen files — call hook with same argument shape as other mutate calls
@@ -283,6 +314,7 @@ const SortableModule = ({
   // reorder hook (optimistic handled inside hook)
   const moduleId = moduleData?.module?.id;
   const reorderMutation = useReorderLessons(moduleId);
+  const reorderLinksMutation = useReorderLinks(moduleId);
 
   // sensors: pointer + touch, same activationConstraint as modules
   const sensors = useSensors(
@@ -328,6 +360,11 @@ const SortableModule = ({
   } = useEditPdf(moduleId);
 
   const {
+    mutateAsync: editLinkLessonAsync,
+    isPending: editLinkPending
+  } = useEditLink(moduleId);
+
+  const {
     mutateAsync: deleteDropboxLessonAsync
   } = useDeleteFromDropbox(moduleId);
 
@@ -338,6 +375,10 @@ const SortableModule = ({
   const {
     mutateAsync: deletePdfLessonAsync,
   } = useDeletePdf(moduleId);
+
+  const {
+    mutateAsync: deleteLinkLessonAsync,
+  } = useDeleteLink(moduleId);
 
   // upload hook (matches edit/delete pattern: returns mutateAsync + cancelUpload)
   const { mutateAsync: uploadDropboxAsync, cancelUpload, isLoading: uploadDropboxPending } = useUploadToDropbox();
@@ -411,6 +452,33 @@ const SortableModule = ({
     onDeleteLesson?.(lesson, e);
   };
 
+  // Link handlers
+  const handleEditLinkLocal = async (link, e, newTitle, newDescription, newUrl) => {
+    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+
+    return editLinkLessonAsync({
+      linkId: link.id,
+      title: newTitle,
+      description: newDescription,
+      url: newUrl
+    }).catch((err) => {
+      console.error("Failed to edit link:", err);
+      throw err;
+    });
+  };
+
+  const handleDeleteLinkLocal = async (link, e) => {
+    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+
+    try {
+      await deleteLinkLessonAsync({ linkId: link.id });
+      return;
+    } catch (err) {
+      console.error("Failed to delete link:", err);
+      throw err;
+    }
+  };
+
   // Drag handlers: match module behaviour (update local order on drag END)
   const handleDragStart = (event) => {
     const id = event.active?.id;
@@ -443,6 +511,42 @@ const SortableModule = ({
       },
       onSettled: () => {
         prevLessonsRef.current = null;
+      }
+    });
+  };
+
+  // Link drag handlers
+  const handleLinkDragStart = (event) => {
+    const id = event.active?.id;
+    setActiveLinkId(id || null);
+    prevLinksRef.current = localLinks.slice();
+  };
+
+  const handleLinkDragEnd = (event) => {
+    setActiveLinkId(null);
+
+    const { active, over } = event;
+    if (!active || !over) return;
+    if (active.id === over.id) return;
+
+    const oldIndex = localLinks.findIndex((l) => l.id === active.id);
+    const newIndex = localLinks.findIndex((l) => l.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // compute new order and immediately apply locally
+    const next = arrayMove(localLinks, oldIndex, newIndex);
+    setLocalLinks(next);
+
+    // prepare orderedLinks payload (1-based positions)
+    const orderedLinks = next.map((l, idx) => ({ id: l.id, position: idx + 1 }));
+
+    // call mutation with rollback on error
+    reorderLinksMutation.mutate({ orderedLinks }, {
+      onError: () => {
+        if (prevLinksRef.current) setLocalLinks(prevLinksRef.current);
+      },
+      onSettled: () => {
+        prevLinksRef.current = null;
       }
     });
   };
@@ -489,7 +593,7 @@ const SortableModule = ({
             if (typeof onUploadPdf === "function") return onUploadPdf(item);
             return openPdfPicker();
           }}
-          onAddLink={() => onAddLink?.(item)}
+          onAddLink={() => openLinkModal()}
           onCreateQuiz={() => onCreateQuiz?.(item)}
         />
 
@@ -626,40 +730,80 @@ const SortableModule = ({
           </div>
         )}
 
-        {/* External Links Section */}
-        <div className="space-y-2">
-          <h4 className="text-sm md:text-base font-semibold text-foreground">External Links</h4>
-          {moduleData.module.links && moduleData.module.links.length > 0 ? (
-            <div className="space-y-2">
-              {moduleData.module.links.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 p-2 rounded-md border border-input bg-card hover:bg-accent/50 transition-colors"
-                >
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="text-sm">{link.title || link.url}</span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <Card className="w-full">
-              <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div className="rounded-full bg-blue-100 p-4 mb-4">
-                  <FileText className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
-                  No external links
-                </h3>
-                <p className="text-xs md:text-sm text-muted-foreground max-w-sm">
-                  Add useful resources and references.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Links Section */}
+        {localLinks.length > 0 ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleLinkDragStart}
+            onDragEnd={handleLinkDragEnd}
+          >
+            <SortableContext items={localLinks.map((l) => l.id)} strategy={verticalListSortingStrategy}>
+              <div className="w-full overflow-hidden">
+                <LinkList
+                  links={localLinks}
+                  onEditLink={handleEditLinkLocal}
+                  onDeleteLink={handleDeleteLinkLocal}
+                  editPending={Boolean(editLinkPending)}
+                />
+              </div>
+            </SortableContext>
+
+            <DragOverlay>
+              {activeLinkId ? (() => {
+                const active = localLinks.find(l => l.id === activeLinkId);
+                return active ? (
+                  <div className="w-full max-w-full p-2 xs:p-2.5 sm:p-2.5 md:p-3 rounded-lg border-2 bg-card shadow-lg border-input">
+                    <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2 md:gap-3 w-full max-w-full overflow-hidden">
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div className="flex-shrink-0 w-8 xs:w-10 sm:w-10 md:w-12 h-8 xs:h-10 sm:h-10 md:h-12 p-1 sm:p-2 rounded-md flex items-center justify-center">
+                          <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 rounded-md overflow-hidden bg-blue-100 items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-600">
+                          <LinkIcon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                        </div>
+                      </div>
+
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex items-start gap-1.5 xs:gap-2 sm:gap-2 md:gap-3">
+                          <span className="text-xs xs:text-xs sm:text-sm md:text-sm font-semibold text-primary bg-primary/10 px-1.5 xs:px-2 sm:px-2 py-0.5 rounded-full flex-shrink-0 leading-none">
+                            {/* Position will be set by parent */}
+                          </span>
+                          <div className="flex-1 overflow-hidden">
+                            <h6 className="line-clamp-1 text-xs xs:text-sm sm:text-sm font-semibold leading-tight text-foreground break-words overflow-hidden text-ellipsis">
+                              {active.title}
+                            </h6>
+                            {active.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                                {active.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-blue-600 line-clamp-1 mt-0.5 break-all">
+                              {active.url}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null;
+              })() : null}
+            </DragOverlay>
+          </DndContext>
+        ) : (
+          <div className="w-full overflow-hidden">
+            <LinkList
+              links={localLinks}
+              activeLinkId={activeLinkId}
+              onEditLink={handleEditLinkLocal}
+              onDeleteLink={handleDeleteLinkLocal}
+              editPending={Boolean(editLinkPending)}
+            />
+          </div>
+        )}
 
         {/* Quiz Section */}
         <div className="space-y-2">
@@ -673,7 +817,7 @@ const SortableModule = ({
             <Card className="w-full">
               <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
                 <div className="rounded-full bg-green-100 p-4 mb-4">
-                  <Play className="h-8 w-8 text-green-600" />
+                  <HelpCircle className="h-8 w-8 text-green-600" />
                 </div>
                 <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
                   No quiz yet
@@ -765,6 +909,7 @@ const SortableModule = ({
       <DropboxUploadModal open={showDropboxModal} onClose={() => setShowDropboxModal(false)} moduleId={moduleId} />
       <YoutubeUploadModal open={showYoutubeModal} onClose={() => setShowYoutubeModal(false)} moduleId={moduleId} />
       <PdfUploadModal open={showPdfModal} onClose={() => setShowPdfModal(false)} moduleId={moduleId} />
+      <LinkUploadModal open={showLinkModal} onClose={() => setShowLinkModal(false)} moduleId={moduleId} />
 
       {currentLesson && (
         <>

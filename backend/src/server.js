@@ -22,6 +22,7 @@ import dropboxAuthRoutes from './routes/dropboxAuthRoutes.js'
 import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 import youtubeAuthRoutes from './routes/youtubeAuthRoutes.js';
 import youtubeVideoRoutes from './routes/youtubeVideoRoutes.js';
+import linkRoutes from './routes/linkRoutes.js';
 
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
 app.use('/api/youtube-lessons', youtubeVideoRoutes);
 app.use('/api/upload-dropbox', dropboxUploadRoutes);
 app.use('/api/upload-pdf', uploadPdfRoutes);
+app.use('/api/link', linkRoutes);
 
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);

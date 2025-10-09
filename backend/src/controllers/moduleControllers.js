@@ -150,6 +150,18 @@ export const getModule = async (req, res) => {
                     },
                     orderBy: { position: 'asc' }
                 },
+                links: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        url: true,
+                        position: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                    orderBy: { position: 'asc' }
+                },
                 quiz: {
                     select: {
                         id: true,
