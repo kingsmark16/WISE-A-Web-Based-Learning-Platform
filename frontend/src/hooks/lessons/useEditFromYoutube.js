@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
+import { toast } from 'react-toastify';
 
 export const useEditFromYoutube = (moduleId = null) => {
   const queryClient = useQueryClient();
@@ -51,6 +52,11 @@ export const useEditFromYoutube = (moduleId = null) => {
       if (moduleId && context?.snapshot) {
         queryClient.setQueryData(["module", moduleId], context.snapshot);
       }
+      toast.error('Failed to update YouTube lesson. Please try again.');
+    },
+
+    onSuccess: () => {
+      toast.success('YouTube lesson updated successfully!');
     },
 
     // ensure a fresh server fetch afterwards

@@ -2,31 +2,24 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
 import { toast } from 'react-toastify';
 
-export const useDeleteFromYoutube = (moduleId) => {
+export const useDeleteLink = (moduleId) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ lessonId, type }) => {
-      if (!lessonId) throw new Error("lessonId is required");
-
-      // Only delete if lesson type is YOUTUBE
-      if (String(type || "").toUpperCase() !== "YOUTUBE") {
-        return { ok: false, skipped: true, message: "Not a YOUTUBE lesson" };
-      }
-
-      const response = await axiosInstance.delete(`/youtube-lessons/${lessonId}`);
-
+    mutationFn: async ({ linkId }) => {
+      if (!linkId) throw new Error("linkId is required");
+      const response = await axiosInstance.delete(`/link/${linkId}`);
       return response.data;
     },
-    // optimistic update: remove lesson from module cache immediately
-    onMutate: async ({ lessonId }) => {
+    // optimistic update: remove link from module cache immediately
+    onMutate: async ({ linkId }) => {
       if (!moduleId) return;
       await queryClient.cancelQueries(["module", moduleId]);
       const previous = queryClient.getQueryData(["module", moduleId]);
-      if (previous?.module?.lessons) {
+      if (previous?.module?.links) {
         queryClient.setQueryData(["module", moduleId], (old) => {
           const copy = JSON.parse(JSON.stringify(old));
-          copy.module.lessons = (copy.module.lessons || []).filter((l) => l.id !== lessonId);
+          copy.module.links = (copy.module.links || []).filter((l) => l.id !== linkId);
           return copy;
         });
       }
@@ -36,10 +29,10 @@ export const useDeleteFromYoutube = (moduleId) => {
       if (context?.previous && moduleId) {
         queryClient.setQueryData(["module", moduleId], context.previous);
       }
-      toast.error('Failed to delete YouTube lesson. Please try again.');
+      toast.error('Failed to delete link. Please try again.');
     },
     onSuccess: () => {
-      toast.success('YouTube lesson deleted successfully!');
+      toast.success('Link deleted successfully!');
     },
     onSettled: () => {
       if (moduleId) queryClient.invalidateQueries(["module", moduleId]);
@@ -47,4 +40,4 @@ export const useDeleteFromYoutube = (moduleId) => {
   });
 };
 
-export default useDeleteFromYoutube;
+export default useDeleteLink;

@@ -92,6 +92,7 @@ model Module {
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   lessons Lesson[]
+  links   Link[]
   quiz         Quiz?
 
   @@unique([courseId, position])
@@ -112,6 +113,23 @@ model Lesson {
   duration    Int?     // in seconds
   uploadedBy User? @relation("UserUploadedVideos", fields: [uploadedById], references: [id], onDelete: SetNull)
   uploadedById String?
+
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, position])
+  @@index([moduleId])
+}
+
+
+model Link {
+  id          String   @id @default(ulid())
+  title       String
+  description String?
+  url         String
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   moduleId    String
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -309,5 +327,4 @@ enum LessonType {
   PDF
   YOUTUBE
   DROPBOX
-  LINK
 }

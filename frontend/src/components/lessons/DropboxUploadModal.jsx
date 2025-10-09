@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X, UploadCloud, Trash2 } from "lucide-react";
 import { useUploadToDropbox } from "../../hooks/lessons/useUploadToDropbox";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from 'react-toastify';
 
 const bytesToSize = (bytes) => {
   if (!bytes) return "0 B";
@@ -69,6 +70,7 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
         // success
         setItems((s) => s.map((x) => (x.id === it.id ? { ...x, status: "done", progress: 100, abortId: null } : x)));
         if (moduleId) queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+        toast.success(`File "${it.file.name}" uploaded successfully!`);
       } catch (err) {
         // if request was aborted client-side, status will be 'canceled' here
         const canceled = err?.name === "CanceledError" || /aborted|canceled/i.test(String(err?.message || err));
@@ -79,6 +81,9 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
               : x
           )
         );
+        if (!canceled) {
+          toast.error(`Failed to upload file "${it.file.name}". Please try again.`);
+        }
       }
     });
   };
@@ -134,14 +139,12 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
               <UploadCloud className="h-6 w-6 text-muted-foreground" />
               <div>
                 <div className="font-semibold">Click to select or drop video files here</div>
-                <div className="text-sm text-muted-foreground">Multiple files supported. Each file uploads separately and shows its own progress.</div>
               </div>
             </div>
             <input ref={inputRef} type="file" accept="video/*" multiple className="hidden" onChange={onFilesPicked} />
           </div>
 
           <div className="space-y-3 max-h-64 overflow-auto">
-            {items.length === 0 && <div className="text-sm text-muted-foreground">No files queued</div>}
             {items.map((it) => (
               <div key={it.id} className="flex items-center gap-3 bg-muted/5 p-2 rounded">
                 <div className="flex-1 min-w-0">
@@ -182,9 +185,6 @@ export default function DropboxUploadModal({ open, onClose, moduleId }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <button onClick={() => inputRef.current?.click()} className="px-3 py-1 rounded bg-primary/10 hover:bg-primary/20">
-                Add files
-              </button>
               <button onClick={onClose} className="px-3 py-1 rounded bg-muted/10 hover:bg-muted/20">
                 Close
               </button>

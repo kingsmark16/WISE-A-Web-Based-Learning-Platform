@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+import { toast } from 'react-toastify';
 import {
   useCreateMdodule,
   useDeleteModule,
@@ -31,7 +32,14 @@ export const useModuleManagement = () => {
       console.error("Missing courseId in URL params");
       return;
     }
-    createMutate({ title, description, courseId });
+    createMutate({ title, description, courseId }, {
+      onSuccess: () => {
+        toast.success('Module created successfully!');
+      },
+      onError: () => {
+        toast.error('Failed to create module. Please try again.');
+      }
+    });
   };
 
   const handleEditModule = (module) => {
@@ -42,8 +50,12 @@ export const useModuleManagement = () => {
   const handleUpdateModule = ({ id, title, description }) => {
     updateMutate({ id, title, description }, {
       onSuccess: () => {
+        toast.success('Module updated successfully!');
         setEditOpen(false);
         setEditingModule(null);
+      },
+      onError: () => {
+        toast.error('Failed to update module. Please try again.');
       }
     });
   };
@@ -58,10 +70,12 @@ export const useModuleManagement = () => {
   const handleDeleteModule = (moduleId) => {
     deleteMutate(moduleId, {
       onSuccess: () => {
+        toast.success('Module deleted successfully!');
         setDeleteModuleOpen(false);
         setModuleToDelete(null);
       },
       onError: () => {
+        toast.error('Failed to delete module. Please try again.');
         // Keep dialog open on error so user can retry
       }
     });

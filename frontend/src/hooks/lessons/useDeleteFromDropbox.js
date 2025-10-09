@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
+import { toast } from 'react-toastify';
 
 export const useDeleteFromDropbox = (moduleId) => {
   const queryClient = useQueryClient();
@@ -35,6 +36,10 @@ export const useDeleteFromDropbox = (moduleId) => {
       if (context?.previous && moduleId) {
         queryClient.setQueryData(["module", moduleId], context.previous);
       }
+      toast.error('Failed to delete Dropbox lesson. Please try again.');
+    },
+    onSuccess: () => {
+      toast.success('Dropbox lesson deleted successfully!');
     },
     onSettled: () => {
       if (moduleId) queryClient.invalidateQueries(["module", moduleId]);

@@ -1,12 +1,12 @@
 import React, { useRef, useState, useLayoutEffect, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Play, Edit3, Trash2, MoreHorizontal, Link as LinkIcon } from "lucide-react";
-import { DeleteLessonDialog, EditLessonDialog } from "./LessonDialog"; // <-- import here
-import { formatDuration } from "../../lib/utils";
+import { GripVertical, ExternalLink, Edit3, Trash2, MoreHorizontal } from "lucide-react";
+import { DeleteLinkDialog, EditLinkDialog } from "./LinkDialog"; // <-- import here
+import LinkDetailDialog from "./LinkDetailDialog"; // <-- import detail dialog
 
-const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLesson, editPending = false }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
+const SortableLink = ({ link, index, onEditLink, onDeleteLink, editPending = false }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
 
   // Ref to title node so we can read computed font-size when drag begins
   const titleRef = useRef(null);
@@ -22,27 +22,23 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
   // edit dialog state
   const [editOpen, setEditOpen] = useState(false);
 
+  // detail dialog state
+  const [detailOpen, setDetailOpen] = useState(false);
+
   // menu position for fixed positioning
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  // thumbnail error state
-  const [thumbnailError, setThumbnailError] = useState(false);
-
-  // ensure only one lesson menu is open at a time across the list:
-  // when this instance opens it will dispatch "lesson-menu-open" with its id,
+  // ensure only one link menu is open at a time across the list:
+  // when this instance opens it will dispatch "link-menu-open" with its id,
   // other instances listen and will close if the id doesn't match.
   useEffect(() => {
     const onExternalOpen = (e) => {
-      if (e?.detail !== lesson.id) setMenuOpen(false);
+      if (e?.detail !== link.id) setMenuOpen(false);
     };
-    document.addEventListener("lesson-menu-open", onExternalOpen);
-    return () => document.removeEventListener("lesson-menu-open", onExternalOpen);
-  }, [lesson.id]);
+    document.addEventListener("link-menu-open", onExternalOpen);
+    return () => document.removeEventListener("link-menu-open", onExternalOpen);
+  }, [link.id]);
 
-  // reset thumbnail error when lesson changes
-  useEffect(() => {
-    setThumbnailError(false);
-  }, [lesson.thumbnail]);
   // close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
@@ -110,19 +106,21 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
     fontSize: lockedFontSize || undefined
   };
 
+  const handleLinkClick = (e) => {
+    // if click originates from an interactive child (menu/buttons/etc.) do not open dialog
+    if (e.target && (e.target.closest("button, a, input, textarea, select") || e.target.closest("[data-no-play]"))) {
+      return;
+    }
+    setDetailOpen(true);
+  };
+
   return (
     <div
       ref={setNodeRef}
-      data-lesson-id={lesson.id}
+      data-link-id={link.id}
       style={style}
       className={`relative w-full max-w-full p-2 xs:p-2.5 sm:p-2.5 md:p-3 rounded-lg border-2 bg-card shadow-sm sm:shadow-md border-input transition-colors duration-150 hover:shadow-lg hover:border-primary/30 ${menuOpen ? "overflow-visible" : "overflow-hidden"} box-border`}
-      onClick={(e) => {
-        // if click originates from an interactive child (menu/buttons/etc.) do not play
-        if (e.target && (e.target.closest("button, a, input, textarea, select") || e.target.closest("[data-no-play]"))) {
-          return;
-        }
-        onPlayLesson?.(index);
-      }}
+      onClick={handleLinkClick}
     >
       <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2 md:gap-3 w-full max-w-full overflow-hidden">
         {/* Drag handle and actions grouped together */}
@@ -161,10 +159,10 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
                   // toggle locally; when opening, broadcast so others close
                   setMenuOpen((prev) => {
                     const next = !prev;
-                    console.log("lesson-menu-open", lesson.id);
-                    
+                    console.log("link-menu-open", link.id);
+
                     if (next) {
-                      document.dispatchEvent(new CustomEvent("lesson-menu-open", { detail: lesson.id }));
+                      document.dispatchEvent(new CustomEvent("link-menu-open", { detail: link.id }));
                     }
                     return next;
                   });
@@ -178,7 +176,7 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
                 <div
                   ref={menuDivRef}
                   role="menu"
-                  aria-label="Lesson actions"
+                  aria-label="Link actions"
                   className="absolute w-40 bg-slate-100 dark:bg-slate-800 text-foreground rounded-md shadow-lg ring-1 ring-black/10 overflow-hidden z-[9999]"
                   style={{ top: menuPosition.top, left: menuPosition.left }}
                   onPointerDown={(e) => e.stopPropagation()} /* keep pointer events inside the dropdown from bubbling */
@@ -209,7 +207,7 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
             <div className="flex items-center gap-0.5">
               <button
                 type="button"
-                aria-label="edit-lesson"
+                aria-label="edit-link"
                 className="h-8 w-8 p-1 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors touch-manipulation"
                 onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
               >
@@ -218,7 +216,7 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
 
               <button
                 type="button"
-                aria-label="delete-lesson"
+                aria-label="delete-link"
                 className="h-8 w-8 p-1 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors touch-manipulation"
                 onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
               >
@@ -228,38 +226,11 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
           </div>
         </div>
 
-        {/* thumbnail / icon - hidden on very small screens, visible from sm+ */}
-        <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 rounded-md overflow-hidden bg-muted items-center justify-center group">
-          {lesson.type && String(lesson.type).toLowerCase() === "pdf" ? (
-            <img src="/pdf.png" alt="PDF" className="w-full h-full object-contain" />
-          ) : lesson.type && String(lesson.type).toLowerCase() === "link" ? (
-            <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-600">
-              <LinkIcon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-            </div>
-          ) : lesson.thumbnail && !thumbnailError ? (
-            <>
-              <img 
-                src={lesson.thumbnail} 
-                alt={lesson.title} 
-                className="w-full h-full object-cover" 
-                onError={() => setThumbnailError(true)}
-              />
-              {/* Play icon overlay */}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <Play className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white drop-shadow-lg" />
-              </div>
-              {/* Duration overlay */}
-              {lesson.duration && lesson.duration > 0 && (
-                <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded font-medium">
-                  {formatDuration(lesson.duration)}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
-              <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-            </div>
-          )}
+        {/* icon - hidden on very small screens, visible from sm+ */}
+        <div className="hidden sm:flex relative flex-shrink-0 w-10 h-8 sm:w-14 sm:h-10 md:w-20 md:h-14 rounded-md overflow-hidden bg-blue-100 items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-600">
+            <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+          </div>
         </div>
 
         {/* title / meta */}
@@ -273,31 +244,42 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
                 ref={titleRef}
                 className="line-clamp-1 text-xs xs:text-sm sm:text-sm font-semibold leading-tight text-foreground break-words overflow-hidden text-ellipsis"
               >
-                {lesson.title}
+                {link.title}
               </h6>
+              {link.description && (
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 w-48 sm:w-64 md:w-80">
+                  {link.description}
+                </p>
+              )}
+              <div className="flex items-center gap-1 mt-1">
+                <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground truncate">
+                  {link.url}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Confirmation dialog */}
-      <DeleteLessonDialog
+      <DeleteLinkDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        onConfirm={onDeleteLesson}
-        lesson={lesson}
+        onConfirm={onDeleteLink}
+        link={link}
         isLoading={false} // pass mutation.isLoading if needed
       />
 
       {/* Edit dialog (opens locally, onSave calls parent handler) */}
-      <EditLessonDialog
+      <EditLinkDialog
         open={editOpen}
         onOpenChange={setEditOpen}
-        lesson={lesson}
+        link={link}
         isLoading={editPending}
-        onConfirm={async (l, newTitle) => {
+        onConfirm={async (l, newTitle, newUrl, newDescription) => {
           // call the passed handler and if it returns a promise, await it
-          const p = onEditLesson?.(l, null, newTitle);
+          const p = onEditLink?.(l, null, newTitle, newDescription, newUrl);
           if (p && typeof p.then === "function") {
             // keep dialog open while pending; close on success
             try {
@@ -311,10 +293,17 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
             // synchronous or no-return path — close immediately
             setEditOpen(false);
           }
-         }}
+        }}
+      />
+
+      {/* Detail dialog */}
+      <LinkDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        link={link}
       />
     </div>
   );
 };
 
-export default SortableLesson;
+export default SortableLink;

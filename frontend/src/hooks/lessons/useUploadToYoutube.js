@@ -65,7 +65,7 @@ export const useUploadToYoutube = (options = {}) => {
     onSuccess: (result, variables) => {
       try {
         const modId = variables?.moduleId ?? options?.moduleId;
-        const uploaded = result?.data?.uploadedVideos ?? result?.data?.uploaded ?? [];
+        const uploaded = result?.data?.uploadedVideos ?? result?.data?.uploaded ?? result?.data?.uploadResults ?? [];
 
         if (!modId) {
           // no module context — nothing to merge; still trigger global invalidation to ensure fresh data

@@ -315,14 +315,8 @@ export async function uploadToYouTube(req, res) {
         const meta = {
           title: videoMeta?.snippet?.title,
           description: videoMeta?.snippet?.description,
-          // pick first available thumbnail size to avoid 404 for mqdefault
-          thumbnail:
-            videoMeta?.snippet?.thumbnails?.maxres?.url ||
-            videoMeta?.snippet?.thumbnails?.standard?.url ||
-            videoMeta?.snippet?.thumbnails?.high?.url ||
-            videoMeta?.snippet?.thumbnails?.medium?.url ||
-            videoMeta?.snippet?.thumbnails?.default?.url ||
-            null,
+          // Don't save thumbnail initially - will be updated asynchronously
+          thumbnail: null,
           duration: parseDuration(videoMeta?.contentDetails?.duration || 'PT0S')
         };
 
@@ -345,6 +339,33 @@ export async function uploadToYouTube(req, res) {
         })
 
         console.log(`Video ${i + 1}/${files.length} uploaded successfully: ${createdLesson.id}`);
+
+        // Schedule thumbnail update in the background
+        setTimeout(async () => {
+          try {
+            console.log(`Updating thumbnail for lesson ${createdLesson.id}...`);
+            const updatedMeta = await getVideoDetailsWithRetry(yt, videoId);
+            const thumbnailUrl = 
+              updatedMeta?.snippet?.thumbnails?.maxres?.url ||
+              updatedMeta?.snippet?.thumbnails?.standard?.url ||
+              updatedMeta?.snippet?.thumbnails?.high?.url ||
+              updatedMeta?.snippet?.thumbnails?.medium?.url ||
+              updatedMeta?.snippet?.thumbnails?.default?.url ||
+              null;
+
+            if (thumbnailUrl) {
+              await prisma.lesson.update({
+                where: { id: createdLesson.id },
+                data: { thumbnail: thumbnailUrl }
+              });
+              console.log(`✅ Thumbnail updated for lesson ${createdLesson.id}`);
+            } else {
+              console.log(`⚠️ No thumbnail available yet for lesson ${createdLesson.id}`);
+            }
+          } catch (error) {
+            console.error(`❌ Failed to update thumbnail for lesson ${createdLesson.id}:`, error);
+          }
+        }, 5000); // Wait 5 seconds for YouTube to process
 
       } catch (error) {
         console.error(`Failed to upload video ${i + 1}:`, error);

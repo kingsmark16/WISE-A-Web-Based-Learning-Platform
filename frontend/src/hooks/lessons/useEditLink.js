@@ -2,25 +2,26 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
 import { toast } from 'react-toastify';
 
-export const useEditFromDropbox = (moduleId = null) => {
+export const useEditLink = (moduleId = null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ lessonId, title, type }) => {
-      if (!lessonId) throw new Error("lessonId is required");
+    mutationFn: async ({ linkId, title, description, url, position }) => {
+      if (!linkId) throw new Error("linkId is required");
       if (!title || String(title).trim() === "") throw new Error("title is required");
 
-      if (String(type || "").toUpperCase() !== "DROPBOX") {
-        return { ok: false, skipped: true, message: "Not a DROPBOX lesson" };
-      }
-
-      const response = await axiosInstance.put(`/upload-dropbox/${lessonId}`, { title });
+      const response = await axiosInstance.put(`/link/${linkId}`, {
+        title: String(title).trim(),
+        description: description || '',
+        url: url ? String(url).trim() : undefined,
+        position
+      });
       return response.data;
     },
 
     // OPTIMISTIC UPDATE: apply immediately before network
     onMutate: async (variables) => {
-      const { lessonId, title } = variables;
+      const { linkId, title, description, url, position } = variables;
       if (!moduleId) return { snapshot: null };
 
       await queryClient.cancelQueries(["module", moduleId]);
@@ -29,10 +30,16 @@ export const useEditFromDropbox = (moduleId = null) => {
       // apply immediate patch
       queryClient.setQueryData(["module", moduleId], (old) => {
         if (!old || !old.module) return old;
-        const updatedLessons = (old.module.lessons || []).map((l) =>
-          l.id === lessonId ? { ...l, title } : l
+        const updatedLinks = (old.module.links || []).map((l) =>
+          l.id === linkId ? {
+            ...l,
+            title,
+            description: description || l.description,
+            url: url || l.url,
+            position: position !== undefined ? position : l.position
+          } : l
         );
-        return { ...old, module: { ...old.module, lessons: updatedLessons } };
+        return { ...old, module: { ...old.module, links: updatedLinks } };
       });
 
       return { snapshot };
@@ -40,16 +47,15 @@ export const useEditFromDropbox = (moduleId = null) => {
 
     // rollback on error
     onError: (error, variables, context) => {
-      console.error("Failed to edit Dropbox lesson:", error);
+      console.error("Failed to edit link:", error);
       if (moduleId && context?.snapshot) {
         queryClient.setQueryData(["module", moduleId], context.snapshot);
       }
-      toast.error('Failed to update Dropbox lesson. Please try again.');
+      toast.error('Failed to update link. Please try again.');
     },
 
-    // still keep onSuccess logic for safety (e.g. server canonical data)
     onSuccess: () => {
-      toast.success('Dropbox lesson updated successfully!');
+      toast.success('Link updated successfully!');
     },
 
     // ensure a fresh server fetch afterwards
@@ -63,4 +69,4 @@ export const useEditFromDropbox = (moduleId = null) => {
   });
 };
 
-export default useEditFromDropbox;
+export default useEditLink;
