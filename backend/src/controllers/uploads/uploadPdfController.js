@@ -17,14 +17,24 @@ function isPdfMagicBuffer(buffer) {
 // POST /upload-pdf
 export const uploadPdf = async (req, res) => {
   try {
+    console.log('[uploadPdf] Request received:', {
+      hasFiles: !!req.files,
+      filesCount: req.files?.length || 0,
+      body: req.body
+    });
+
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ message: "No PDF uploaded" });
 
     // Get moduleId, title, description from body (for all files)
     const { moduleId, title, description } = req.body;
 
-    if(!moduleId) return res.status(400).json({message: 'moduleId is undefined'})
+    if(!moduleId) {
+      console.error('[uploadPdf] moduleId is undefined');
+      return res.status(400).json({message: 'moduleId is undefined'});
+    }
 
+    console.log('[uploadPdf] Looking up module:', moduleId);
     const module = await prisma.module.findUnique({
       where: { id: moduleId },
       include: {
@@ -36,7 +46,10 @@ export const uploadPdf = async (req, res) => {
         }
       }
     });
-    if (!module) return res.status(400).json({ message: "moduleId is required" });
+    if (!module) {
+      console.error('[uploadPdf] Module not found:', moduleId);
+      return res.status(400).json({ message: "Module not found" });
+    }
 
     // Find next position in module
     const last = await prisma.lesson.findFirst({
@@ -48,26 +61,43 @@ export const uploadPdf = async (req, res) => {
     const results = [];
 
     for (const file of req.files) {
+      console.log('[uploadPdf] Processing file:', file.originalname);
+      
       // Check PDF magic number in buffer
       if (!isPdfMagicBuffer(file.buffer)) {
+        console.warn('[uploadPdf] Invalid PDF file:', file.originalname);
         results.push({ error: "Invalid PDF file.", originalname: file.originalname });
         continue;
       }
 
       const base = safeBase(file.originalname);
-      // make filename unique using timestamp only (no uuid)
-      const unique = `${base}-${Date.now()}`;
+      // make filename unique using timestamp + random component
+      const unique = `${base}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const filename = `${unique}.pdf`;
       const key = `pdfs/${filename}`;
 
-      // upload with explicit upsert:false (unique key means no conflict)
-      await storage.uploadPdf({ key, buffer: file.buffer, upsert: false });
+      console.log('[uploadPdf] Uploading to storage with key:', key);
+      
+      try {
+        // upload with explicit upsert:false (unique key means no conflict)
+        await storage.uploadPdf({ key, buffer: file.buffer, upsert: false });
+        console.log('[uploadPdf] Upload successful:', key);
+      } catch (uploadErr) {
+        console.error('[uploadPdf] Storage upload failed:', uploadErr);
+        results.push({ 
+          error: `Storage upload failed: ${uploadErr.message}`, 
+          originalname: file.originalname 
+        });
+        continue;
+      }
 
       // Short-lived direct links
       const { url: view_url } = await storage.getViewUrl({ key, seconds: EXPIRES_SEC });
       const { url: direct_download_url } = await storage.getDownloadUrl({
         key, filename, seconds: EXPIRES_SEC
       });
+
+      console.log('[uploadPdf] Generated URLs for:', filename);
 
       // Stable API endpoints
       const preview_api_url  = `${API_BASE}/api/upload-pdf/preview?id=${encodeURIComponent(key)}`;
@@ -87,6 +117,8 @@ export const uploadPdf = async (req, res) => {
           });
           const currentPosition = lastLocal ? lastLocal.position + 1 : 1; 
 
+          console.log('[uploadPdf] Creating lesson at position:', currentPosition);
+
           lesson = await prisma.lesson.create({
             data: {
               moduleId,
@@ -99,11 +131,13 @@ export const uploadPdf = async (req, res) => {
             }
           });
 
+          console.log('[uploadPdf] Lesson created:', lesson.id);
           break; // success
         } catch (err) {
           // If unique constraint on (moduleId, position) happened, retry a few times
           const isUniqueConstraint = err?.code === "P2002" && err?.meta?.target && String(err.meta.target).includes("moduleId") && String(err.meta.target).includes("position");
           attempt++;
+          console.warn(`[uploadPdf] Lesson create attempt ${attempt} failed:`, err.message);
           if (!isUniqueConstraint || attempt >= maxRetries) {
             // bubble up if not recoverable
             throw err;
@@ -129,8 +163,10 @@ export const uploadPdf = async (req, res) => {
       position++;
     }
 
+    console.log('[uploadPdf] Upload complete. Results:', results.length);
     return res.json({ results });
   } catch (e) {
+    console.error('[uploadPdf] Error:', e);
     return res.status(500).json({ error: e.message || String(e) });
   }
 };

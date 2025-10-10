@@ -8,10 +8,10 @@ const supabase = createClient(
 
 const BUCKET = process.env.SUPABASE_BUCKET || "pdfs";
 
-export async function uploadBuffer({ key, buffer, contentType }) {
+export async function uploadBuffer({ key, buffer, contentType, upsert = false }) {
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(key, buffer, { contentType, upsert: false });
+    .upload(key, buffer, { contentType, upsert });
   if (error) throw error;
   return { key };
 }
