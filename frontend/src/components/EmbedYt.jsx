@@ -1,32 +1,30 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { X, SkipForward, SkipBack, Volume2, VolumeX } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-} from '@/components/ui/dialog';
+import { X } from 'lucide-react';
 
 const EmbedYt = ({ 
   open, 
   onOpenChange, 
   lesson, 
   onNext, 
-  onPrevious, 
-  hasNext, 
-  hasPrevious 
+  hasNext 
 }) => {
   const playerRef = useRef(null);
   const playerInstanceRef = useRef(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [isAPIReady, setIsAPIReady] = useState(false);
-  const [error, setError] = useState(null);
-  const [playerState, setPlayerState] = useState({
-    playing: false,
-    muted: false,
-    currentTime: 0,
-    duration: 0,
-  });
+
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [open]);
 
   // Load YouTube IFrame Player API
   useEffect(() => {
@@ -86,10 +84,57 @@ const EmbedYt = ({
       }
       playerInstanceRef.current = null;
       setIsPlayerReady(false);
-      setError(null);
     }
 
     console.log('Initializing YouTube player with video ID:', lesson.youtubeId);
+
+    const onPlayerReady = (event) => {
+      console.log('Player ready, starting playback');
+      setIsPlayerReady(true);
+      
+      // Try to play the video with a small delay
+      setTimeout(() => {
+        try {
+          event.target.playVideo();
+        } catch (error) {
+          console.error('Error starting playback:', error);
+        }
+      }, 100);
+    };
+
+    const onPlayerStateChange = (event) => {
+      const player = event.target;
+      console.log('Player state changed:', event.data);
+      
+      // Update time and duration
+      try {
+        if (player.getCurrentTime && player.getDuration) {
+          // Removed unused state updates
+        }
+      } catch (error) {
+        console.warn('Error getting player time:', error);
+      }
+
+      // Handle video end - auto advance to next lesson
+      if (event.data === window.YT.PlayerState.ENDED && hasNext) {
+        setTimeout(() => {
+          onNext?.();
+        }, 1000);
+      }
+    };
+
+    const onPlayerError = (event) => {
+      console.error('YouTube player error:', event.data);
+      const errorMessages = {
+        2: 'Invalid video ID',
+        5: 'HTML5 player error',
+        100: 'Video not found or private',
+        101: 'Video not allowed in embedded players',
+        150: 'Video not allowed in embedded players',
+      };
+      const errorMessage = errorMessages[event.data] || 'Unknown error';
+      console.error('Error details:', errorMessage);
+    };
 
     try {
       // Clear the container
@@ -125,9 +170,8 @@ const EmbedYt = ({
       });
     } catch (error) {
       console.error('Error initializing YouTube player:', error);
-      setError('Failed to initialize player');
     }
-  }, [lesson?.youtubeId, isAPIReady]);
+  }, [lesson?.youtubeId, isAPIReady, hasNext, onNext]);
 
   // Initialize player when dialog opens and everything is ready
   useEffect(() => {
@@ -153,82 +197,8 @@ const EmbedYt = ({
       }
       playerInstanceRef.current = null;
       setIsPlayerReady(false);
-      setError(null);
     }
   }, [open]);
-
-  const onPlayerReady = (event) => {
-    console.log('Player ready, starting playback');
-    setIsPlayerReady(true);
-    setError(null);
-    
-    // Try to play the video with a small delay
-    setTimeout(() => {
-      try {
-        event.target.playVideo();
-      } catch (error) {
-        console.error('Error starting playback:', error);
-        setError('Failed to start playback');
-      }
-    }, 100);
-  };
-
-  const onPlayerStateChange = (event) => {
-    const player = event.target;
-    console.log('Player state changed:', event.data);
-    
-    setPlayerState(prev => ({
-      ...prev,
-      playing: event.data === window.YT.PlayerState.PLAYING,
-    }));
-
-    // Update time and duration
-    try {
-      if (player.getCurrentTime && player.getDuration) {
-        setPlayerState(prev => ({
-          ...prev,
-          currentTime: player.getCurrentTime() || 0,
-          duration: player.getDuration() || 0,
-        }));
-      }
-    } catch (error) {
-      console.warn('Error getting player time:', error);
-    }
-
-    // Handle video end - auto advance to next lesson
-    if (event.data === window.YT.PlayerState.ENDED && hasNext) {
-      setTimeout(() => {
-        onNext?.();
-      }, 1000);
-    }
-  };
-
-  const onPlayerError = (event) => {
-    console.error('YouTube player error:', event.data);
-    const errorMessages = {
-      2: 'Invalid video ID',
-      5: 'HTML5 player error',
-      100: 'Video not found or private',
-      101: 'Video not allowed in embedded players',
-      150: 'Video not allowed in embedded players',
-    };
-    const errorMessage = errorMessages[event.data] || 'Unknown error';
-    console.error('Error details:', errorMessage);
-    setError(errorMessage);
-  };
-
-  // Handle lesson change
-  const handleNext = () => {
-    if (hasNext) {
-      onNext?.();
-    }
-  };
-
-  const handlePrevious = () => {
-    if (hasPrevious) {
-      onPrevious?.();
-    }
-  };
 
   // Update player when lesson changes
   useEffect(() => {
@@ -241,148 +211,54 @@ const EmbedYt = ({
         });
       } catch (error) {
         console.error('Error loading new video:', error);
-        setError('Failed to load video');
       }
     }
   }, [lesson?.youtubeId, isPlayerReady]);
 
-  const toggleMute = () => {
-    if (!playerInstanceRef.current || !isPlayerReady) return;
-
-    try {
-      if (playerInstanceRef.current.isMuted()) {
-        playerInstanceRef.current.unMute();
-        setPlayerState(prev => ({ ...prev, muted: false }));
-      } else {
-        playerInstanceRef.current.mute();
-        setPlayerState(prev => ({ ...prev, muted: true }));
-      }
-    } catch (error) {
-      console.error('Error toggling mute:', error);
-    }
-  };
-
   if (!lesson) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full h-[80vh] p-0 border-0 shadow-2xl rounded-xl overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <DialogHeader className="px-6 py-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30">
-                <svg 
-                  className="w-5 h-5 text-red-600 dark:text-red-400" 
-                  viewBox="0 0 24 24" 
-                  fill="currentColor"
-                >
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-              </div>
-              <span className="font-semibold text-lg text-slate-800 dark:text-slate-200">Video Player</span>
-            </div>
-          </div>
-        </DialogHeader>
+  if (!open) return null;
 
-        <div className="flex flex-col h-full">
-          {/* Video Player Container */}
-          <div className="flex-1 bg-black relative rounded-lg m-4 overflow-hidden shadow-inner border border-slate-300/20 dark:border-slate-600/20">
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 z-50"
+        onClick={() => onOpenChange(false)}
+      />
+      
+      {/* Modal */}
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[900px] max-w-[1200px]">
+        <div className="bg-white rounded-lg shadow-2xl overflow-hidden">
+          {/* YouTube Header */}
+          <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-white border-b border-gray-200">
+            <div className="flex items-center">
+              <svg className="w-16 h-4 sm:w-20 md:w-24 sm:h-5 md:h-6" viewBox="0 0 90 20" xmlns="http://www.w3.org/2000/svg">
+                <g fill="none" fillRule="evenodd">
+                  <path fill="#FF0000" d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 0 14.285 0 14.285 0C14.285 0 5.35042 0 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C0 5.35042 0 10 0 10C0 10 0 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z"/>
+                  <path fill="#FFFFFF" d="M11.4253 14.2854L18.8477 10.0004L11.4253 5.71533V14.2854Z"/>
+                </g>
+              </svg>
+            </div>
+            <button
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors flex-shrink-0"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          </div>
+
+          {/* Video Player */}
+          <div className="bg-black" style={{ aspectRatio: '16/9' }}>
             <div 
               ref={playerRef}
-              className="w-full h-full rounded-lg overflow-hidden"
-              style={{ minHeight: '400px' }}
+              className="w-full h-full"
               id={`youtube-player-${lesson.youtubeId}`}
             />
-            
-            {/* Loading overlay */}
-            {(!isAPIReady || !isPlayerReady) && !error && lesson.youtubeId && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-lg">
-                <div className="text-white text-center p-6 rounded-xl bg-black/40 border border-white/10">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/30 border-t-white mx-auto mb-3"></div>
-                  <div className="text-sm font-medium">
-                    {!isAPIReady ? 'Loading YouTube API...' : 'Loading player...'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Error overlay */}
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm rounded-lg">
-                <div className="text-white text-center p-6 rounded-xl bg-red-900/40 border border-red-500/20">
-                  <div className="text-red-400 mb-2 font-semibold">Error</div>
-                  <div className="text-sm mb-4">{error}</div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-white/20 text-white hover:bg-white/10 hover:border-white/30"
-                    onClick={() => {
-                      setError(null);
-                      if (isAPIReady) {
-                        initializePlayer();
-                      }
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Controls Bar */}
-          <div className="px-6 py-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-slate-200/60 dark:border-slate-700/60">
-            <div className="flex items-center justify-between gap-4">
-              {/* Lesson Navigation */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrevious}
-                  disabled={!hasPrevious}
-                  className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
-                >
-                  <SkipBack className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNext}
-                  disabled={!hasNext}
-                  className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
-                >
-                  <SkipForward className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Lesson Info */}
-              <div className="flex-1 text-center">
-                <div className="font-medium text-sm text-slate-800 dark:text-slate-200 bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-                  {lesson.title}
-                </div>
-              </div>
-
-              {/* Player Controls */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMute}
-                  disabled={!isPlayerReady}
-                  className="hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm"
-                >
-                  {playerState.muted ? (
-                    <VolumeX className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>
   );
 };
 
