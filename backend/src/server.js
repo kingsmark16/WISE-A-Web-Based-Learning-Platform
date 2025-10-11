@@ -54,7 +54,7 @@ app.use(
 app.use(clerkMiddleware());
 
 // GLOBAL rate limiter (applies to all routes below) can be edited through .env file
-app.use(arcjetRateLimit);
+//app.use(arcjetRateLimit);
 
 // Static files
 app.use("/files", express.static(UPLOADS_DIR));
@@ -64,7 +64,7 @@ app.use('/api/admin',   requireAuth(), updateLastActive, adminRoutes);
 app.use('/api/student', requireAuth(), updateLastActive, studentRoutes);
 app.use('/api/faculty', requireAuth(), updateLastActive, facultyRoutes);
 app.use('/api/course', requireAuth(), updateLastActive, courseRoutes);
-app.use('/api/stats',  requireAuth(),updateLastActive, statsRoutes);
+app.use('/api/stats',  requireAuth(), updateLastActive, statsRoutes);
 app.use('/api/auth', requireAuth(), updateLastActive, authRoutes);
 
 app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
@@ -80,7 +80,7 @@ app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);
 
 // ===== Public APIs =====
-app.use('/api', guestRoutes);
+app.use('/api', strictRateLimit("5m", 10), guestRoutes);
 
 
 // Health / debug
@@ -88,14 +88,12 @@ app.post("/api/_ping", (req, res) => res.json({ ok: true }));
 app.get("/", (req, res) => res.send("Server is running"));
 
 //testing endpoint: 
-app.get("/healthz", strictRateLimit("10s", 3), (req, res) => {
+app.get("/healthz", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
 console.log("ARCJET envs:", {
   MODE: process.env.ARCJET_MODE,
-  WINDOW: process.env.ARCJET_LIMIT_WINDOW,
-  MAX: process.env.ARCJET_LIMIT_MAX,
 });
 
 // Start server

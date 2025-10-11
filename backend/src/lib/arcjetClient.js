@@ -23,8 +23,8 @@ export function getAj() {
       shield({ mode: MODE }),
       slidingWindow({
         mode: MODE,
-        interval: process.env.ARCJET_LIMIT_WINDOW || "1m",
-        max: Number(process.env.ARCJET_LIMIT_MAX || 120),
+        interval: process.env.ARCJET_LIMIT_WINDOW || "30s",
+        max: parseInt(process.env.ARCJET_LIMIT_MAX || 10 ),
       }),
     ],
   });

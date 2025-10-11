@@ -1,5 +1,5 @@
+import arcjet, { slidingWindow, shield } from "@arcjet/node";
 import { getAj } from "../lib/arcjetClient.js";
-import { slidingWindow } from "@arcjet/node"; 
 
 export async function arcjetRateLimit(req, res, next) {
   try {
@@ -7,8 +7,11 @@ export async function arcjetRateLimit(req, res, next) {
     const decision = await aj.protect(req);
     if (decision.isDenied()) {
       if (decision.reason?.isRateLimit?.()) {
-        const ra = decision.reason.retryAfter && Math.ceil(Number(decision.reason.retryAfter) / 1000);
-        if (ra) res.set("Retry-After", String(ra));
+        const retryAfterMs = decision.reason.retryAfter;
+        if (retryAfterMs) {
+          const retryAfterSeconds = Math.ceil(retryAfterMs / 1000);
+          res.set("Retry-After", String(retryAfterSeconds));
+        }
         return res.status(429).json({ error: "Too Many Requests" });
       }
       return res.status(403).json({ error: "Forbidden" });
@@ -20,7 +23,7 @@ export async function arcjetRateLimit(req, res, next) {
   }
 }
 
-export function strictRateLimit(window = "1m", max = 10) {
+export function strictRateLimit(window = "30s", max = 10) {
   const MODE = (process.env.ARCJET_MODE || "LIVE").toUpperCase();
 
   const strictRule = slidingWindow({
@@ -31,13 +34,21 @@ export function strictRateLimit(window = "1m", max = 10) {
 
   return async (req, res, next) => {
     try {
-      const ajStrict = getAj().withRule(strictRule); 
+      // Create a dedicated Arcjet client that only contains the strict rule
+      const ajStrict = arcjet({
+        key: process.env.ARCJET_KEY,
+        rules: [shield({ mode: MODE }), strictRule],
+      });
+
       const decision = await ajStrict.protect(req);
 
       if (decision.isDenied()) {
         if (decision.reason?.isRateLimit?.()) {
-          const ra = decision.reason.retryAfter && Math.ceil(Number(decision.reason.retryAfter) / 1000);
-          if (ra) res.set("Retry-After", String(ra));
+          const retryAfterMs = decision.reason.retryAfter;
+          if (retryAfterMs) {
+            const retryAfterSeconds = Math.ceil(retryAfterMs / 1000);
+            res.set("Retry-After", String(retryAfterSeconds));
+          }
           return res.status(429).json({ error: "Too Many Requests" });
         }
         return res.status(403).json({ error: "Forbidden" });
