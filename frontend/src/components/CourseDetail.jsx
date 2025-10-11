@@ -5,10 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, UploadCloud, CloudOff } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Calendar, User, BookOpen } from "lucide-react";
 import { useState } from "react";
-import { Copy } from "lucide-react";
-import { Users, MessageSquare, BookOpen, ChevronRight } from "lucide-react";
 import CourseContentNav from "./CourseContentNav";
 
 const CourseDetail = () => {
@@ -21,22 +19,113 @@ const CourseDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto mt-10">
-        <Skeleton className="h-56 w-full mb-6" />
-        <Skeleton className="h-8 w-1/2 mb-2" />
-        <Skeleton className="h-6 w-1/3 mb-2" />
-        <Skeleton className="h-6 w-1/4 mb-2" />
+      <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
+        {/* Header with Back Button */}
+        <div className="flex flex-row items-center justify-between gap-4">
+          <Skeleton className="h-10 w-20" />
+        </div>
+
+        {/* Main Course Card */}
+        <Card className="shadow-lg overflow-hidden">
+          <CardContent className="px-3 sm:px-6 w-full overflow-hidden">
+            <div className="flex flex-col gap-6">
+              {/* Thumbnail and Course Info Row */}
+              <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
+                {/* Course Information */}
+                <div className="flex-1 space-y-6">
+                  {/* Title and Badges */}
+                  <div>
+                    <Skeleton className="h-8 w-3/4 mb-4" />
+
+                    {/* Thumbnail below title on small and medium screens */}
+                    <Skeleton className="w-48 sm:w-64 md:w-80 h-48 sm:h-64 md:h-80 block lg:hidden mb-4" />
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 w-24" />
+                    </div>
+                  </div>
+
+                  {/* Course Code */}
+                  <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-8 w-8 rounded" />
+                  </div>
+
+                  {/* Instructor and Last Updated */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-6 w-6 rounded-full" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thumbnail with Interactive Border */}
+                <Skeleton className="w-48 sm:w-64 md:w-80 lg:w-96 h-48 sm:h-64 md:h-80 lg:h-96 flex-shrink-0 hidden lg:block" />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-16" />
+                <Skeleton className="h-10 w-20" />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            </div>
+
+            {/* Course Content Navigation */}
+            <div className="mt-2 border-t w-full overflow-hidden">
+              <CourseContentNav courseId={id} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
-  if (error) return <div className="text-center text-destructive mt-10">{error.message}</div>;
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="text-center">
+          <div className="text-destructive text-lg sm:text-xl font-semibold mb-2">Error loading course</div>
+          <p className="text-muted-foreground text-sm sm:text-base">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   const course = data?.course;
-  console.log(course)
-  if (!course) return <div className="text-center text-muted-foreground mt-10">Course not found</div>;
+  if (!course) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="text-center text-muted-foreground">
+          <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
+          <p className="text-lg font-medium">Course not found</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleBack = () => navigate(-1);
-
   const handleEdit = () => navigate(`/admin/courses/edit/${course.id}`);
 
   const handlePublishToggle = async () => {
@@ -46,7 +135,7 @@ const CourseDetail = () => {
         id: course.id,
         isPublished: !course.isPublished,
       });
-      await refetch(); // Ensure course data is refreshed before updating UI
+      await refetch();
     } finally {
       setPublishing(false);
     }
@@ -54,13 +143,11 @@ const CourseDetail = () => {
 
   const handleCopyCode = () => {
     if (course.code) {
-      // Try modern clipboard API first
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(course.code);
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } else {
-        // Fallback for mobile/older browsers
         const textarea = document.createElement("textarea");
         textarea.value = course.code;
         textarea.style.position = "fixed";
@@ -72,150 +159,204 @@ const CourseDetail = () => {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         } catch (err) {
-          alert(err);
+          console.error("Copy failed:", err);
         }
         document.body.removeChild(textarea);
       }
     }
   };
 
-  
-
   return (
-    <div className="max-w-6xl mx-auto md:mt-5">
-      <div className="mb-6 flex md:flex-row items-start md:items-center justify-between gap-4">
-        <Button variant="outline" onClick={handleBack} className="flex items-center gap-2">
-          <ArrowLeft size={18} />
+    <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
+      {/* Header with Back Button */}
+      <div className="flex flex-row items-center justify-between gap-4">
+        <Button 
+          variant="outline" 
+          onClick={handleBack} 
+          className="items-center gap-2 border-2 hover:bg-primary/5 hidden sm:flex"
+        >
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="secondary" onClick={handleEdit} className="flex items-center gap-2">
-            <Pencil size={18} />
-            Edit
-          </Button>
-          <Button
-            variant={course.isPublished ? "outline" : "default"}
-            onClick={handlePublishToggle}
-            disabled={publishing}
-            className={`flex items-center gap-2 transition-all duration-200 ${
-              publishing
-                ? "opacity-70 cursor-not-allowed"
-                : course.isPublished
-                ? "border border-green-500 text-green-700 hover:bg-green-50"
-                : "bg-primary text-white hover:bg-primary/90"
-            }`}
-          >
-            {publishing ? (
-              <>
-                <UploadCloud size={18} className="animate-spin" />
-              </>
-            ) : course.isPublished ? (
-              <>
-                <CloudOff size={18} />
-                <span>Unpublish</span>
-              </>
-            ) : (
-              <>
-                <UploadCloud size={18} />
-                <span>Publish</span>
-              </>
-            )}
-          </Button>
-        </div>
       </div>
-      <Card className="shadow-lg bg-background border-0 p-0">
-        <CardHeader className="flex flex-col xl:flex-row md:justify-baseline gap-4 md:gap-8 pb-0 px-0">
-          {course.thumbnail && (
-            <img
-              src={course.thumbnail}
-              alt={course.title}
-              className="max-w-xl w-full h-auto object-contain rounded-lg md:mx-0 mb-4 md:mb-0"
-            />
-          )}
-          <div className="flex-1">
-            <CardTitle className="text-xl md:text-2xl font-bold mb-4">{course.title}</CardTitle>
-            <div className="flex flex-wrap gap-3 mb-4">
-              {/* Modern shadcn badge for category */}
-              <Badge
-                variant="secondary"
-                className="rounded-full px-4 py-1 text-sm font-medium bg-primary/10 text-primary border-none shadow-sm"
-              >
-                {course.category}
-              </Badge>
-              {/* Modern shadcn badge for status */}
-              <Badge
-                className={`rounded-full px-4 py-1 text-sm font-medium shadow-sm ${
-                  course.isPublished
-                    ? "bg-green-100 text-green-700 border-none"
-                    : "bg-yellow-100 text-yellow-700 border-none"
-                }`}
-                variant="outline"
-              >
-                {course.isPublished ? "Published" : "Draft"}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-              <div>
-                <h3 className="font-semibold mb-2 text-sm">Instructor</h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={course.managedBy?.imageUrl} alt={course.managedBy?.fullName} />
-                    <AvatarFallback>
-                      {course.managedBy?.fullName?.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium text-muted-foreground">{course.managedBy?.fullName || "Not assigned"}</span>
+
+      {/* Main Course Card */}
+      <Card className="shadow-lg overflow-hidden">
+        <CardContent className="px-3 sm:px-6 w-full overflow-hidden">
+          <div className="flex flex-col gap-6">
+            {/* Thumbnail and Course Info Row */}
+            <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
+              {/* Course Information */}
+              <div className="flex-1 space-y-6">
+                {/* Title and Badges */}
+                <div>
+                  <h1 className="text-xl sm:text-2xl lg:text-2xl xl:text-2xl font-bold tracking-tight mb-3 sm:mb-4">
+                    {course.title}
+                  </h1>
+                  {/* Thumbnail below title on small and medium screens */}
+                  {course.thumbnail && (
+                    <div className="relative group flex-shrink-0 block lg:hidden mb-4">
+                      <div className="relative">
+                        <img
+                          src={course.thumbnail}
+                          alt={course.title}
+                          className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover border-2 border-primary/20 shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium bg-primary/10 text-primary border-none"
+                    >
+                      {course.category}
+                    </Badge>
+                    <Badge
+                      className={`rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium ${
+                        course.isPublished
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-none"
+                      }`}
+                    >
+                      {course.isPublished ? (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Published
+                        </span>
+                      ) : (
+                        "Draft"
+                      )}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Course Code */}
+                {course.code && (
+                  <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm font-medium text-muted-foreground">Course Code:</span>
+                    <Badge 
+                      variant="outline" 
+                      className="rounded-full px-3 py-1 font-mono text-xs bg-background border-2"
+                    >
+                      {course.code}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyCode}
+                      className="h-8 w-8 p-0 hover:bg-primary/10"
+                      title="Copy code"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    {copied && (
+                      <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Copied!
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Instructor and Last Updated */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {/* Instructor */}
+                  <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground font-medium mb-1">Instructor</p>
+                      {course.managedBy ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6 flex-shrink-0">
+                            <AvatarImage src={course.managedBy?.imageUrl} alt={course.managedBy?.fullName} />
+                            <AvatarFallback className="text-xs">
+                              {course.managedBy?.fullName?.split(" ").map(n => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium truncate">{course.managedBy?.fullName}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not assigned</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Last Updated */}
+                  <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground font-medium mb-1">Last Updated</p>
+                      <p className="text-sm font-medium">
+                        {course.updatedAt
+                          ? new Date(course.updatedAt).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div>
-              {course.code && (
-                <div className="flex items-center">
-                  <span className="pr-2">Code:</span>
-                  <Badge variant="outline" className="rounded-full px-3 py-1 text-muted-foreground font-mono text-xs bg-muted/60">
-                    {course.code}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCopyCode}
-                    title="Copy code"
-                  >
-                    <Copy size={16} />
-                  </Button>
-                  {copied && (
-                    <span className="text-xs text-muted-foreground ml-2">Copied!</span>
-                  )}
+
+              {/* Thumbnail with Interactive Border */}
+              {course.thumbnail && (
+                <div className="relative group flex-shrink-0 hidden lg:block">
+                  <div className="relative">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover border-2 border-primary/20 shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                    />
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button 
+                variant="secondary" 
+                onClick={handleEdit}
+              >
+                Edit
+              </Button>
+              <Button
+                variant={course.isPublished ? "outline" : "default"}
+                onClick={handlePublishToggle}
+                disabled={publishing}
+                className={`transition-all duration-200 ${
+                  publishing
+                    ? "opacity-70 cursor-not-allowed"
+                    : course.isPublished
+                    ? "border-2 border-green-500 text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+              >
+                {publishing ? "Processing..." : course.isPublished ? "Unpublish" : "Publish"}
+              </Button>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground tracking-wide">
+                Description
+              </h3>
+              <p className="text-sm sm:text-base leading-relaxed">
+                {course.description || "No description available"}
+              </p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0 px-0">
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-3 text-sm">Description</h3>
-              <div className="mb-6 text-muted-foreground">{course.description}</div>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-3 text-sm">Last Updated</h3>
-              <div className="mb-8 text-sm text-muted-foreground">
-                {course.updatedAt
-                  ? new Date(course.updatedAt).toLocaleString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "N/A"}
-              </div>
-            </div>
 
-            {/* Navigation Section */}
-              <CourseContentNav/>
-
+          {/* Course Content Navigation */}
+          <div className="mt-2 border-t w-full overflow-hidden">
+            <CourseContentNav courseId={id} />
           </div>
         </CardContent>
       </Card>

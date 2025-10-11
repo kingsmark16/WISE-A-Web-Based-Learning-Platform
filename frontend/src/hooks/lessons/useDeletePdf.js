@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
+import { toast } from 'react-toastify';
 
 export const useDeletePdf = (moduleId) => {
   const queryClient = useQueryClient();
@@ -31,6 +32,10 @@ export const useDeletePdf = (moduleId) => {
       if (context?.previous && moduleId) {
         queryClient.setQueryData(["module", moduleId], context.previous);
       }
+      toast.error('Failed to delete PDF lesson. Please try again.');
+    },
+    onSuccess: () => {
+      toast.success('PDF lesson deleted successfully!');
     },
     onSettled: () => {
       if (moduleId) queryClient.invalidateQueries(["module", moduleId]);

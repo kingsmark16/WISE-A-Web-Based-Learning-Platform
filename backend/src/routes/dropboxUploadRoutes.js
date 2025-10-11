@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import uploadVideo from '../middlewares/uploadVideoMiddleware.js';
-import { uploadDropboxVideo, editDropboxLesson, deleteDropboxLesson } from '../controllers/dropboxUploadController.js';
+import { uploadDropboxVideo, editDropboxLesson, deleteDropboxLesson } from '../controllers/uploads/dropboxUploadController.js';
 
 const router = Router();
 

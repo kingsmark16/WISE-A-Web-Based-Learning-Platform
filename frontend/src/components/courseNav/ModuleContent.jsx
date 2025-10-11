@@ -1,17 +1,17 @@
 import React, { useState } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, GripVertical, Edit3, Trash2 } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 // Components
-import SortableModule from "./modules/SortableModule";
-import { AddModuleDialog, EditModuleDialog, DeleteModuleDialog } from "./modules/ModuleDialogs";
-import ModuleStats from "./modules/ModuleStats";
+import SortableModule from "../modules/SortableModule";
+import { AddModuleDialog, EditModuleDialog, DeleteModuleDialog } from "../modules/ModuleDialogs";
+import ModuleStats from "../modules/ModuleStats";
 
 // Hooks
-import { useModuleManagement } from "../hooks/useModuleManagement";
-import { useDragAndDrop } from "../hooks/useDragAndDrop";
+import { useModuleManagement } from "../../hooks/useModuleManagement";
+import { useDragAndDrop } from "../../hooks/useDragAndDrop";
 
 const ModuleContent = () => {
   // keep Accordion controlled for its whole lifetime by initializing to empty string
@@ -52,7 +52,7 @@ const ModuleContent = () => {
   } = useDragAndDrop(modules, reorderModules);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <BookOpen className="h-5 w-5 text-primary" />
@@ -91,7 +91,7 @@ const ModuleContent = () => {
         module={moduleToDelete}
       />
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 w-full overflow-hidden">
         {isLoading ? (
           <div className="text-sm text-muted-foreground">Loading modules...</div>
         ) : fetchError ? (
@@ -109,7 +109,7 @@ const ModuleContent = () => {
               <Accordion
                 type="single"
                 collapsible
-                className="space-y-3"
+                className="space-y-3 w-full overflow-hidden"
                 value={openId}
                 onValueChange={(val) => setOpenId(val || "")}
               >
@@ -127,13 +127,34 @@ const ModuleContent = () => {
             </SortableContext>
 
             <DragOverlay>
-              {activeId ? (
-                <div className="rounded-md shadow-lg border border-input bg-card px-6 py-4">
-                  <div className="text-base font-semibold">
-                    {localModules.find(m => m.id === activeId)?.title}
+              {activeId ? (() => {
+                const activeModule = localModules.find(m => m.id === activeId);
+                return activeModule ? (
+                  <div className="relative rounded-lg border-2 bg-card shadow-lg border-input w-full overflow-hidden">
+                    <div className="py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 w-full overflow-hidden">
+                      <div className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded">
+                        <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                      </div>
+
+                      <div className="flex flex-col gap-1 min-w-0 flex-1 pr-2 sm:pr-3 md:pr-40 overflow-hidden">
+                        <div className="text-xs sm:text-sm md:text-base font-semibold leading-tight text-left overflow-hidden">
+                          <span className="text-xs sm:text-xs md:text-sm flex-shrink-0 mr-1">Module {activeModule.position}:</span>
+                          <span className="block overflow-hidden text-ellipsis" title={activeModule.title}>{activeModule.title}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-shrink-0 opacity-50">
+                        <div className="h-8 w-8 p-0 flex items-center justify-center rounded-md">
+                          <Edit3 className="h-4 w-4" />
+                        </div>
+                        <div className="h-8 w-8 p-0 flex items-center justify-center rounded-md">
+                          <Trash2 className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null;
+              })() : null}
             </DragOverlay>
           </DndContext>
         )}

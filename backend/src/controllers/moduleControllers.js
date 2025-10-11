@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient();
+import prisma from "../lib/prisma.js";
 
 export const createModule = async (req, res) => {
     try {
@@ -147,6 +145,18 @@ export const getModule = async (req, res) => {
                         duration: true,
                         thumbnail: true,
                         url: true,
+                    },
+                    orderBy: { position: 'asc' }
+                },
+                links: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        url: true,
+                        position: true,
+                        createdAt: true,
+                        updatedAt: true,
                     },
                     orderBy: { position: 'asc' }
                 },

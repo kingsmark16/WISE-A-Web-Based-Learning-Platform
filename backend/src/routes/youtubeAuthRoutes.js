@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { start, callback } from '../controllers/youtubeAuthController.js';
+import { start, callback } from '../controllers/upload-auth/youtubeAuthController.js';
 import { requireRole } from '../middlewares/authMiddleware.js';
 
 const router = Router();

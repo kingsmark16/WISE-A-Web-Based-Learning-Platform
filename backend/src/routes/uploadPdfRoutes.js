@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { uploadPdf, previewPdf, editPdf, deletePdf } from "../controllers/uploadPdfController.js";
+import { uploadPdf, previewPdf, editPdf, deletePdf } from "../controllers/uploads/uploadPdfController.js";
 
 const router = express.Router();
 

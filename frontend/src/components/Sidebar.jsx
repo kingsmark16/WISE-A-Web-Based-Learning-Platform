@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, BookOpen, Users, GraduationCap, ChevronDown, ChevronRight } from 'lucide-react';
+import { BarChart3, BookOpen, Users, GraduationCap, ChevronDown, ChevronRight, UserCog, FolderOpen } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -11,38 +11,49 @@ const menuConfig = {
     { name: 'Analytics Dashboard', path: '/admin/analytics', icon: BarChart3 },
     { 
       name: 'Course Management', 
+      path: '/admin/courses',
       icon: BookOpen,
-      submenu: [
-        { name: 'Manage Courses', path: '/admin/courses' },
-        { name: 'My Courses', path: '/admin/my-courses' }
-      ]
+     
     },
     { 
       name: 'User Management', 
       icon: Users,
       submenu: [
         { name: 'Faculty', path: '/admin/faculty-management' },
-        { name: 'Students', path: '/admin/students' }
+        { name: 'Students', path: '/admin/student-management' }
       ]
     },
+    { name: 'My Courses', path: '/faculty/courses', icon: FolderOpen },
   ],
   STUDENT: [
-    { name: 'Home', path: '/student/homepage' },
+    { name: 'Home', path: '/student/student-homepage' },
     { name: 'My Courses', path: '/student/my-courses' },
     { name: 'Certification', path: '/student/certification' },
     { name: 'Analytics', path: '/student/analytics' },
   ],
   FACULTY: [
-    { name: 'Courses', path: '/faculty/courses' },
+    { name: 'Courses', path: '/faculty/faculty-homepage' },
     { name: 'Analytics', path: '/faculty/analytics' },
   ],
 };
 
 const Sidebar = ({ isOpen, onClose}) => {
   const [expandedItems, setExpandedItems] = useState({});
-  const {user} = useUser();
-  const role = user.publicMetadata?.role;
+  const { user, isLoaded } = useUser();
+  
+  // Get role from Clerk metadata first, fallback to localStorage
+  const clerkRole = user?.publicMetadata?.role;
+  const localRole = localStorage.getItem('userRole');
+  const role = clerkRole || localRole;
+  
   const menuItems = menuConfig[role] || [];
+
+  // Log for debugging
+  console.log('Sidebar - User loaded:', isLoaded);
+  console.log('Sidebar - Clerk role:', clerkRole);
+  console.log('Sidebar - Local role:', localRole);
+  console.log('Sidebar - Final role:', role);
+  console.log('Sidebar - Menu items:', menuItems);
 
   const toggleSubmenu = (itemName) => {
     setExpandedItems(prev => ({
@@ -164,9 +175,23 @@ const Sidebar = ({ isOpen, onClose}) => {
 
           {/* Navigation */}
           <ScrollArea className="flex-1 p-4">
-            <nav className="space-y-2">
-              {menuItems.map(renderMenuItem)}
-            </nav>
+            {!isLoaded ? (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-muted-foreground">Loading menu...</p>
+              </div>
+            ) : !role ? (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-muted-foreground">No role assigned</p>
+              </div>
+            ) : menuItems.length === 0 ? (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-muted-foreground">No menu items available</p>
+              </div>
+            ) : (
+              <nav className="space-y-2">
+                {menuItems.map(renderMenuItem)}
+              </nav>
+            )}
           </ScrollArea>
         </div>
       </aside>

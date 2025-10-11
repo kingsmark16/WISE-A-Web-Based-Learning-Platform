@@ -56,10 +56,10 @@ model Course {
   updatedAt   DateTime  @updatedAt
 
   createdById String
-  createdBy   User      @relation("CourseCreator", fields: [createdById], references: [id])
+  createdBy   User      @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   facultyId   String?
-  managedBy   User?     @relation("CourseFaculty", fields: [facultyId], references: [id])
+  managedBy   User?     @relation("CourseFaculty", fields: [facultyId], references: [id], onDelete: SetNull)
 
   
   enrollments        Enrollment[]
@@ -92,11 +92,13 @@ model Module {
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   lessons Lesson[]
+  links   Link[]
   quiz         Quiz?
 
   @@unique([courseId, position])
   @@index([courseId])
 }
+
 model Lesson {
   id          String   @id @default(ulid())
   title       String
@@ -109,8 +111,25 @@ model Lesson {
   url         String
   position    Int
   duration    Int?     // in seconds
-  uploadedBy User? @relation("UserUploadedVideos", fields: [uploadedById], references: [id])
+  uploadedBy User? @relation("UserUploadedVideos", fields: [uploadedById], references: [id], onDelete: SetNull)
   uploadedById String?
+
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, position])
+  @@index([moduleId])
+}
+
+
+model Link {
+  id          String   @id @default(ulid())
+  title       String
+  description String?
+  url         String
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   moduleId    String
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -204,7 +223,7 @@ model ForumPost {
   course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
   
   authorId    String
-  author      User        @relation(fields: [authorId], references: [id])
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
   replies     ForumReply[]
 
@@ -224,7 +243,7 @@ model ForumReply {
   post        ForumPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
   
   authorId    String
-  author      User        @relation(fields: [authorId], references: [id])
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([authorId])
@@ -276,8 +295,8 @@ model Enrollment {
   courseId String
   enrolledAt DateTime @default(now())
 
-  student User @relation(fields: [studentId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, courseId])
   @@index([studentId])
@@ -308,5 +327,4 @@ enum LessonType {
   PDF
   YOUTUBE
   DROPBOX
-  LINK
 }

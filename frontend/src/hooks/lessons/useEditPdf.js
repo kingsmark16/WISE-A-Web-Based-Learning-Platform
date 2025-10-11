@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../lib/axios";
+import { toast } from 'react-toastify';
 
 export const useEditPdf = (moduleId = null) => {
   const queryClient = useQueryClient();
@@ -43,10 +44,13 @@ export const useEditPdf = (moduleId = null) => {
       if (moduleId && context?.snapshot) {
         queryClient.setQueryData(["module", moduleId], context.snapshot);
       }
+      toast.error('Failed to update PDF lesson. Please try again.');
     },
 
     // keep onSuccess no-op (optimistic applied)
-    onSuccess: () => {},
+    onSuccess: () => {
+      toast.success('PDF lesson updated successfully!');
+    },
 
     // ensure a fresh server fetch afterwards
     onSettled: () => {

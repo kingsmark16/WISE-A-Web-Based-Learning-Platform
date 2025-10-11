@@ -19,7 +19,7 @@ export const useReorderLessons = (moduleId) => {
     return useMutation({
         mutationFn: async ({ orderedLessons }) => {
             // orderedLessons: [{ id: string, position: number }, ...]
-            const response = await axiosInstance.post('lessons/reorder', { orderedLessons });
+            const response = await axiosInstance.post(`course/modules/${moduleId}/lessons/reorder`, { orderedLessons });
             return response.data;
         },
         onMutate: async ({ orderedLessons }) => {
@@ -35,6 +35,51 @@ export const useReorderLessons = (moduleId) => {
                     module: {
                         ...previous.module,
                         lessons: [...previous.module.lessons]
+                            .map(l => ({ ...l, position: idToPos.has(l.id) ? idToPos.get(l.id) : l.position }))
+                            .sort((a, b) => a.position - b.position)
+                    }
+                };
+                queryClient.setQueryData(queryKey, optimistic);
+            }
+
+            return { previous };
+        },
+        onError: (err, variables, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(queryKey, context.previous);
+            }
+        },
+        onSettled: () => {
+            if (!moduleId) return;
+            queryClient.invalidateQueries(queryKey);
+        }
+    })
+}
+
+// Optimized reorder hook for links with optimistic UI
+export const useReorderLinks = (moduleId) => {
+    const queryClient = useQueryClient();
+    const queryKey = ['module', moduleId];
+
+    return useMutation({
+        mutationFn: async ({ orderedLinks }) => {
+            // orderedLinks: [{ id: string, position: number }, ...]
+            const response = await axiosInstance.post(`link/module/${moduleId}/reorder`, { orderedLinks });
+            return response.data;
+        },
+        onMutate: async ({ orderedLinks }) => {
+            if (!moduleId) return;
+            await queryClient.cancelQueries(queryKey);
+            const previous = queryClient.getQueryData(queryKey);
+
+            // optimistic update: if we have module data with links array, reorder them locally
+            if (previous?.module?.links) {
+                const idToPos = new Map(orderedLinks.map(l => [l.id, l.position]));
+                const optimistic = {
+                    ...previous,
+                    module: {
+                        ...previous.module,
+                        links: [...previous.module.links]
                             .map(l => ({ ...l, position: idToPos.has(l.id) ? idToPos.get(l.id) : l.position }))
                             .sort((a, b) => a.position - b.position)
                     }

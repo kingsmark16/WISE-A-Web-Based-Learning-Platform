@@ -1,7 +1,6 @@
 // src/controllers/forumController.js
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { addPhTimes, addPhTimesArray } from '../utils/withPhTime.js';
-const prisma = new PrismaClient();
 
 // ---------- helpers ----------
 const clamp = (n, min = 1, max = 100) => Math.max(min, Math.min(+n || min, max));
@@ -17,10 +16,10 @@ const ensureAuthorOrStaff = (dbUser, authorId) => isStaff(dbUser.role) || dbUser
 // ---------- THREADS (ForumPost) ----------
 
 /**
- * GET /courses/:courseId/forum/threads?cursor=<id>&limit=20&q=search
+ * GET /courses/:courseId/forum/threads?cursor=<id>&limit=10&q=search
  * Sorted by isPinned desc, updatedAt desc.
  */
-export const listThreads = async (req, res) => {
+export const listOfPost = async (req, res) => {
   try {
     const { courseId } = req.params;
     const { cursor, limit, q } = req.query;
@@ -41,7 +40,7 @@ export const listThreads = async (req, res) => {
     const threads = await prisma.forumPost.findMany({
       where,
       orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
-      take,
+      take: take + 1, // Fetch one extra to determine if there's a next page
       ...(cursor ? { skip: 1, cursor: { id: String(cursor) } } : {}),
       select: {
         id: true,
@@ -56,8 +55,15 @@ export const listThreads = async (req, res) => {
       }
     });
 
-    const nextCursor = threads.length === take ? threads[threads.length - 1].id : null;
-    return res.json({ items: addPhTimesArray(threads), nextCursor });
+    const hasNextPage = threads.length > take;
+    const items = hasNextPage ? threads.slice(0, -1) : threads;
+    const nextCursor = hasNextPage ? items[items.length - 1].id : null;
+
+    return res.json({ 
+      items: addPhTimesArray(items), 
+      nextCursor,
+      hasNextPage 
+    });
   } catch (err) {
     console.error('listThreads error', err);
     return res.status(500).json({ message: 'Failed to list threads' });
@@ -68,24 +74,58 @@ export const listThreads = async (req, res) => {
  * POST /courses/:courseId/forum/threads
  * body: { title, content }
  */
-export const createThread = async (req, res) => {
+export const createPost = async (req, res) => {
   try {
     const { courseId } = req.params;
     const { title, content } = req.body;
-    if (!title || !content) return res.status(400).json({ message: 'title and content are required' });
+    
+    console.log('Creating post:', { courseId, title, content, userId: req.auth?.userId });
 
-    const auth = req.auth?.();
-    const dbUser = await getDbUser(auth?.userId);
-    if (!dbUser) return res.status(401).json({ message: 'User not found' });
+    if (!title || !content) {
+      return res.status(400).json({ message: 'title and content are required' });
+    }
+
+    // Get clerk user ID from req.auth (set by Clerk middleware)
+    const clerkUserId = req.auth().userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized - No clerk user ID' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
+    if (!dbUser) {
+      return res.status(401).json({ message: 'User not found in database' });
+    }
 
     const post = await prisma.forumPost.create({
-      data: { title, content, courseId, authorId: dbUser.id }
+      data: { 
+        title, 
+        content, 
+        courseId, 
+        authorId: dbUser.id 
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            imageUrl: true
+          }
+        },
+        _count: {
+          select: {
+            replies: true
+          }
+        }
+      }
     });
 
     return res.status(201).json(addPhTimes(post));
   } catch (err) {
-    console.error('createThread error', err);
-    return res.status(500).json({ message: 'Failed to create thread' });
+    console.error('createThread error:', err);
+    return res.status(500).json({ 
+      message: 'Failed to create thread',
+      error: err.message 
+    });
   }
 };
 
@@ -94,7 +134,7 @@ export const createThread = async (req, res) => {
  * returns post + first page of replies
  * query: ?cursor=<replyId>&limit=50
  */
-export const getThread = async (req, res) => {
+export const getPost = async (req, res) => {
   try {
     const { postId } = req.params;
     const { cursor, limit } = req.query;
@@ -144,7 +184,7 @@ export const getThread = async (req, res) => {
  * body: { title?, content? }
  * Author OR staff (faculty/admin)
  */
-export const updateThread = async (req, res) => {
+export const updatePost = async (req, res) => {
   try {
     const { postId } = req.params;
     const { title, content } = req.body;
@@ -155,8 +195,12 @@ export const updateThread = async (req, res) => {
     });
     if (!existing) return res.status(404).json({ message: 'Thread not found' });
 
-    const auth = req.auth?.();
-    const dbUser = await getDbUser(auth?.userId);
+    const clerkUserId = req.auth?.userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
     if (!ensureAuthorOrStaff(dbUser, existing.authorId))
       return res.status(403).json({ message: 'Not allowed to edit this thread' });
@@ -176,7 +220,7 @@ export const updateThread = async (req, res) => {
  * DELETE /forum/posts/:postId
  * Staff only (faculty/admin)
  */
-export const deleteThread = async (req, res) => {
+export const deletePost = async (req, res) => {
   try {
     const { postId } = req.params;
 
@@ -195,7 +239,7 @@ export const deleteThread = async (req, res) => {
  * POST /forum/posts/:postId/pin|unpin|lock|unlock
  * Staff only (faculty/admin)
  */
-export const setThreadFlag = (flag, value) => {
+export const setPostFlag = (flag, value) => {
   return async (req, res) => {
     try {
       const { postId } = req.params;
@@ -237,12 +281,25 @@ export const createReply = async (req, res) => {
     if (!post) return res.status(404).json({ message: 'Thread not found' });
     if (post.isLocked) return res.status(403).json({ message: 'Thread is locked' });
 
-    const auth = req.auth?.();
-    const dbUser = await getDbUser(auth?.userId);
+    const clerkUserId = req.auth?.userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
 
     const reply = await prisma.forumReply.create({
-      data: { postId: post.id, content, authorId: dbUser.id }
+      data: { postId: post.id, content, authorId: dbUser.id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            imageUrl: true
+          }
+        }
+      }
     });
 
     // bump thread updatedAt for sorting
@@ -271,8 +328,12 @@ export const updateReply = async (req, res) => {
     });
     if (!existing) return res.status(404).json({ message: 'Reply not found' });
 
-    const auth = req.auth?.();
-    const dbUser = await getDbUser(auth?.userId);
+    const clerkUserId = req.auth?.userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
     if (!ensureAuthorOrStaff(dbUser, existing.authorId))
       return res.status(403).json({ message: 'Not allowed to edit this reply' });
@@ -309,8 +370,12 @@ export const deleteReply = async (req, res) => {
     });
     if (!existing) return res.status(404).json({ message: 'Reply not found' });
 
-    const auth = req.auth?.();
-    const dbUser = await getDbUser(auth?.userId);
+    const clerkUserId = req.auth?.userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
     if (!ensureAuthorOrStaff(dbUser, existing.authorId))
       return res.status(403).json({ message: 'Not allowed to delete this reply' });

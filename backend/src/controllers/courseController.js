@@ -1,16 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from '../lib/prisma.js';
 import { generateCourseCode } from "../utils/generateCourseCode.js";
 import cloudinary from "../lib/cloudinary.js";
 
-
-
-const prisma = new PrismaClient();
-
-
 export const createCourse = async (req, res) => {
-   
    try {
-      const {title, description, category, facultyId, thumbnail} = req.body; // Add thumbnail from request
+      const {title, description, category, facultyId, thumbnail, assignSelfAsInstructor} = req.body;
       const code = generateCourseCode();
 
       if(!title || !category){
@@ -20,14 +14,23 @@ export const createCourse = async (req, res) => {
       const auth = req.auth();
       const userId = auth.userId;
 
-      const {id: createdById} = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
          where: {
             clerkId: userId
          },
          select: {
             id: true,
+            role: true
          }
       })
+
+      const createdById = user.id;
+      
+      // Determine facultyId: if assignSelfAsInstructor is true and user is ADMIN, use their ID
+      let assignedFacultyId = facultyId;
+      if (assignSelfAsInstructor && user.role === 'ADMIN') {
+         assignedFacultyId = user.id;
+      }
 
       const newCourse = await prisma.course.create({
          data: {
@@ -37,7 +40,7 @@ export const createCourse = async (req, res) => {
             category,
             code,
             createdById,
-            facultyId
+            facultyId: assignedFacultyId
          }
       })
 
@@ -50,16 +53,44 @@ export const createCourse = async (req, res) => {
 }
 
 export const getCourses = async (req, res) => {
-
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        const skip = (page - 1) * limit;
+        const search = req.query.search || '';
+        const status = req.query.status || 'all';
+        const category = req.query.category || 'all';
 
-        // const page = parseInt(req.query.page) || 1;
-        // const limit = parseInt(req.query.limit) || 10;
-        // const skip = (page - 1) * limit;
+        // Build where clause for filtering
+        const whereClause = {};
+
+        // Search filter
+        if (search) {
+            whereClause.title = {
+                contains: search,
+                mode: 'insensitive'
+            };
+        }
+
+        // Status filter
+        if (status !== 'all') {
+            whereClause.isPublished = status === 'published';
+        }
+
+        // Category filter
+        if (category !== 'all') {
+            whereClause.category = category;
+        }
+
+        // Get total count for pagination
+        const totalCourses = await prisma.course.count({
+            where: whereClause
+        });
 
         const courses = await prisma.course.findMany({
-            // skip,
-            // take: limit,
+            where: whereClause,
+            skip,
+            take: limit,
             select: {
                 id: true,
                 title: true,
@@ -72,11 +103,13 @@ export const getCourses = async (req, res) => {
                     select: {
                         fullName: true,
                         clerkId: true,
+                        imageUrl: true, // Added imageUrl
                     }
                 },
                 managedBy: {
                     select: {
-                        fullName: true
+                        fullName: true,
+                        imageUrl: true, // Added imageUrl
                     }
                 }
             },
@@ -85,7 +118,19 @@ export const getCourses = async (req, res) => {
             }
         });
 
-        res.status(200).json({ courses});
+        const totalPages = Math.ceil(totalCourses / limit);
+
+        res.status(200).json({ 
+            courses,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalCourses,
+                limit,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
+        });
 
     } catch (error) {
         console.log("Error in getCourses controller", error);
@@ -217,48 +262,71 @@ export const deleteCourse = async (req, res) => {
 
 export const updateCourse = async (req, res) => {
     try {
-        const {id} = req.params;
-        const updateData = req.body;
+        const { id } = req.params;
+        const { title, description, category, thumbnail, facultyId, assignSelfAsInstructor } = req.body;
 
-        if(!id) return res.status(404).json({message: "Invalid courseId"});
+        const auth = req.auth();
+        const userId = auth.userId;
 
-        const filteredData = Object.fromEntries(
-            Object.entries(updateData).filter(([_, value]) => value !== undefined && value !== null && value !== "")
-        );
+        const user = await prisma.user.findUnique({
+            where: {
+                clerkId: userId
+            },
+            select: {
+                id: true,
+                role: true
+            }
+        });
 
-        const course = await prisma.course.update({
-            where: {id},
-            data: filteredData,
+        // Prepare update data
+        const updateData = {
+            title,
+            description,
+            category,
+            thumbnail
+        };
+
+        // Only update facultyId if it's explicitly provided or assignSelfAsInstructor is true
+        if (assignSelfAsInstructor && user.role === 'ADMIN') {
+            updateData.facultyId = user.id;
+        } else if (facultyId !== undefined) {
+            // If facultyId is explicitly provided (even if empty string to remove instructor)
+            if (facultyId && facultyId.trim() !== "") {
+                // Validate that the facultyId exists
+                const facultyExists = await prisma.user.findUnique({
+                    where: { id: facultyId },
+                    select: { id: true }
+                });
+                if (facultyExists) {
+                    updateData.facultyId = facultyId;
+                }
+            } else if (facultyId === "") {
+                // Explicitly set to null to remove instructor
+                updateData.facultyId = null;
+            }
+            // If facultyId is undefined, don't update it (keep existing value)
+        }
+
+        const updatedCourse = await prisma.course.update({
+            where: { id },
+            data: updateData,
             select: {
                 id: true,
                 title: true,
                 description: true,
-                thumbnail: true,
                 category: true,
-                isPublished: true,
-                code: true,
-                updatedAt: true,
-                createdBy: {
-                    select: {
-                        fullName: true,
-                        clerkId: true,
-                    }
-                },
-                managedBy: {
-                    select: {
-                        fullName: true
-                    }
-                }
+                thumbnail: true,
+                facultyId: true,
+                updatedAt: true
             }
         });
 
-        res.status(200).json({message: "Course updated successfully", course});
-
+        res.status(200).json({ message: 'Course updated successfully', updatedCourse });
     } catch (error) {
         console.log("Error in updateCourse controller", error);
-        res.status(500).json({message: "Internal Server Error"});
+        res.status(500).json({ message: "Internal server error" });
     }
-}
+};
 
 
 export const publishCourse = async (req, res) => {

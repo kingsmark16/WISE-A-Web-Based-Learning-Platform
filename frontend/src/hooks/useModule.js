@@ -6,7 +6,7 @@ export const useCreateMdodule = () => {
 
     return useMutation({
         mutationFn: async ({ title, description, courseId }) => {
-            const response = await axiosInstance.post('/module', { title, description, courseId }, {
+            const response = await axiosInstance.post('/course/modules', { title, description, courseId }, {
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -23,7 +23,7 @@ export const useGetModules = (courseId) => {
     return useQuery({
         queryKey: ['modules', courseId],
         queryFn: async () => {
-            const response = await axiosInstance.get('/module', {
+            const response = await axiosInstance.get('/course/modules', {
                 params: {
                     courseId
                 }
@@ -38,7 +38,7 @@ export const useGetModule = (moduleId, enabled = true) => {
     return useQuery({
         queryKey: ['module', moduleId],
         queryFn: async () => {
-            const response = await axiosInstance.get(`/module/${moduleId}`);
+            const response = await axiosInstance.get(`/course/module/${moduleId}`);
             return response.data;
         },
         enabled: enabled && !!moduleId
@@ -54,7 +54,7 @@ export const useReorderModules = (courseId) => {
     return useMutation({
         mutationFn: async (orderedModules /* [{id, position}] */) => {
             // call bulk reorder endpoint
-            const response = await axiosInstance.patch('/module/reorder', { orderedModules }, {
+            const response = await axiosInstance.patch('/course/modules/reorder', { orderedModules }, {
                 headers: { 'Content-Type': 'application/json' }
             });
             return response.data;
@@ -98,7 +98,7 @@ export const useUpdateModule = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, title, description }) => {
-            const response = await axiosInstance.patch(`/module/${id}`, { title, description }, {
+            const response = await axiosInstance.patch(`/course/modules/${id}`, { title, description }, {
                 headers: { 'Content-Type': 'application/json' }
             });
             return response.data;
@@ -141,7 +141,7 @@ export const useDeleteModule = (courseId) => {
 
     return useMutation({
         mutationFn: async (id) => {
-            const response = await axiosInstance.delete(`/module/${id}`);
+            const response = await axiosInstance.delete(`/course/modules/${id}`);
             return { deletedId: id, ...response.data };
         },
         onMutate: async (id) => {

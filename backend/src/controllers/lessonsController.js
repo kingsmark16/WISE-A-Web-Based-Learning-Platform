@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 // Reorder lessons within a module (pattern aligned with moduleControllers)
 export const reorderLessons = async (req, res) => {

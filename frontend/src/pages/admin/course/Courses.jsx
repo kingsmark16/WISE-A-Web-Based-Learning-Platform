@@ -1,21 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,7 +18,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { useDeleteCourse, useGetCourses } from "../../../hooks/courses/useCourses";
 import { useUser } from "@clerk/clerk-react";
 import { 
@@ -44,35 +36,85 @@ import {
   Plus, 
   Search, 
   MoreHorizontal,
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Filter,
-  X
+  X,
+  BookOpen,
+  Calendar
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RefreshCcw, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Courses = () => {
   const { user } = useUser();
   const navigate = useNavigate();
   
-  const [sorting, setSorting] = useState([]);
-  const [columnFilters, setColumnFilters] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
-  const { data: courseQuery = [], isLoading: getCoursesLoading, error: getCoursesError } = useGetCourses();
-  const { mutate: deleteCourse } = useDeleteCourse();
+  const searchRef = useRef(null);
 
-  const allCourses = useMemo(() => courseQuery?.courses || [], [courseQuery]);
+  const limit = 12;
 
+  const { 
+    data: courseData, 
+    isLoading: getCoursesLoading, 
+    error: getCoursesError 
+  } = useGetCourses({
+    page: currentPage,
+    limit,
+    search: "",
+    status: statusFilter,
+    category: categoryFilter
+  });
+
+  const { mutate: deleteCourse, isPending: isDeleting } = useDeleteCourse();
+
+  // Get all unique categories for filter dropdown
+  const { data: allCoursesData } = useGetCourses({ limit: 1000 });
   const categories = useMemo(() => {
+    const allCourses = allCoursesData?.courses || [];
     const cats = allCourses.map(c => c.category).filter(Boolean);
     return [...Array.from(new Set(cats))];
-  }, [allCourses]);
+  }, [allCoursesData]);
+
+  // Filter suggestions based on search input
+  const suggestions = useMemo(() => {
+    if (!searchInput.trim()) return [];
+    
+    const allCourses = allCoursesData?.courses || [];
+    return allCourses.filter(course => 
+      course.title.toLowerCase().includes(searchInput.toLowerCase())
+    ).slice(0, 5); // Limit to 5 suggestions
+  }, [searchInput, allCoursesData]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const getCreatorDisplayName = (course) => {
     if (user && course.createdBy?.clerkId === user.id) return "You";
@@ -87,284 +129,106 @@ const Courses = () => {
     navigate(`/admin/courses/edit/${courseId}`);
   };
 
-  const handleDelete = (courseId) => {
-    if (window.confirm("Are you sure you want to delete this course?")) {
-      deleteCourse(courseId);
+  const handleDelete = (course) => {
+    setCourseToDelete(course);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (courseToDelete) {
+      deleteCourse(courseToDelete.id, {
+        onSuccess: () => {
+          setShowDeleteDialog(false);
+          setCourseToDelete(null);
+        },
+        onError: () => {
+          setShowDeleteDialog(false);
+          setCourseToDelete(null);
+        }
+      });
     }
   };
 
-  const columns = [
-    {
-      accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-semibold hover:bg-transparent"
-          >
-            Course Title
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("title")}</div>
-      ),
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => {
-        const category = row.getValue("category");
-        return category ? (
-          <Badge variant="secondary" className="text-xs">
-            {category}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">No category</span>
-        );
-      },
-    },
-    {
-      accessorKey: "isPublished",
-      header: "Status",
-      cell: ({ row }) => {
-        const isPublished = row.getValue("isPublished");
-        return (
-          <Badge
-            variant={isPublished ? "default" : "secondary"}
-            className={isPublished ? "bg-green-500 hover:bg-green-600" : "bg-yellow-500 hover:bg-yellow-600"}
-          >
-            {isPublished ? "Published" : "Draft"}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "createdBy",
-      header: "Created By",
-      cell: ({ row }) => {
-        const course = row.original;
-        return <div>{getCreatorDisplayName(course)}</div>;
-      },
-    },
-    {
-      accessorKey: "managedBy",
-      header: "Instructor",
-      cell: ({ row }) => {
-        const managedBy = row.getValue("managedBy");
-        return (
-          <div>
-            {managedBy?.fullName || (
-              <span className="text-muted-foreground">Not assigned</span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "updatedAt",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-semibold hover:bg-transparent"
-          >
-            Last Updated
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("updatedAt"));
-        return (
-          <div className="text-sm">
-            {date.toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </div>
-        );
-      },
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const course = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleView(course.id)}>
-                <Eye className="mr-2 h-4 w-4" />
-                View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEdit(course.id)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleDelete(course.id)}
-                className="text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
-
-  const filteredData = useMemo(() => {
-    return allCourses.filter((course) => {
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "published" && course.isPublished) ||
-        (statusFilter === "draft" && !course.isPublished);
-      
-      const matchesCategory =
-        categoryFilter === "all" || course.category === categoryFilter;
-
-      return matchesStatus && matchesCategory;
-    });
-  }, [allCourses, statusFilter, categoryFilter]);
-
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: "includesString",
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
-  });
-
-  const clearFilters = () => {
-    setGlobalFilter("");
-    setStatusFilter("all");
-    setCategoryFilter("all");
-    setColumnFilters([]);
+  const handleCreateCourse = () => {
+    navigate('/admin/courses/create');
   };
 
-  const hasActiveFilters = globalFilter || statusFilter !== "all" || categoryFilter !== "all";
+  const handleSuggestionClick = (course) => {
+    setSelectedCourse(course);
+    setSearchInput(course.title);
+    setShowSuggestions(false);
+  };
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setSelectedCourse(null);
+    setStatusFilter("all");
+    setCategoryFilter("all");
+    setCurrentPage(1);
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPreviousPage) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const hasActiveFilters = searchInput || statusFilter !== "all" || categoryFilter !== "all";
+
+  // Display filtered courses
+  const displayedCourses = useMemo(() => {
+    const courses = courseData?.courses || [];
+    if (selectedCourse) {
+      return [selectedCourse];
+    }
+    return courses;
+  }, [selectedCourse, courseData?.courses]);
+
+  const pagination = courseData?.pagination || {};
 
   if (getCoursesLoading) {
     return (
-      <div className="space-y-6 md:p-6">
+      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <Skeleton className="h-8 w-40 mb-2" />
-            <Skeleton className="h-4 w-64" />
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-72" />
           </div>
-        </div>
-
-        {/* Stats Cards Skeleton */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-4 w-24 mb-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))}
+          <Skeleton className="h-10 w-36" />
         </div>
 
         {/* Filters Skeleton */}
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-24" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <Skeleton className="h-10 w-full md:w-1/2" />
-              <Skeleton className="h-10 w-full md:w-[180px]" />
-              <Skeleton className="h-10 w-full md:w-[180px]" />
-              <Skeleton className="h-10 w-24" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <Skeleton className="h-10 w-full md:flex-1" />
+            <Skeleton className="h-10 w-full md:w-[180px]" />
+            <Skeleton className="h-10 w-full md:w-[180px]" />
+          </div>
+        </div>
 
         {/* Table Skeleton */}
-        <Card>
-          <CardContent className="p-0">
-            <div className="rounded-md border px-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {[...Array(7)].map((_, i) => (
-                      <TableHead key={i}>
-                        <Skeleton className="h-4 w-20" />
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...Array(6)].map((_, i) => (
-                    <TableRow key={i}>
-                      {[...Array(7)].map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pagination Skeleton */}
-        <Card>
-          <CardContent className="flex items-center justify-between py-4">
-            <Skeleton className="h-8 w-32" />
-            <div className="flex items-center space-x-6 lg:space-x-8">
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-8 w-24" />
-              <div className="flex items-center space-x-2">
-                <Skeleton className="h-8 w-8" />
-                <Skeleton className="h-8 w-8" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          {[...Array(12)].map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (getCoursesError) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60vh] p-4 sm:p-6">
         <Alert
           variant="destructive"
-          className="max-w-md w-full mx-auto flex flex-col items-center gap-3 shadow-lg"
+          className="max-w-md w-full mx-auto flex flex-col items-center gap-3"
         >
           <div className="flex items-center justify-center gap-2 mb-1">
             <AlertTriangle className="h-8 w-8 text-destructive animate-bounce" />
@@ -382,200 +246,343 @@ const Courses = () => {
   }
 
   return (
-    <div className="space-y-6 md:p-6">
+    <div className="space-y-4 sm:space-y-6 px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Course Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Course Management
+          </h1>
           <p className="text-muted-foreground">
-            Manage and organize your courses
+            Manage and organize your courses efficiently
           </p>
         </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{allCourses.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Published</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {allCourses.filter(c => c.isPublished).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Draft</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {allCourses.filter(c => !c.isPublished).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{categories.length}</div>
-          </CardContent>
-        </Card>
+        <Button 
+          onClick={handleCreateCourse} 
+          className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Create Course
+        </Button>
       </div>
 
       {/* Filters */}
-      <Card className="bg-background border-background">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search courses..."
-                value={globalFilter ?? ""}
-                onChange={(event) => setGlobalFilter(String(event.target.value))}
-                className="pl-10"
-              />
-            </div>
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="relative w-full min-w-3xs flex-1" ref={searchRef}>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+            <Input
+              placeholder="Search courses by title..."
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                setSelectedCourse(null);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              className="pl-10 border-2 focus:border-primary transition-colors"
+            />
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters}>
-                <X className="mr-2 h-4 w-4" />
-                Clear
-              </Button>
+            {/* Search Suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <Card className="absolute top-full left-0 right-0 z-50 max-h-60 sm:max-h-80 overflow-y-auto shadow-lg">
+                <CardContent className="p-2">
+                  {suggestions.map((course) => (
+                    <div
+                      key={course.id}
+                      onClick={() => handleSuggestionClick(course)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                    >
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs truncate">{course.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {course.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {course.category}
+                            </Badge>
+                          )}
+                          <Badge
+                            className={`text-xs ${
+                              course.isPublished 
+                                ? "bg-green-500 text-white" 
+                                : "bg-yellow-500 text-white"
+                            }`}
+                          >
+                            {course.isPublished ? "Published" : "Draft"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             )}
           </div>
-        </CardContent>
-      </Card>
+          
+          <Select value={statusFilter} onValueChange={(value) => {
+            setStatusFilter(value);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-full md:w-[180px] border-2">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Status</SelectItem>
+              <SelectItem value="published">✓ Published</SelectItem>
+              <SelectItem value="draft">✎ Draft</SelectItem>
+            </SelectContent>
+          </Select>
 
-      {/* Data Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="rounded-md border px-2">
-            <Table>
-              <TableHeader className="bg-primary/30">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
+          <Select value={categoryFilter} onValueChange={(value) => {
+            setCategoryFilter(value);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-full md:w-[180px] border-2">
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+              className="border-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors w-full sm:w-auto"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Courses Table */}
+      <div className="rounded-lg overflow-hidden overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-primary/5 hover:bg-primary/10">
+              <TableHead className="font-semibold min-w-[200px]">Course Title</TableHead>
+              <TableHead className="font-semibold min-w-[120px]">Category</TableHead>
+              <TableHead className="font-semibold min-w-[100px]">Status</TableHead>
+              <TableHead className="font-semibold min-w-[150px]">Created By</TableHead>
+              <TableHead className="font-semibold min-w-[150px]">Instructor</TableHead>
+              <TableHead className="font-semibold min-w-[120px]">Last Updated</TableHead>
+              <TableHead className="font-semibold text-right min-w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayedCourses.length > 0 ? (
+              displayedCourses.map((course) => (
+                <TableRow key={course.id} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="min-w-[200px]">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-medium">{course.title}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
+                    {course.category ? (
+                      <Badge variant="secondary" className="text-xs font-medium">
+                        {course.category}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">No category</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="min-w-[100px]">
+                    <Badge
+                      className={`text-xs font-medium ${
+                        course.isPublished 
+                          ? "bg-green-500 hover:bg-green-600 text-white" 
+                          : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                      }`}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                      {course.isPublished ? "Published" : "Draft"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="min-w-[150px]">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {course.createdBy.imageUrl ? (
+                        <img
+                          src={course.createdBy.imageUrl}
+                          alt={getCreatorDisplayName(course)}
+                          className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                          {getCreatorDisplayName(course).charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-sm font-medium truncate">{getCreatorDisplayName(course)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[120px] sm:min-w-[150px]">
+                    {course.managedBy ? (
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        {course.managedBy.imageUrl ? (
+                          <img
+                            src={course.managedBy.imageUrl}
+                            alt={course.managedBy.fullName}
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                            {course.managedBy.fullName?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-sm font-medium truncate">{course.managedBy.fullName}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Not assigned</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {new Date(course.updatedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric"
+                        })}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right min-w-[100px]">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 w-8 p-0 hover:bg-primary/10"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
+                          Actions
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem 
+                          onClick={() => handleView(course.id)}
+                          className="cursor-pointer"
+                        >
+                          <Eye className="mr-2 h-4 w-4 text-blue-500" />
+                          <span className="font-medium">View</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleEdit(course.id)}
+                          className="cursor-pointer"
+                        >
+                          <Edit className="mr-2 h-4 w-4 text-orange-500" />
+                          <span className="font-medium">Edit</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(course)}
+                          className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span className="font-medium">Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="h-32 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <BookOpen className="h-12 w-12 opacity-50 mb-2" />
+                    <p className="font-medium">No courses found</p>
+                    <p className="text-sm">Try adjusting your filters</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Pagination */}
-      <Card className="bg-background p-0 border-background">
-        <CardContent className="flex items-center justify-between py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
+      {!selectedCourse && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+          <div className="flex-1 text-sm text-muted-foreground text-center sm:text-left">
+            Showing {displayedCourses.length} of {pagination.totalCourses || 0} courses
           </div>
-          <div className="flex items-center space-x-6 lg:space-x-8">
-            
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+          <div className="flex items-center space-x-2 sm:space-x-6 lg:space-x-8">
+            <div className="flex items-center justify-center text-sm font-medium px-4 py-2 bg-primary/10 rounded-lg">
+              Page {pagination.currentPage || 1} of {pagination.totalPages || 1}
             </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={!pagination.hasPreviousPage}
+                className="h-9 w-9 p-0 border-2"
               >
                 <span className="sr-only">Go to previous page</span>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!pagination.hasNextPage}
+                className="h-9 w-9 p-0 border-2"
               >
                 <span className="sr-only">Go to next page</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Course
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the course "{courseToDelete?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };

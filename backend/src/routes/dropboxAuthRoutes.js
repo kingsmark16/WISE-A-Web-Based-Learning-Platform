@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 const router = Router();
-const prisma = new PrismaClient();
 
 // NOTE: set DROPBOX_CLIENT_ID, DROPBOX_CLIENT_SECRET and DROPBOX_REDIRECT_URI in your .env
 // Add the DROPBOX_REDIRECT_URI to your Dropbox app settings (Exact match)

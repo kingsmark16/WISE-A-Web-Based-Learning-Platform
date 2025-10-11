@@ -1,18 +1,25 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { axiosInstance } from "../../lib/axios";
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
 
-export const useGetCourses = () => {
-
+export const useGetCourses = ({ page = 1, limit = 12, search = '', status = 'all', category = 'all' } = {}) => {
     return useQuery({
-       
-        queryKey: ['courses'],
+        queryKey: ['courses', page, limit, search, status, category],
         queryFn: async () => {
-            const response = await axiosInstance.get('/course');
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: limit.toString(),
+                search,
+                status,
+                category
+            });
+            
+            const response = await axiosInstance.get(`/course?${params.toString()}`);
             return response.data;
         },
-        staleTime: 1000 * 60 * 60,
+        keepPreviousData: true, // Keep previous data while fetching new page
+        staleTime: 1000 * 60 * 5,
     })
 }
 
@@ -33,7 +40,12 @@ export const useCreateCourse = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['courses']);
+            toast.success('Course created successfully!');
             navigate('/admin/courses');
+        },
+        onError: (error) => {
+            const errorMessage = error?.response?.data?.message || 'Failed to create course';
+            toast.error(errorMessage);
         }
     })
 }
@@ -41,7 +53,6 @@ export const useCreateCourse = () => {
 
 export const useDeleteCourse = () => {
     const queryClient = useQueryClient();
-    const navigate = useNavigate();
 
     return useMutation({
         mutationFn: async (id) => {
@@ -50,7 +61,11 @@ export const useDeleteCourse = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['courses']);
-            navigate('/admin/courses');
+            toast.success('Course deleted successfully!');
+        },
+        onError: (error) => {
+            const errorMessage = error?.response?.data?.message || 'Failed to delete course';
+            toast.error(errorMessage);
         }
     })
 }
@@ -88,7 +103,12 @@ export const useUpdateCourse = () => {
         onSuccess: () => {
             queryClient.invalidateQueries(['courses']);
             queryClient.invalidateQueries(['course']);
+            toast.success('Course updated successfully!');
             navigate('/admin/courses');
+        },
+        onError: (error) => {
+            const errorMessage = error?.response?.data?.message || 'Failed to update course';
+            toast.error(errorMessage);
         }
     })
 }
@@ -104,9 +124,17 @@ export const usePublishCourse = () => {
 
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries(['courses']);
             queryClient.invalidateQueries(['course']);
+            const message = data.course.isPublished 
+                ? 'Course published successfully!' 
+                : 'Course unpublished successfully!';
+            toast.success(message);
+        },
+        onError: (error) => {
+            const errorMessage = error?.response?.data?.message || 'Failed to update course status';
+            toast.error(errorMessage);
         }
     })
 }
@@ -149,10 +177,11 @@ export const useEnrollInCourse = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries();
-            toast.success('Successfully enrolled in course');
+            toast.success('Successfully enrolled in course!');
         },
         onError: (error) => {
-            toast.error(error.message);
+            const errorMessage = error?.response?.data?.message || 'Failed to enroll in course';
+            toast.error(errorMessage);
         }
 
     })
