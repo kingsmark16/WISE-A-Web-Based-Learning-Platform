@@ -1,7 +1,7 @@
 import { getYouTubeClient } from '../../services/googleAuth.js';
 
 import { toPhDateString } from '../../utils/time.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma.js';
 import { Readable } from 'stream';
 import multer from 'multer';
 import fs from 'fs';
@@ -10,7 +10,6 @@ import path from 'path';
 import https from 'https';
 
 
-const prisma = new PrismaClient();
 const upload = multer(); // Initialize multer for file uploads
 
 // enable keep-alive for long uploads
@@ -906,10 +905,22 @@ export async function remove(req, res) {
 
     await prisma.$transaction(async (tx) => {
       await tx.lesson.delete({ where: { id } });
-      await tx.lesson.updateMany({
-        where: { moduleId: ex.moduleId, position: { gt: ex.position } },
-        data: { position: { decrement: 1 } }
+      
+      // Update positions one-by-one (ascending) to avoid transient unique constraint collisions
+      const siblings = await tx.lesson.findMany({
+        where: {
+          moduleId: ex.moduleId,
+          position: { gt: ex.position }
+        },
+        orderBy: { position: 'asc' }
       });
+
+      for (const s of siblings) {
+        await tx.lesson.update({
+          where: { id: s.id },
+          data: { position: s.position - 1 }
+        });
+      }
     });
 
     res.json({ message: `Deleted${deleteFromYouTube ? ' (YouTube + DB)' : ' (DB only)'}` });

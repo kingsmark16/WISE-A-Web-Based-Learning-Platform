@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma.js';
 import { toPhDateString } from '../../utils/time.js';
-
-const prisma = new PrismaClient();
 
 // Helper function to add Philippine time fields
 function withPhTime(obj) {

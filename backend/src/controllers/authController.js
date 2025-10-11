@@ -1,7 +1,5 @@
 import { clerkClient } from '@clerk/express';
-import {PrismaClient} from '@prisma/client'
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 export const authCallback = async (req, res) => {
     try {

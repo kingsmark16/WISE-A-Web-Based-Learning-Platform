@@ -1,7 +1,6 @@
 import path from "path";
 import { storage } from "../../storage/index.js";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import prisma from "../../lib/prisma.js";
 
 const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 const EXPIRES_SEC = 60 * 60 * 4; // 4 hours
@@ -330,13 +329,21 @@ export const deletePdf = async (req, res) => {
     const deleted = await prisma.lesson.delete({ where });
 
     // Reorder remaining lessons within the module
-    await prisma.lesson.updateMany({
+    // Update positions one-by-one (ascending) to avoid transient unique constraint collisions
+    const siblings = await prisma.lesson.findMany({
       where: {
         moduleId: deleted.moduleId,
         position: { gt: deleted.position }
       },
-      data: { position: { decrement: 1 } }
+      orderBy: { position: 'asc' }
     });
+
+    for (const s of siblings) {
+      await prisma.lesson.update({
+        where: { id: s.id },
+        data: { position: s.position - 1 }
+      });
+    }
 
     return res.json({
       ok: true,

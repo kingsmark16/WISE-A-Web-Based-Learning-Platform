@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 const isoOrEpoch = (s) => (s ? new Date(s) : new Date(0));
 const clampLimit = (n, d = 20, max = 100) => Math.max(1, Math.min(+n || d, max));

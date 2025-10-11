@@ -1,7 +1,6 @@
 // src/controllers/forumController.js
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { addPhTimes, addPhTimesArray } from '../utils/withPhTime.js';
-const prisma = new PrismaClient();
 
 // ---------- helpers ----------
 const clamp = (n, min = 1, max = 100) => Math.max(min, Math.min(+n || min, max));

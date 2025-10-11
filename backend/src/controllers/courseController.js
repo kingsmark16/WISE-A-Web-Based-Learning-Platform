@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from '../lib/prisma.js';
 import { generateCourseCode } from "../utils/generateCourseCode.js";
 import cloudinary from "../lib/cloudinary.js";
-
-const prisma = new PrismaClient();
 
 export const createCourse = async (req, res) => {
    try {
