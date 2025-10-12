@@ -328,3 +328,173 @@ export const getSingleStudent = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const adminSearch = async (req, res) => {
+    try {
+        const query = req.query.q || "";
+        const limit = parseInt(req.query.limit) || 10;
+
+        if (!query || query.trim() === "") {
+            return res.status(200).json({
+                courses: [],
+                faculty: [],
+                students: [],
+                totalResults: 0
+            });
+        }
+
+        // Search for courses
+        const courses = await prisma.course.findMany({
+            where: {
+                OR: [
+                    {
+                        title: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        description: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        category: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        code: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                title: true,
+                thumbnail: true,
+                category: true,
+                isPublished: true,
+                code: true,
+                createdBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                }
+            },
+            take: limit,
+            orderBy: {
+                updatedAt: 'desc'
+            }
+        });
+
+        // Search for faculty
+        const faculty = await prisma.user.findMany({
+            where: {
+                role: 'FACULTY',
+                OR: [
+                    {
+                        fullName: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        emailAddress: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                fullName: true,
+                emailAddress: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        managedCourses: true,
+                        createdCourses: true
+                    }
+                }
+            },
+            take: limit,
+            orderBy: {
+                fullName: 'asc'
+            }
+        });
+
+        // Search for students
+        const students = await prisma.user.findMany({
+            where: {
+                role: 'STUDENT',
+                OR: [
+                    {
+                        fullName: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        emailAddress: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                fullName: true,
+                emailAddress: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        enrollments: true
+                    }
+                }
+            },
+            take: limit,
+            orderBy: {
+                fullName: 'asc'
+            }
+        });
+
+        const totalResults = courses.length + faculty.length + students.length;
+
+        res.status(200).json({
+            courses: courses.map(c => ({
+                ...c,
+                type: 'course'
+            })),
+            faculty: faculty.map(f => ({
+                ...f,
+                type: 'faculty',
+                totalCourses: f._count.managedCourses + f._count.createdCourses
+            })),
+            students: students.map(s => ({
+                ...s,
+                type: 'student',
+                totalEnrollments: s._count.enrollments
+            })),
+            totalResults,
+            query
+        });
+
+    } catch (error) {
+        console.error("Error in adminSearch controller", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
