@@ -834,11 +834,20 @@ const SortableModule = ({
     );
   };
 
+  // Set body cursor during drag
+  useEffect(() => {
+    if (moduleIsDragging) {
+      document.body.style.cursor = 'grabbing';
+      return () => {
+        document.body.style.cursor = '';
+      };
+    }
+  }, [moduleIsDragging]);
+
   // Keep module header non-draggable here (module-level drag handled elsewhere)
   const style = {
     transform: moduleTransform ? CSS.Transform.toString(moduleTransform) : undefined,
     transition: moduleTransition,
-    cursor: "grab",
     opacity: moduleIsDragging ? 0.75 : 1,
   };
 
@@ -856,7 +865,7 @@ const SortableModule = ({
       >
         <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden">
           <div
-            className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-grab active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
+            className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-pointer active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
             {...(listenersDisabled ? {} : { ...moduleAttributes })}
             {...(listenersDisabled ? {} : { ...moduleListeners })}
             style={{ touchAction: "none" }}
