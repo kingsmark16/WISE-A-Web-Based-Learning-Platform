@@ -97,21 +97,21 @@ async function updateExistingYouTubeDurations() {
           data: { duration: durationSeconds }
         });
 
-        console.log(`✅ Updated lesson ${lesson.id}: ${lesson.title} -> ${durationSeconds} seconds`);
+        console.log(`Updated lesson ${lesson.id}: ${lesson.title} -> ${durationSeconds} seconds`);
         updatedCount++;
 
         // Add a small delay to avoid hitting rate limits
         await new Promise(resolve => setTimeout(resolve, 100));
 
       } catch (error) {
-        console.error(`❌ Failed to update lesson ${lesson.id}:`, error.message);
+        console.error(`Failed to update lesson ${lesson.id}:`, error.message);
       }
     }
 
-    console.log(`✅ Successfully updated ${updatedCount} out of ${youtubeLessons.length} lessons`);
+    console.log(`Successfully updated ${updatedCount} out of ${youtubeLessons.length} lessons`);
 
   } catch (error) {
-    console.error('❌ Error updating YouTube durations:', error);
+    console.error('Error updating YouTube durations:', error);
   } finally {
     await prisma.$disconnect();
   }

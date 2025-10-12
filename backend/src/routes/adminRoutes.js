@@ -6,7 +6,8 @@ import {
     getAllFacultyByName, 
     getSingleFaculty,
     getStudents,
-    getSingleStudent
+    getSingleStudent,
+    adminSearch
 } from "../controllers/adminController.js";
 
 const router = Router();
@@ -17,5 +18,6 @@ router.get('/display-faculty', requireRole(['ADMIN']), getAllFaculty);
 router.get('/display-faculty/:id', requireRole(['ADMIN']), getSingleFaculty);
 router.get('/display-students', requireRole(['ADMIN']), getStudents);
 router.get('/display-students/:id', requireRole(['ADMIN']), getSingleStudent);
+router.get('/search', requireRole(['ADMIN']), adminSearch);
 
 export default router;
