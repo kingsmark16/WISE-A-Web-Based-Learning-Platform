@@ -267,21 +267,21 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 flex justify-between items-center py-6 px-5 md:py-6 lg:px-8 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 h-20">
+    <header className={`fixed top-0 right-0 flex items-center justify-between py-4 px-4 md:py-5 md:px-6 lg:py-6 lg:px-8 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[60] h-20 lg:left-64 ${isSidebarOpen ? 'left-64' : 'left-0'}`}>
       
       {/* Left side - Menu button and Logo */}
-      <div className="flex justify-center items-center gap-3">
+      <div className="flex items-center gap-3 flex-shrink-0">
         {/* Sidebar Toggle Button */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggleSidebar}
-          className="lg:hidden"
+          className={`lg:hidden ${isSidebarOpen ? 'hidden' : ''}`}
         >
           {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
         
-        <h2 className="text-lg md:text-2xl font-bold tracking-wide">WISE</h2>
+        <h2 className={`text-lg md:text-2xl font-bold tracking-wide ${isSidebarOpen ? 'hidden lg:block' : 'block'}`}>WISE</h2>
       </div>
       
       {/* Search Bar - Desktop (Only for Admin) */}
@@ -317,7 +317,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
       )}
 
       {/* Right side - Mobile Search Toggle & User Actions */}
-      <div className="flex justify-center items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
         {/* Mobile Search Button (Only for Admin) */}
         {isAdmin && (
           <Button
