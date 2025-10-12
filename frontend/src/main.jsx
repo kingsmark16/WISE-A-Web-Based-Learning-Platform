@@ -9,6 +9,7 @@ import AuthProvider from './provider/AuthProvider.jsx'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ThemeProvider } from './components/ThemeProvider.jsx'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -21,16 +22,18 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <ClerkProvider 
+      <ClerkProvider
         publishableKey={PUBLISHABLE_KEY}
         signInUrl='/sign-in'
         signUpUrl='/sign-in'
       >
         <QueryClientProvider client={queryClient}>
          <ReactQueryDevtools initialIsOpen={false} />
-            <AuthProvider>
-              <App />
-            </AuthProvider>
+            <ThemeProvider defaultTheme="dark" storageKey="wise-theme">
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </ThemeProvider>
           <ToastContainer
             position="top-right"
             autoClose={5000}

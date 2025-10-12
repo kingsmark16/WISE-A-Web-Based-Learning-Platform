@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { useAdminSearch } from "@/hooks/useAdminSearch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { ThemeToggle } from "./ThemeToggle"
 
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const { user } = useUser()
@@ -329,6 +330,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           </Button>
         )}
         
+        <ThemeToggle />
         <UserButton />
       </div>
 
