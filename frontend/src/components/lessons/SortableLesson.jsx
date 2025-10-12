@@ -97,6 +97,16 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
     }
   }, [isDragging]);
 
+  // Set body cursor during drag
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.cursor = 'grabbing';
+      return () => {
+        document.body.style.cursor = '';
+      };
+    }
+  }, [isDragging]);
+
   const style = {
     transform: transform ? CSS.Transform.toString(transform) : undefined,
     transition: transform ? (transition ?? "transform 150ms ease") : undefined,
@@ -107,7 +117,9 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
     zIndex: "auto",
     opacity: 1,
     // lock font-size while dragging (prevents jump)
-    fontSize: lockedFontSize || undefined
+    fontSize: lockedFontSize || undefined,
+    // remove grab cursor from the entire card
+    cursor: isDragging ? "grabbing" : "default"
   };
 
   return (
@@ -132,11 +144,11 @@ const SortableLesson = ({ lesson, index, onPlayLesson, onEditLesson, onDeleteLes
             {...attributes}
             {...listeners}
             style={{ touchAction: "none" }}
-            className="flex-shrink-0 w-8 xs:w-10 sm:w-10 md:w-12 h-8 xs:h-10 sm:h-10 md:h-12 p-1 sm:p-2 rounded-md select-none hover:bg-accent/20 transition-colors flex items-center justify-center touch-manipulation cursor-grab active:cursor-grabbing"
+            className="flex-shrink-0 w-8 xs:w-10 sm:w-10 md:w-12 h-8 xs:h-10 sm:h-10 md:h-12 p-1 sm:p-2 rounded-md select-none hover:bg-accent/20 transition-colors flex items-center justify-center cursor-pointer active:cursor-grabbing"
             title="Drag to reorder"
             aria-label="drag-handle"
           >
-            <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+            <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground hover:text-foreground transition-colors" />
           </div>
 
           {/* actions - mark actions area so card-click ignores clicks that start here
