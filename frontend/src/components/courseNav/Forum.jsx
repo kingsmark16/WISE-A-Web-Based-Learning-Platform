@@ -25,8 +25,8 @@ const Forum = ({ courseId }) => {
   const [viewPostOpen, setViewPostOpen] = useState(false);
   const [editPostOpen, setEditPostOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [deletePostId, setDeletePostId] = useState(null);
-  const [deleteReplyId, setDeleteReplyId] = useState(null);
+  const [deletePostObject, setDeletePostObject] = useState(null);
+  const [deleteReplyObject, setDeleteReplyObject] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
 
   // Intersection observer for infinite scroll
@@ -175,17 +175,17 @@ const Forum = ({ courseId }) => {
     setEditPostOpen(true);
   };
 
-  const handleDeletePost = async (postId) => {
+  const handleDeletePost = async (post) => {
     const toastId = toast.loading('Deleting post...');
     try {
-      await deletePostMutation.mutateAsync(postId);
+      await deletePostMutation.mutateAsync(post.id);
       toast.update(toastId, {
         render: 'Post deleted successfully',
         type: 'success',
         isLoading: false,
         autoClose: 3000,
       });
-      setDeletePostId(null);
+      setDeletePostObject(null);
     } catch (error) {
       console.error('Failed to delete post:', error);
       toast.update(toastId, {
@@ -197,13 +197,13 @@ const Forum = ({ courseId }) => {
     }
   };
 
-  const handleDeleteReply = async (replyId) => {
+  const handleDeleteReply = async (reply) => {
     if (!selectedPost) return;
     const toastId = toast.loading('Deleting reply...');
     try {
       await deleteReplyMutation.mutateAsync({
         postId: selectedPost.id,
-        replyId,
+        replyId: reply.id,
       });
       toast.update(toastId, {
         render: 'Reply deleted successfully',
@@ -211,7 +211,7 @@ const Forum = ({ courseId }) => {
         isLoading: false,
         autoClose: 3000,
       });
-      setDeleteReplyId(null);
+      setDeleteReplyObject(null);
     } catch (error) {
       console.error('Failed to delete reply:', error);
       toast.update(toastId, {
@@ -379,7 +379,7 @@ const Forum = ({ courseId }) => {
                 posts={getFilteredPosts()}
                 categories={categories}
                 onViewPost={handleViewPost}
-                onDeletePost={setDeletePostId}
+                onDeletePost={setDeletePostObject}
               />
               
               {/* Infinite Scroll Trigger */}
@@ -425,7 +425,7 @@ const Forum = ({ courseId }) => {
         onOpenChange={setViewPostOpen}
         post={selectedPost}
         categories={categories}
-        onDeleteReply={setDeleteReplyId}
+        onDeleteReply={setDeleteReplyObject}
         onEditPost={handleEditPost}
       />
 
@@ -436,15 +436,19 @@ const Forum = ({ courseId }) => {
       />
 
       <DeletePostDialog
-        open={!!deletePostId}
-        onOpenChange={() => setDeletePostId(null)}
-        onConfirm={() => handleDeletePost(deletePostId)}
+        open={!!deletePostObject}
+        onOpenChange={() => setDeletePostObject(null)}
+        onConfirm={() => handleDeletePost(deletePostObject)}
+        post={deletePostObject}
+        isLoading={deletePostMutation.isPending}
       />
 
       <DeleteReplyDialog
-        open={!!deleteReplyId}
-        onOpenChange={() => setDeleteReplyId(null)}
-        onConfirm={() => handleDeleteReply(deleteReplyId)}
+        open={!!deleteReplyObject}
+        onOpenChange={() => setDeleteReplyObject(null)}
+        onConfirm={() => handleDeleteReply(deleteReplyObject)}
+        reply={deleteReplyObject}
+        isLoading={deleteReplyMutation.isPending}
       />
     </div>
   );

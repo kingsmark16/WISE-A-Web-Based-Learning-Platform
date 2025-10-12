@@ -207,7 +207,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeleteReply, o
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => onDeleteReply(reply.id)}
+                            onClick={() => onDeleteReply(reply)}
                             className="h-8 w-8 p-0"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
