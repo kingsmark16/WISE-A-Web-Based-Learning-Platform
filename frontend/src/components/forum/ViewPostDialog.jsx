@@ -28,6 +28,7 @@ import { useCreateReply } from '../../hooks/forum/useCreateReply';
 import { useGetPostWithReplies } from '../../hooks/forum/useGetPostWithReplies';
 import { useLikePost } from '../../hooks/forum/useLikePost';
 import { usePinPost } from '../../hooks/forum/usePinPost';
+import { useLockPost } from '../../hooks/forum/useLockPost';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../lib/axios';
 import { useSocket } from '../../contexts/SocketContext';
@@ -43,10 +44,12 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   const [loadingMore, setLoadingMore] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const scrollContainerRef = React.useRef(null);
   const hasScrolledRef = React.useRef(false);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-  const [sortOrder, setSortOrder] = useState('oldest'); // 'oldest' or 'newest'
+  const [sortOrder, setSortOrder] = useState('oldest');
   const [showNewRepliesButton, setShowNewRepliesButton] = useState(false);
   const [newRepliesCount, setNewRepliesCount] = useState(0);
   const [showNewRepliesTopButton, setShowNewRepliesTopButton] = useState(false);
@@ -57,6 +60,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   const createReplyMutation = useCreateReply();
   const likePostMutation = useLikePost();
   const pinPostMutation = usePinPost();
+  const lockPostMutation = useLockPost();
 
   // Fetch post with initial replies when dialog opens
   const { data: postData, isLoading } = useGetPostWithReplies(post?.id, {
@@ -75,17 +79,24 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
       setHasMore(!!postData.nextCursor);
       setLikeCount(postData.post?._count?.likedBy || 0);
       setIsLiked(postData.post?.isLiked || false);
+      setIsPinned(postData.post?.isPinned || false);
+      setIsLocked(postData.post?.isLocked || false);
       hasScrolledRef.current = false; // Reset scroll flag
       setShowNewRepliesButton(false);
       setNewRepliesCount(0);
       setShowNewRepliesTopButton(false);
       setNewRepliesTopCount(0);
+      
+      // Add history state when modal opens to handle back button
+      window.history.pushState({ modalOpen: true }, '');
     } else if (!open) {
       setAllReplies([]);
       setRepliesCursor(null);
       setHasMore(true);
       setLikeCount(0);
       setIsLiked(false);
+      setIsPinned(false);
+      setIsLocked(false);
       hasScrolledRef.current = false;
       setShowNewRepliesButton(false);
       setNewRepliesCount(0);
@@ -93,6 +104,27 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
       setNewRepliesTopCount(0);
     }
   }, [open, postData]);
+
+  // Handle browser back button to close modal instead of navigating away
+  React.useEffect(() => {
+    const handlePopState = () => {
+      // If modal is open and back button is pressed, close the modal
+      if (open) {
+        onOpenChange(false);
+        // Re-push the state to keep the user on the forum page
+        window.history.pushState(null, '');
+      }
+    };
+
+    // Only add listener when modal is open
+    if (open) {
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [open, onOpenChange]);
 
   // Socket.IO real-time updates
   React.useEffect(() => {
@@ -225,15 +257,42 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   const handlePin = async () => {
     if (!post.id) return;
     
+    // Optimistic update
+    const previousPinned = isPinned;
+    setIsPinned(!isPinned);
+    
     try {
       await pinPostMutation.mutateAsync({ 
         postId: post.id, 
-        pin: !post.isPinned 
+        pin: !previousPinned 
       });
-      toast.success(post.isPinned ? 'Post unpinned' : 'Post pinned');
+      toast.success(previousPinned ? 'Post unpinned' : 'Post pinned');
     } catch (error) {
+      // Revert on error
+      setIsPinned(previousPinned);
       console.error('Failed to pin post:', error);
       toast.error('Failed to pin post');
+    }
+  };
+
+  const handleLock = async () => {
+    if (!post.id) return;
+    
+    // Optimistic update
+    const previousLocked = isLocked;
+    setIsLocked(!isLocked);
+    
+    try {
+      await lockPostMutation.mutateAsync({ 
+        postId: post.id, 
+        lock: !previousLocked 
+      });
+      toast.success(previousLocked ? 'Post unlocked' : 'Post locked');
+    } catch (error) {
+      // Revert on error
+      setIsLocked(previousLocked);
+      console.error('Failed to lock post:', error);
+      toast.error('Failed to lock post');
     }
   };
 
@@ -443,46 +502,74 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[95vh] flex flex-col overflow-hidden">
-        <DialogHeader>
+  <DialogContent className="max-w-full sm:max-w-[95vw] md:max-w-6xl h-[100dvh] sm:h-[95vh] flex flex-col overflow-hidden pt-2 pb-2 sm:pt-4 sm:pb-6 px-1 sm:px-6 gap-1">
+  <DialogHeader className="px-3 sm:px-6 pt-2 sm:pt-0 pb-2 sm:pb-4 flex-shrink-0">
           <DialogTitle className="sr-only">View Post</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide pb-6" onScroll={handleScroll} ref={scrollContainerRef}>
+  <div className="flex-1 overflow-y-auto scrollbar-hide pt-2 pb-3 sm:pb-6 px-3 sm:px-0 min-h-0" onScroll={handleScroll} ref={scrollContainerRef}>
           {/* Post Header */}
-          <div className="space-y-4 px-1">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {category && <Badge className={category.color}>{category.name}</Badge>}
-                  {post.isPinned && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Pin className="h-3 w-3" />
-                      Pinned
-                    </Badge>
-                  )}
-                  {post.isLocked && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Lock className="h-3 w-3" />
-                      Locked
-                    </Badge>
-                  )}
-                </div>
-                <h2 className="text-xl font-bold">{post.title}</h2>
+          <div className="space-y-3 sm:space-y-4 px-0 sm:px-1">
+            {/* Title and Badges - Full width on mobile */}
+            <div className="space-y-1.5 sm:space-y-2 pr-8 sm:pr-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                {category && <Badge className={`${category.color} text-[10px] sm:text-xs px-1.5 sm:px-2`}>{category.name}</Badge>}
+                {isPinned && (
+                  <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                    <Pin className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    Pinned
+                  </Badge>
+                )}
+                {isLocked && (
+                  <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                    <Lock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    Locked
+                  </Badge>
+                )}
               </div>
+              <h2 className="text-base sm:text-lg md:text-xl font-bold line-clamp-2 sm:line-clamp-none">{post.title}</h2>
+            </div>
             
-            {/* Action buttons */}
-            <div className="flex items-center gap-2">
+            {/* Action buttons - Below title on mobile, inline on desktop */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap sm:justify-end sm:-mt-20 sm:mb-16">
               {canModerate && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePin}
+                    disabled={pinPostMutation.isPending}
+                    className="gap-1 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                  >
+                    <Pin className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-transform ${pinPostMutation.isPending ? 'animate-pulse' : ''}`} />
+                    <span className="hidden sm:inline">{isPinned ? 'Unpin' : 'Pin'}</span>
+                    <span className="sm:hidden">{isPinned ? 'Unpin' : 'Pin'}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLock}
+                    disabled={lockPostMutation.isPending}
+                    className="gap-1 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                  >
+                    <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-transform ${lockPostMutation.isPending ? 'animate-pulse' : ''}`} />
+                    <span className="hidden sm:inline">{isLocked ? 'Unlock' : 'Lock'}</span>
+                    <span className="sm:hidden">{isLocked ? 'Unlock' : 'Lock'}</span>
+                  </Button>
+                </>
+              )}
+              
+              {(isAuthor || canModerate) && !canModerate && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handlePin}
-                  disabled={pinPostMutation.isPending}
-                  className="gap-2"
+                  onClick={handleLock}
+                  disabled={lockPostMutation.isPending}
+                  className="gap-1 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
                 >
-                  <Pin className="h-4 w-4" />
-                  {post.isPinned ? 'Unpin' : 'Pin'}
+                  <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-transform ${lockPostMutation.isPending ? 'animate-pulse' : ''}`} />
+                  <span className="hidden sm:inline">{isLocked ? 'Unlock' : 'Lock'}</span>
+                  <span className="sm:hidden">{isLocked ? 'Unlock' : 'Lock'}</span>
                 </Button>
               )}
               
@@ -494,50 +581,50 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
                     onEditPost(post);
                     onOpenChange(false);
                   }}
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
                 >
-                  <Edit className="h-4 w-4" />
-                  Edit
+                  <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Edit</span>
+                  <span className="sm:hidden">Edit</span>
                 </Button>
               )}
             </div>
-          </div>
 
           {/* Author Info and Like Button */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar>
+          <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <Avatar className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 flex-shrink-0">
                 <AvatarImage src={post.author?.imageUrl} />
-                <AvatarFallback>
+                <AvatarFallback className="text-xs sm:text-sm">
                   {post.author?.fullName?.charAt(0).toUpperCase() || '?'}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <p className="font-medium">{post.author?.fullName || 'Unknown'}</p>
-                <p className="text-sm text-muted-foreground">{post.lastActivity}</p>
+              <div className="min-w-0">
+                <p className="font-medium text-sm sm:text-base truncate">{post.author?.fullName || 'Unknown'}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">{post.lastActivity}</p>
               </div>
             </div>
           </div>
 
           {/* Post Content */}
-          <div className="prose prose-sm max-w-none">
+          <div className="prose prose-sm max-w-none text-xs sm:text-sm">
             <p className="whitespace-pre-wrap">{post.content}</p>
           </div>
 
           {/* Like Button and Reply Count */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleLike}
               disabled={likePostMutation.isPending}
-              className={`gap-2 ${isLiked ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`gap-1.5 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 ${isLiked ? 'text-primary' : 'text-muted-foreground'}`}
             >
-              <ThumbsUp className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-              <span>{likeCount}</span>
+              <ThumbsUp className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-all ${isLiked ? 'fill-current' : ''} ${likePostMutation.isPending ? 'animate-pulse' : ''}`} />
+              <span className="text-xs sm:text-sm">{likeCount}</span>
             </Button>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MessageSquare className="h-4 w-4" />
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+              <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
               <span>{allReplies.length}</span>
             </div>
           </div>
@@ -545,9 +632,9 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
           <Separator />
 
           {/* Replies Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Replies</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-sm sm:text-base">Replies</h3>
               <button
                 onClick={() => {
                   const newSortOrder = sortOrder === 'oldest' ? 'newest' : 'oldest';
@@ -564,10 +651,11 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
                     }
                   }, 100);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
               >
-                <ArrowUpDown className="h-4 w-4" />
-                {sortOrder === 'oldest' ? 'Oldest First' : 'Newest First'}
+                <ArrowUpDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">{sortOrder === 'oldest' ? 'Oldest First' : 'Newest First'}</span>
+                <span className="sm:hidden">{sortOrder === 'oldest' ? 'Oldest' : 'Newest'}</span>
               </button>
             </div>
 
@@ -642,64 +730,78 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
 
         {/* New Replies Button at Top - For newest first sort */}
         {showNewRepliesTopButton && newRepliesTopCount > 0 && sortOrder === 'newest' && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="absolute top-12 sm:top-16 left-1/2 transform -translate-x-1/2 z-10">
             <Button
               onClick={handleScrollToTop}
-              className="shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-full px-4 py-2 animate-bounce"
+              className="shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 sm:gap-2 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 animate-bounce text-xs sm:text-sm"
               size="sm"
             >
-              <ArrowUp className="h-4 w-4" />
-              {newRepliesTopCount} new {newRepliesTopCount === 1 ? 'reply' : 'replies'}
+              <ArrowUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">{newRepliesTopCount} new {newRepliesTopCount === 1 ? 'reply' : 'replies'}</span>
+              <span className="sm:hidden">{newRepliesTopCount}</span>
             </Button>
           </div>
         )}
 
         {/* New Replies Button at Bottom - For oldest first sort */}
         {showNewRepliesButton && newRepliesCount > 0 && sortOrder === 'oldest' && (
-          <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-1/2 transform -translate-x-1/2 z-10">
             <Button
               onClick={handleScrollToBottom}
-              className="shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-full px-4 py-2 animate-bounce"
+              className="shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 sm:gap-2 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 animate-bounce text-xs sm:text-sm"
               size="sm"
             >
-              <ArrowDown className="h-4 w-4" />
-              {newRepliesCount} new {newRepliesCount === 1 ? 'reply' : 'replies'}
+              <ArrowDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">{newRepliesCount} new {newRepliesCount === 1 ? 'reply' : 'replies'}</span>
+              <span className="sm:hidden">{newRepliesCount}</span>
             </Button>
           </div>
         )}
 
         {/* Reply Form - Fixed at bottom */}
-        {!post.isLocked && (
-          <div className="border-t bg-background p-4 mt-auto">
-            <form onSubmit={handleReplySubmit} className="space-y-3">
+        {!isLocked && (
+          <div className="border-t bg-background p-2 sm:p-3 md:p-4 flex-shrink-0">
+            <form onSubmit={handleReplySubmit} className="space-y-2 sm:space-y-3">
               <Textarea
                 placeholder="Write a reply..."
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                rows={3}
+                rows={2}
                 disabled={createReplyMutation.isPending || isSubmittingReply}
-                className="resize-none min-h-[72px] max-h-[72px] overflow-y-auto"
+                className="resize-none min-h-[60px] sm:min-h-[72px] max-h-[60px] sm:max-h-[72px] overflow-y-auto text-sm"
               />
               <div className="flex justify-end">
                 <Button 
                   type="submit" 
                   disabled={createReplyMutation.isPending || isSubmittingReply || !replyContent.trim()}
-                  className="gap-2"
+                  className="gap-1.5 sm:gap-2 h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm"
                 >
                   {createReplyMutation.isPending || isSubmittingReply ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Posting...
+                      <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 animate-spin" />
+                      <span className="hidden sm:inline">Posting...</span>
+                      <span className="sm:hidden">Post...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" />
-                      Post Reply
+                      <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                      <span className="hidden sm:inline">Post Reply</span>
+                      <span className="sm:hidden">Reply</span>
                     </>
                   )}
                 </Button>
               </div>
             </form>
+          </div>
+        )}
+        
+        {/* Locked Post Message */}
+        {isLocked && (
+          <div className="border-t bg-muted/50 p-2 sm:p-3 md:p-4 flex-shrink-0">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-muted-foreground">
+              <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+              <p className="text-xs sm:text-sm text-center">This post is locked. No new replies can be added.</p>
+            </div>
           </div>
         )}
       </DialogContent>

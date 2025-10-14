@@ -26,6 +26,7 @@ const Forum = ({ courseId }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [deletePostObject, setDeletePostObject] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(null);
 
   // Intersection observer for infinite scroll
   const loadMoreRef = useRef(null);
@@ -131,17 +132,25 @@ const Forum = ({ courseId }) => {
     );
   }
 
-  // Filter posts based on active tab (for main list)
+  // Filter posts based on active tab and category (for main list)
   const getFilteredPosts = () => {
+    let filtered = allPosts;
+
+    // First apply category filter
+    if (activeCategory) {
+      filtered = filtered.filter(p => p.category === activeCategory);
+    }
+
+    // Then apply tab filter
     switch (activeTab) {
       case 'pinned':
-        return allPosts.filter(p => p.isPinned);
+        return filtered.filter(p => p.isPinned);
       case 'recent':
-        return [...allPosts].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        return [...filtered].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       case 'popular':
-        return [...allPosts].sort((a, b) => b.replies - a.replies);
+        return [...filtered].sort((a, b) => b.replies - a.replies);
       default:
-        return allPosts;
+        return filtered;
     }
   };
 
@@ -191,6 +200,11 @@ const Forum = ({ courseId }) => {
     }
   };
 
+  const handleCategoryClick = (categoryName) => {
+    setActiveCategory(activeCategory === categoryName ? null : categoryName);
+    setActiveTab('all'); // Reset tab when category is selected
+  };
+
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -232,14 +246,14 @@ const Forum = ({ courseId }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <MessageSquare className="h-6 w-6 text-primary" />
-          <div>
-            <h4 className="font-semibold text-xl">Course Forum</h4>
-            <p className="text-sm text-muted-foreground">Discuss, ask questions, and collaborate</p>
+      <div className="flex items-start sm:items-center justify-between gap-2">
+        <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-lg sm:text-xl truncate">Course Forum</h4>
+            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Discuss, ask questions, and collaborate</p>
           </div>
         </div>
       </div>
@@ -248,12 +262,12 @@ const Forum = ({ courseId }) => {
       <ForumAnalytics stats={forumStats} />
 
       {/* Search and Create Post */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="relative flex-1 order-1 sm:order-none">
+          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground z-10" />
           <Input
-            placeholder="Search all posts..."
-            className="pl-10 pr-10"
+            placeholder="Search posts..."
+            className="pl-8 sm:pl-10 pr-8 sm:pr-10 h-9 sm:h-10 text-sm"
             value={searchQuery}
             onChange={handleSearchChange}
             onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
@@ -261,46 +275,46 @@ const Forum = ({ courseId }) => {
           {searchQuery && (
             <button
               onClick={clearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+              className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           )}
 
           {/* Search Results Dropdown */}
           {showSearchResults && (
-            <Card className="absolute top-full mt-2 w-full max-h-96 overflow-y-auto z-50 shadow-lg">
+            <Card className="absolute top-full mt-2 w-full max-h-[60vh] sm:max-h-96 overflow-y-auto z-50 shadow-lg">
               {isSearching ? (
-                <div className="p-4 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
-                  <p className="text-sm text-muted-foreground">Searching...</p>
+                <div className="p-3 sm:p-4 text-center">
+                  <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin mx-auto mb-2 text-primary" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">Searching...</p>
                 </div>
               ) : searchFilteredPosts.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <p className="text-sm">No posts found matching "{searchQuery}"</p>
+                <div className="p-3 sm:p-4 text-center text-muted-foreground">
+                  <p className="text-xs sm:text-sm">No posts found matching "{searchQuery}"</p>
                 </div>
               ) : (
-                <div className="p-2">
-                  <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
+                <div className="p-1.5 sm:p-2">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground px-2 py-1 mb-1">
                     {searchFilteredPosts.length} result{searchFilteredPosts.length !== 1 ? 's' : ''} found
                   </div>
                   {searchFilteredPosts.map((post) => (
                     <button
                       key={post.id}
                       onClick={() => handleViewPost(post)}
-                      className="w-full text-left p-3 hover:bg-accent rounded-lg transition-colors"
+                      className="w-full text-left p-2 sm:p-3 hover:bg-accent rounded-lg transition-colors"
                     >
-                      <div className="flex items-start gap-3">
-                        <MessageSquare className="h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 sm:mt-1 flex-shrink-0 text-muted-foreground" />
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm mb-1 truncate">{post.title}</h4>
-                          <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span>{post.author?.fullName || 'Unknown'}</span>
-                            <span>•</span>
+                          <h4 className="font-medium text-xs sm:text-sm mb-1 truncate">{post.title}</h4>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                          <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
+                            <span className="truncate max-w-[100px] sm:max-w-none">{post.author?.fullName || 'Unknown'}</span>
+                            <span className="hidden sm:inline">•</span>
                             <span>{post.replies} replies</span>
-                            <span>•</span>
-                            <span>{post.lastActivity}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">{post.lastActivity}</span>
                           </div>
                         </div>
                       </div>
@@ -312,32 +326,43 @@ const Forum = ({ courseId }) => {
           )}
         </div>
 
-        <Button className="gap-2" onClick={() => setNewPostOpen(true)}>
-          <Plus className="h-4 w-4" />
-          New Post
+        <Button className="gap-1.5 sm:gap-2 h-9 sm:h-10 text-sm whitespace-nowrap" onClick={() => setNewPostOpen(true)}>
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">New Post</span>
+          <span className="sm:hidden">New</span>
         </Button>
       </div>
 
       {/* Categories */}
-      <Categories categories={categories} />
+      <Categories 
+        categories={categories} 
+        onCategoryClick={handleCategoryClick}
+        activeCategory={activeCategory}
+      />
 
       {/* Tabs for filtering */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">All Posts ({allPosts.length})</TabsTrigger>
-          <TabsTrigger value="pinned">Pinned ({allPosts.filter(p => p.isPinned).length})</TabsTrigger>
-          <TabsTrigger value="recent">Recent</TabsTrigger>
-          <TabsTrigger value="popular">Popular</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3 py-2">
+            <span className="hidden sm:inline">All Posts ({getFilteredPosts().length})</span>
+            <span className="sm:hidden">All ({getFilteredPosts().length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="pinned" className="text-xs sm:text-sm px-2 sm:px-3 py-2">
+            <span className="hidden sm:inline">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
+            <span className="sm:hidden">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Recent</TabsTrigger>
+          <TabsTrigger value="popular" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Popular</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="space-y-3 mt-4">
+        <TabsContent value={activeTab} className="space-y-3 mt-3 sm:mt-4">
           {getFilteredPosts().length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">No posts found</p>
-              <p className="text-sm">Be the first to start a discussion!</p>
+            <div className="text-center py-8 sm:py-12 text-muted-foreground px-4">
+              <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+              <p className="text-base sm:text-lg font-medium">No posts found</p>
+              <p className="text-xs sm:text-sm mt-1">Be the first to start a discussion!</p>
               <Button 
-                className="mt-4" 
+                className="mt-3 sm:mt-4 text-sm" 
                 onClick={() => setNewPostOpen(true)}
               >
                 Create First Post
@@ -355,17 +380,17 @@ const Forum = ({ courseId }) => {
               
               {/* Infinite Scroll Trigger */}
               {hasNextPage && (
-                <div ref={loadMoreRef} className="flex justify-center py-4">
+                <div ref={loadMoreRef} className="flex justify-center py-3 sm:py-4">
                   {isFetchingNextPage ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Loading more posts...</span>
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="text-xs sm:text-sm">Loading more...</span>
                     </div>
                   ) : (
                     <Button 
                       variant="outline" 
                       onClick={() => fetchNextPage()}
-                      className="gap-2"
+                      className="gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9"
                     >
                       Load More Posts
                     </Button>
@@ -374,7 +399,7 @@ const Forum = ({ courseId }) => {
               )}
               
               {!hasNextPage && allPosts.length > 0 && (
-                <p className="text-center text-sm text-muted-foreground py-4">
+                <p className="text-center text-xs sm:text-sm text-muted-foreground py-3 sm:py-4">
                   You've reached the end of posts
                 </p>
               )}

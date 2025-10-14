@@ -42,18 +42,43 @@ const DeleteReplyDialog = ({ open, onOpenChange, onConfirm, reply, isLoading = f
           </div>
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel
+            disabled={isLoading}
+            onClick={(e) => {
+              // Prevent the cancel click from bubbling to parent dialogs/overlays
+              e.preventDefault();
+              e.stopPropagation();
+              if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+                e.nativeEvent.stopImmediatePropagation();
+              }
+              // Close the alert after a short delay to avoid parent overlay receiving the event
+              setTimeout(() => onOpenChange(false), 50);
+            }}
+          >
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => {
-              onConfirm(reply);
-              onOpenChange(false);
+            onClick={async (e) => {
+              // Prevent the click from bubbling to parent dialogs/overlays
+              e.preventDefault();
+              e.stopPropagation();
+              if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+                e.nativeEvent.stopImmediatePropagation();
+              }
+              try {
+                await onConfirm(reply);
+              } catch (err) {
+                console.error('Failed to delete reply:', err);
+              }
+              // Close the alert after a short delay so the parent overlay doesn't catch the event
+              setTimeout(() => onOpenChange(false), 50);
             }}
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive"
           >
             <div className="flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
-              {isLoading ? "Deleting..." : "Delete Reply"}
+              {isLoading ? 'Deleting...' : 'Delete Reply'}
             </div>
           </AlertDialogAction>
         </AlertDialogFooter>

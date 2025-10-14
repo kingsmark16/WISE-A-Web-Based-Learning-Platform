@@ -39,7 +39,7 @@ createRoot(document.getElementById('root')).render(
         signUpUrl='/sign-in'
       >
         <QueryClientProvider client={queryClient}>
-         <ReactQueryDevtools initialIsOpen={false} />
+         {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           <SocketProvider>
             <ThemeProvider defaultTheme="dark" storageKey="wise-theme">
               <AuthProvider>

@@ -42,11 +42,11 @@ router.patch('/forum/posts/:postId', requireRole(ALL), updatePost);
 // DELETE /api/course/forum/posts/:postId
 router.delete('/forum/posts/:postId', requireRole(['ADMIN', 'FACULTY']), deletePost);
 
-// moderation (faculty/admin)
+// moderation (faculty/admin for pin, faculty/admin/author for lock)
 router.post('/forum/posts/:postId/pin',   requireRole(['ADMIN','FACULTY']), setPostFlag('pin',  true));
 router.post('/forum/posts/:postId/unpin', requireRole(['ADMIN','FACULTY']), setPostFlag('pin',  false));
-router.post('/forum/posts/:postId/lock',  requireRole(['ADMIN','FACULTY']), setPostFlag('lock', true));
-router.post('/forum/posts/:postId/unlock',requireRole(['ADMIN','FACULTY']), setPostFlag('lock', false));
+router.post('/forum/posts/:postId/lock',  requireRole(ALL), setPostFlag('lock', true));
+router.post('/forum/posts/:postId/unlock',requireRole(ALL), setPostFlag('lock', false));
 
 // POST /api/course/forum/posts/:postId/like - Toggle like on a post
 router.post('/forum/posts/:postId/like', requireRole(ALL), toggleLikePost);

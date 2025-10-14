@@ -32,13 +32,30 @@ export const getForumCategories = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Define forum categories (these could be made configurable in the future)
+    // Get actual post counts for each category
+    const categoryCounts = await prisma.forumPost.groupBy({
+      by: ['category'],
+      where: { courseId: courseId },
+      _count: {
+        category: true
+      }
+    });
+
+    // Define forum categories with actual counts
     const categories = [
       { name: 'General Discussion', color: 'bg-blue-500', count: 0 },
       { name: 'Questions & Answers', color: 'bg-green-500', count: 0 },
       { name: 'Announcements', color: 'bg-purple-500', count: 0 },
       { name: 'Others', color: 'bg-gray-500', count: 0 }
     ];
+
+    // Update counts based on actual data
+    categoryCounts.forEach(item => {
+      const category = categories.find(cat => cat.name === item.category);
+      if (category) {
+        category.count = item._count.category;
+      }
+    });
 
     return res.status(200).json({ data: categories });
   } catch (err) {
@@ -302,18 +319,41 @@ export const deletePost = async (req, res) => {
 
 /**
  * POST /forum/posts/:postId/pin|unpin|lock|unlock
- * Staff only (faculty/admin)
+ * Pin: Staff only (faculty/admin)
+ * Lock: Staff or post author
  */
 export const setPostFlag = (flag, value) => {
   return async (req, res) => {
     try {
       const { postId } = req.params;
+      const userId = req.user.clerkId;
+      const userRole = req.user.role;
+      
       const data =
         flag === 'pin' ? { isPinned: value } :
         flag === 'lock' ? { isLocked: value } :
         null;
 
       if (!data) return res.status(400).json({ message: 'Unknown flag' });
+
+      // For lock/unlock, check if user is author or staff
+      if (flag === 'lock') {
+        const post = await prisma.forumPost.findUnique({
+          where: { id: String(postId) },
+          select: { authorId: true }
+        });
+        
+        if (!post) {
+          return res.status(404).json({ message: 'Post not found' });
+        }
+        
+        const isAuthor = post.authorId === userId;
+        const isStaff = userRole === 'ADMIN' || userRole === 'FACULTY';
+        
+        if (!isAuthor && !isStaff) {
+          return res.status(403).json({ message: 'Not authorized to lock/unlock this post' });
+        }
+      }
 
       const updated = await prisma.forumPost.update({
         where: { id: String(postId) },

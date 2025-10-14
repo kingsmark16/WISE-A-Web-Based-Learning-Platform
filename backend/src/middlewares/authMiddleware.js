@@ -22,6 +22,12 @@ export const requireRole = (allowedRole) => async (req, res, next) => {
             return res.status(403).json({ message: 'Access denied' });
         }
 
+        // Attach user info to request for use in controllers
+        req.user = {
+            clerkId: userId,
+            role: userRole
+        };
+
         console.log('Access granted');
         next();
     } catch (error) {

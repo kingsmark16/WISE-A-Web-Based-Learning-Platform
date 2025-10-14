@@ -17,6 +17,11 @@ export const useCreatePost = () => {
       queryClient.invalidateQueries({
         queryKey: ["forum-posts", variables.courseId],
       });
+
+      // Invalidate categories to update counts
+      queryClient.invalidateQueries({
+        queryKey: ["forum-categories", variables.courseId],
+      });
     },
   });
 };

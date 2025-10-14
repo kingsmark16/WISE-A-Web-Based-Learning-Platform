@@ -10,7 +10,7 @@ const PostList = ({ posts, categories, onViewPost, onDeletePost, onEditPost }) =
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {posts.map((post) => (
         <PostCard
           key={post.id}

@@ -1,24 +1,34 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-const Categories = ({ categories }) => {
+const Categories = ({ categories, onCategoryClick, activeCategory }) => {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Categories</CardTitle>
+      <CardHeader className="pb-3 sm:pb-6">
+        <CardTitle className="text-sm sm:text-base">Categories</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           {categories.map((category) => (
             <div
               key={category.name}
-              className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
+              onClick={() => onCategoryClick?.(category.name)}
+              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors ${
+                activeCategory === category.name 
+                  ? 'bg-primary text-primary-foreground border-primary' 
+                  : 'hover:bg-accent'
+              }`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${category.color}`} />
-                <span className="text-sm font-medium">{category.name}</span>
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${category.color} flex-shrink-0`} />
+                <span className="text-xs sm:text-sm font-medium truncate">{category.name}</span>
               </div>
-              <Badge variant="secondary">{category.count}</Badge>
+              <Badge 
+                variant={activeCategory === category.name ? "default" : "secondary"} 
+                className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 flex-shrink-0 ml-2"
+              >
+                {category.count}
+              </Badge>
             </div>
           ))}
         </div>
