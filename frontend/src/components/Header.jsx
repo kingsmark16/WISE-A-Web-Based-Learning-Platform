@@ -267,7 +267,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   }
 
   return (
-    <header className={`fixed top-0 right-0 flex items-center justify-between py-4 px-4 md:py-5 md:px-6 lg:py-6 lg:px-8 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-[60] h-20 lg:left-64 ${isSidebarOpen ? 'left-64' : 'left-0'}`}>
+    <header className={`fixed top-0 right-0 flex items-center justify-between py-4 px-4 md:py-5 md:px-6 lg:py-6 lg:px-8 z-[60] h-20 lg:left-64 ${isSidebarOpen ? 'left-64' : 'left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b'}`}>
       
       {/* Left side - Menu button and Logo */}
       <div className="flex items-center gap-3 flex-shrink-0">
@@ -296,7 +296,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => debouncedQuery && setShowSuggestions(true)}
                 placeholder="Search courses, faculty, students..."
-                className="w-full pl-10 pr-10"
+                className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
               />
               {searchQuery && (
                 <Button
@@ -347,7 +347,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => debouncedQuery && setShowSuggestions(true)}
                   placeholder="Search courses, faculty, students..."
-                  className="w-full pl-10 pr-10"
+                  className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
                   autoFocus
                 />
                 {searchQuery && (
