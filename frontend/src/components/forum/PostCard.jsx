@@ -1,17 +1,20 @@
-import { Pin, Lock, Eye, MessageCircle, ThumbsUp, Trash2 } from 'lucide-react';
+import { Pin, Lock, MessageCircle, ThumbsUp, Trash2, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { useUser } from '@clerk/clerk-react';
 
-const PostCard = ({ post, categories, onView, onDelete }) => {
-  const getCategoryColor = (categoryId) => {
-    return categories.find(c => c.id === categoryId)?.color || 'bg-gray-500';
+const PostCard = ({ post, categories, onView, onDelete, onEdit }) => {
+  const { user } = useUser();
+  const isAuthor = user?.id === post.author?.clerkId;
+  const getCategoryColor = (categoryName) => {
+    return categories.find(c => c.name === categoryName)?.color || 'bg-gray-500';
   };
 
-  const getCategoryName = (categoryId) => {
-    return categories.find(c => c.id === categoryId)?.name || categoryId;
+  const getCategoryName = (categoryName) => {
+    return categoryName || 'Uncategorized';
   };
 
   return (
@@ -19,8 +22,8 @@ const PostCard = ({ post, categories, onView, onDelete }) => {
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
           <Avatar>
-            <AvatarImage src={post.authorAvatar} />
-            <AvatarFallback>{post.author.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+            <AvatarImage src={post.author?.imageUrl} />
+            <AvatarFallback>{post.author?.fullName?.split(' ').map(n => n[0]).join('') || '?'}</AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0">
@@ -33,6 +36,19 @@ const PostCard = ({ post, categories, onView, onDelete }) => {
               >
                 {post.title}
               </h5>
+              {isAuthor && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(post);
+                  }}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -51,28 +67,25 @@ const PostCard = ({ post, categories, onView, onDelete }) => {
             </p>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-              <span>by <span className="font-medium text-foreground">{post.author}</span></span>
+              <span>by <span className="font-medium text-foreground">{post.author?.fullName || 'Unknown'}</span></span>
               <Separator orientation="vertical" className="h-4" />
-              <Badge variant="outline" className={`${getCategoryColor(post.category)} text-white border-none`}>
-                {getCategoryName(post.category)}
-              </Badge>
+              {post.category && (
+                <Badge variant="outline" className={`${getCategoryColor(post.category)} text-white border-none`}>
+                  {getCategoryName(post.category)}
+                </Badge>
+              )}
             </div>
 
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
-                <Eye className="h-4 w-4" />
-                <span>{post.views}</span>
-              </div>
-              <div className="flex items-center gap-1">
                 <MessageCircle className="h-4 w-4" />
-                <span>{post.replies?.length || 0}</span>
+                <span>{post.replies}</span>
               </div>
               <div className="flex items-center gap-1">
                 <ThumbsUp className="h-4 w-4" />
-                <span>{post.likes}</span>
+                <span>{post.likeCount}</span>
               </div>
               <Separator orientation="vertical" className="h-4" />
-              <span>Last reply by <span className="font-medium text-foreground">{post.lastReplyBy}</span></span>
               <span>{post.lastActivity}</span>
             </div>
           </div>

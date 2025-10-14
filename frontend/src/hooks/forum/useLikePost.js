@@ -1,22 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../../lib/axios";
 
-export const useCreateReply = () => {
+export const useLikePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ postId, content }) => {
+    mutationFn: async ({ postId }) => {
       const response = await axiosInstance.post(
-        `/course/forum/posts/${postId}/replies`,
-        { content }
+        `/course/forum/posts/${postId}/like`
       );
       return response.data;
     },
-    onSuccess: () => {
-      // Only invalidate posts list to update reply count
-      // Don't invalidate forum-post as ViewPostDialog manages its own state
+    onSuccess: (data, variables) => {
+      // Invalidate the posts list
       queryClient.invalidateQueries({
         queryKey: ["forum-posts"],
+      });
+      
+      // Invalidate the specific post
+      queryClient.invalidateQueries({
+        queryKey: ["forum-post", variables.postId],
       });
     },
   });

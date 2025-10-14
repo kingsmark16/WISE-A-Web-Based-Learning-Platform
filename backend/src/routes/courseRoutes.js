@@ -13,12 +13,18 @@ import {
   updatePost,
   createPost,
   deletePost,
-  setPostFlag
+  setPostFlag,
+  toggleLikePost,
+  getForumCategories
 } from '../controllers/forumController.js';
 
 const router = Router();
 
 const ALL = ['ADMIN', 'FACULTY', 'STUDENT'];
+
+// ---------- FORUM CATEGORIES ----------
+// GET /api/course/:courseId/forum/categories
+router.get('/:courseId/forum/categories', requireRole(ALL), getForumCategories);
 
 // ---------- FORUM THREADS ----------
 // GET /api/course/:courseId/forum/threads
@@ -41,6 +47,9 @@ router.post('/forum/posts/:postId/pin',   requireRole(['ADMIN','FACULTY']), setP
 router.post('/forum/posts/:postId/unpin', requireRole(['ADMIN','FACULTY']), setPostFlag('pin',  false));
 router.post('/forum/posts/:postId/lock',  requireRole(['ADMIN','FACULTY']), setPostFlag('lock', true));
 router.post('/forum/posts/:postId/unlock',requireRole(['ADMIN','FACULTY']), setPostFlag('lock', false));
+
+// POST /api/course/forum/posts/:postId/like - Toggle like on a post
+router.post('/forum/posts/:postId/like', requireRole(ALL), toggleLikePost);
 
 // ---------- FORUM REPLIES ----------
 // POST /api/course/forum/posts/:postId/replies

@@ -13,6 +13,43 @@ const getDbUser = async (clerkUserId) => {
 const isStaff = (role) => role === 'ADMIN' || role === 'FACULTY';
 const ensureAuthorOrStaff = (dbUser, authorId) => isStaff(dbUser.role) || dbUser.id === authorId;
 
+// ---------- FORUM CATEGORIES ----------
+/**
+ * GET /courses/:courseId/forum/categories
+ * Returns available forum categories for a course
+ */
+export const getForumCategories = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    // Verify course exists
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, title: true }
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Define forum categories (these could be made configurable in the future)
+    const categories = [
+      { name: 'General Discussion', color: 'bg-blue-500', count: 0 },
+      { name: 'Questions & Answers', color: 'bg-green-500', count: 0 },
+      { name: 'Announcements', color: 'bg-purple-500', count: 0 },
+      { name: 'Others', color: 'bg-gray-500', count: 0 }
+    ];
+
+    return res.status(200).json({ data: categories });
+  } catch (err) {
+    console.error('getForumCategories error:', err);
+    return res.status(500).json({ 
+      message: 'Failed to get forum categories',
+      error: err.message 
+    });
+  }
+};
+
 // ---------- THREADS (ForumPost) ----------
 
 /**
@@ -46,12 +83,14 @@ export const listOfPost = async (req, res) => {
         id: true,
         title: true,
         content: true,
+        category: true,
+        likes: true,
         isPinned: true,
         isLocked: true,
         createdAt: true,
         updatedAt: true,
-        author: { select: { id: true, fullName: true, imageUrl: true } },
-        _count: { select: { replies: true } }
+        author: { select: { id: true, clerkId: true, fullName: true, imageUrl: true } },
+        _count: { select: { replies: true, likedBy: true } }
       }
     });
 
@@ -77,9 +116,9 @@ export const listOfPost = async (req, res) => {
 export const createPost = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const { title, content } = req.body;
+    const { title, content, category } = req.body;
     
-    console.log('Creating post:', { courseId, title, content, userId: req.auth?.userId });
+    console.log('Creating post:', { courseId, title, content, category, userId: req.auth?.userId });
 
     if (!title || !content) {
       return res.status(400).json({ message: 'title and content are required' });
@@ -99,7 +138,8 @@ export const createPost = async (req, res) => {
     const post = await prisma.forumPost.create({
       data: { 
         title, 
-        content, 
+        content,
+        category: category || null,
         courseId, 
         authorId: dbUser.id 
       },
@@ -140,21 +180,37 @@ export const getPost = async (req, res) => {
     const { cursor, limit } = req.query;
     const take = clamp(limit, 1, 100);
 
+    const clerkUserId = req.auth?.userId;
+    let dbUser = null;
+    if (clerkUserId) {
+      dbUser = await getDbUser(clerkUserId);
+    }
+
     const post = await prisma.forumPost.findUnique({
       where: { id: String(postId) },
       select: {
         id: true,
         title: true,
         content: true,
+        category: true,
+        likes: true,
         isPinned: true,
         isLocked: true,
         createdAt: true,
         updatedAt: true,
         courseId: true,
-        author: { select: { id: true, fullName: true, imageUrl: true } }
+        author: { select: { id: true, clerkId: true, fullName: true, imageUrl: true } },
+        _count: { select: { likedBy: true } },
+        likedBy: dbUser ? {
+          where: { userId: dbUser.id },
+          select: { id: true }
+        } : false
       }
     });
     if (!post) return res.status(404).json({ message: 'Thread not found' });
+
+    // Check if current user has liked this post
+    const isLikedByCurrentUser = dbUser && post.likedBy && post.likedBy.length > 0;
 
     const replies = await prisma.forumReply.findMany({
       where: { postId: post.id },
@@ -167,12 +223,17 @@ export const getPost = async (req, res) => {
         isAnswer: true,
         createdAt: true,
         updatedAt: true,
-        author: { select: { id: true, fullName: true, imageUrl: true } }
+        author: { select: { id: true, clerkId: true, fullName: true, imageUrl: true } }
       }
     });
 
     const nextCursor = replies.length === take ? replies[replies.length - 1].id : null;
-    return res.json({ post: addPhTimes(post), replies: addPhTimesArray(replies), nextCursor });
+    
+    // Remove likedBy from response and add isLiked flag
+    const { likedBy, ...postWithoutLikedBy } = post;
+    const postResponse = { ...postWithoutLikedBy, isLiked: isLikedByCurrentUser };
+    
+    return res.json({ post: addPhTimes(postResponse), replies: addPhTimesArray(replies), nextCursor });
   } catch (err) {
     console.error('getThread error', err);
     return res.status(500).json({ message: 'Failed to fetch thread' });
@@ -187,7 +248,7 @@ export const getPost = async (req, res) => {
 export const updatePost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const { title, content } = req.body;
+    const { title, content, category } = req.body;
 
     const existing = await prisma.forumPost.findUnique({
       where: { id: String(postId) },
@@ -207,7 +268,11 @@ export const updatePost = async (req, res) => {
 
     const updated = await prisma.forumPost.update({
       where: { id: existing.id },
-      data: { ...(title && { title }), ...(content && { content }) }
+      data: { 
+        ...(title && { title }), 
+        ...(content && { content }),
+        ...(category !== undefined && { category })
+      }
     });
     return res.json(addPhTimes(updated));
   } catch (err) {
@@ -295,6 +360,7 @@ export const createReply = async (req, res) => {
         author: {
           select: {
             id: true,
+            clerkId: true,
             fullName: true,
             imageUrl: true
           }
@@ -305,7 +371,18 @@ export const createReply = async (req, res) => {
     // bump thread updatedAt for sorting
     await prisma.forumPost.update({ where: { id: post.id }, data: { updatedAt: new Date() } });
 
-    return res.status(201).json(addPhTimes(reply));
+    const replyData = addPhTimes(reply);
+
+    // Emit Socket.IO event for real-time updates
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`post-${post.id}`).emit('new-reply', {
+        postId: post.id,
+        reply: replyData
+      });
+    }
+
+    return res.status(201).json(replyData);
   } catch (err) {
     console.error('createReply error', err);
     return res.status(500).json({ message: 'Failed to create reply' });
@@ -366,7 +443,7 @@ export const deleteReply = async (req, res) => {
 
     const existing = await prisma.forumReply.findUnique({
       where: { id: String(replyId) },
-      select: { id: true, authorId: true }
+      select: { id: true, authorId: true, postId: true }
     });
     if (!existing) return res.status(404).json({ message: 'Reply not found' });
 
@@ -381,9 +458,85 @@ export const deleteReply = async (req, res) => {
       return res.status(403).json({ message: 'Not allowed to delete this reply' });
 
     await prisma.forumReply.delete({ where: { id: existing.id } });
+    
+    // Emit Socket.IO event for real-time updates
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`post-${existing.postId}`).emit('delete-reply', {
+        postId: existing.postId,
+        replyId: existing.id
+      });
+    }
+    
     return res.json({ message: 'Deleted' });
   } catch (err) {
     console.error('deleteReply error', err);
     return res.status(500).json({ message: 'Failed to delete reply' });
+  }
+};
+
+/**
+ * POST /forum/posts/:postId/like
+ * Toggle like on a post
+ */
+export const toggleLikePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const clerkUserId = req.auth?.userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
+    if (!dbUser) return res.status(401).json({ message: 'User not found' });
+
+    const post = await prisma.forumPost.findUnique({
+      where: { id: String(postId) },
+      select: { id: true, likes: true }
+    });
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Check if user already liked this post
+    const existingLike = await prisma.forumPostLike.findUnique({
+      where: {
+        postId_userId: {
+          postId: post.id,
+          userId: dbUser.id
+        }
+      }
+    });
+
+    if (existingLike) {
+      // Unlike: remove the like and decrement likes
+      await prisma.$transaction([
+        prisma.forumPostLike.delete({
+          where: { id: existingLike.id }
+        }),
+        prisma.forumPost.update({
+          where: { id: post.id },
+          data: { likes: { decrement: 1 } }
+        })
+      ]);
+      return res.json({ liked: false, likes: post.likes - 1 });
+    } else {
+      // Like: add the like and increment likes
+      await prisma.$transaction([
+        prisma.forumPostLike.create({
+          data: {
+            postId: post.id,
+            userId: dbUser.id
+          }
+        }),
+        prisma.forumPost.update({
+          where: { id: post.id },
+          data: { likes: { increment: 1 } }
+        })
+      ]);
+      return res.json({ liked: true, likes: post.likes + 1 });
+    }
+  } catch (err) {
+    console.error('toggleLikePost error', err);
+    return res.status(500).json({ message: 'Failed to toggle like' });
   }
 };

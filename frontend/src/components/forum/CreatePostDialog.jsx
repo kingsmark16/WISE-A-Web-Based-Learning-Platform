@@ -36,6 +36,7 @@ const CreatePostDialog = ({ open, onOpenChange, categories, courseId }) => {
         courseId,
         title: newPost.title.trim(),
         content: newPost.content.trim(),
+        category: newPost.category && newPost.category.trim() ? newPost.category : 'Others',
       });
 
       toast.update(toastId, {
@@ -88,7 +89,6 @@ const CreatePostDialog = ({ open, onOpenChange, categories, courseId }) => {
           <div className="space-y-2">
             <Label htmlFor="category">Category (optional)</Label>
             <Select
-              value={newPost.category}
               onValueChange={(value) => setNewPost({ ...newPost, category: value })}
               disabled={createPostMutation.isPending}
             >
@@ -97,7 +97,7 @@ const CreatePostDialog = ({ open, onOpenChange, categories, courseId }) => {
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
+                  <SelectItem key={cat.name} value={cat.name}>
                     {cat.name}
                   </SelectItem>
                 ))}

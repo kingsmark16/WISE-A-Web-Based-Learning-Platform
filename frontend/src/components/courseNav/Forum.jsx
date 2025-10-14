@@ -12,11 +12,10 @@ import CreatePostDialog from '../forum/CreatePostDialog';
 import ViewPostDialog from '../forum/ViewPostDialog';
 import EditPostDialog from '../forum/EditPostDialog';
 import DeletePostDialog from '../forum/DeletePostDialog';
-import DeleteReplyDialog from '../forum/DeleteReplyDialog';
 import { useGetPostList } from '../../hooks/forum/useGetPostList';
 import { useSearchPosts } from '../../hooks/forum/useSearchPosts';
 import { useDeletePost } from '../../hooks/forum/useDeletePost';
-import { useDeleteReply } from '../../hooks/forum/useDeleteReply';
+import { useGetForumCategories } from '../../hooks/forum/useGetForumCategories';
 
 const Forum = ({ courseId }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +25,6 @@ const Forum = ({ courseId }) => {
   const [editPostOpen, setEditPostOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [deletePostObject, setDeletePostObject] = useState(null);
-  const [deleteReplyObject, setDeleteReplyObject] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
 
   // Intersection observer for infinite scroll
@@ -50,7 +48,9 @@ const Forum = ({ courseId }) => {
 
   // Mutations
   const deletePostMutation = useDeletePost();
-  const deleteReplyMutation = useDeleteReply();
+
+  // Fetch forum categories
+  const { data: categories = [] } = useGetForumCategories(courseId);
 
   // Transform backend data to match frontend structure
   const transformPosts = (items) => {
@@ -59,14 +59,18 @@ const Forum = ({ courseId }) => {
       id: item.id,
       title: item.title,
       content: item.content,
-      author: item.author.fullName,
-      authorAvatar: item.author.imageUrl || '',
-      authorId: item.author.id,
+      category: item.category,
+      likes: item.likes || 0,
+      author: {
+        id: item.author.id,
+        clerkId: item.author.clerkId,
+        fullName: item.author.fullName,
+        imageUrl: item.author.imageUrl || ''
+      },
       isPinned: item.isPinned,
       isLocked: item.isLocked,
-      views: 0,
       replies: item._count?.replies || 0,
-      likes: 0,
+      likeCount: item._count?.likedBy || 0,
       lastActivity: new Date(item.updatedAt).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -74,9 +78,7 @@ const Forum = ({ courseId }) => {
         hour: '2-digit',
         minute: '2-digit'
       }),
-      lastReplyBy: 'N/A',
       excerpt: item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content,
-      category: 'general',
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     }));
@@ -128,14 +130,6 @@ const Forum = ({ courseId }) => {
       </div>
     );
   }
-
-  // Mock categories
-  const categories = [
-    { id: 'general', name: 'General Discussion', count: 45, color: 'bg-blue-500' },
-    { id: 'questions', name: 'Questions & Answers', count: 62, color: 'bg-green-500' },
-    { id: 'announcements', name: 'Announcements', count: 8, color: 'bg-purple-500' },
-    { id: 'assignments', name: 'Assignment Help', count: 34, color: 'bg-orange-500' },
-  ];
 
   // Filter posts based on active tab (for main list)
   const getFilteredPosts = () => {
@@ -197,32 +191,6 @@ const Forum = ({ courseId }) => {
     }
   };
 
-  const handleDeleteReply = async (reply) => {
-    if (!selectedPost) return;
-    const toastId = toast.loading('Deleting reply...');
-    try {
-      await deleteReplyMutation.mutateAsync({
-        postId: selectedPost.id,
-        replyId: reply.id,
-      });
-      toast.update(toastId, {
-        render: 'Reply deleted successfully',
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000,
-      });
-      setDeleteReplyObject(null);
-    } catch (error) {
-      console.error('Failed to delete reply:', error);
-      toast.update(toastId, {
-        render: 'Failed to delete reply. Please try again.',
-        type: 'error',
-        isLoading: false,
-        autoClose: 3000,
-      });
-    }
-  };
-
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -274,78 +242,80 @@ const Forum = ({ courseId }) => {
             <p className="text-sm text-muted-foreground">Discuss, ask questions, and collaborate</p>
           </div>
         </div>
-
-        <Button className="gap-2" onClick={() => setNewPostOpen(true)}>
-          <Plus className="h-4 w-4" />
-          New Post
-        </Button>
       </div>
 
       {/* Analytics */}
       <ForumAnalytics stats={forumStats} />
 
-      {/* Search with Results Dropdown */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-        <Input
-          placeholder="Search all posts..."
-          className="pl-10 pr-10"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
-        />
-        {searchQuery && (
-          <button
-            onClick={clearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+      {/* Search and Create Post */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+          <Input
+            placeholder="Search all posts..."
+            className="pl-10 pr-10"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
 
-        {/* Search Results Dropdown */}
-        {showSearchResults && (
-          <Card className="absolute top-full mt-2 w-full max-h-96 overflow-y-auto z-50 shadow-lg">
-            {isSearching ? (
-              <div className="p-4 text-center">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
-                <p className="text-sm text-muted-foreground">Searching...</p>
-              </div>
-            ) : searchFilteredPosts.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
-                <p className="text-sm">No posts found matching "{searchQuery}"</p>
-              </div>
-            ) : (
-              <div className="p-2">
-                <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
-                  {searchFilteredPosts.length} result{searchFilteredPosts.length !== 1 ? 's' : ''} found
+          {/* Search Results Dropdown */}
+          {showSearchResults && (
+            <Card className="absolute top-full mt-2 w-full max-h-96 overflow-y-auto z-50 shadow-lg">
+              {isSearching ? (
+                <div className="p-4 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
+                  <p className="text-sm text-muted-foreground">Searching...</p>
                 </div>
-                {searchFilteredPosts.map((post) => (
-                  <button
-                    key={post.id}
-                    onClick={() => handleViewPost(post)}
-                    className="w-full text-left p-3 hover:bg-accent rounded-lg transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <MessageSquare className="h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm mb-1 truncate">{post.title}</h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span>{post.author}</span>
-                          <span>•</span>
-                          <span>{post.replies} replies</span>
-                          <span>•</span>
-                          <span>{post.lastActivity}</span>
+              ) : searchFilteredPosts.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  <p className="text-sm">No posts found matching "{searchQuery}"</p>
+                </div>
+              ) : (
+                <div className="p-2">
+                  <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
+                    {searchFilteredPosts.length} result{searchFilteredPosts.length !== 1 ? 's' : ''} found
+                  </div>
+                  {searchFilteredPosts.map((post) => (
+                    <button
+                      key={post.id}
+                      onClick={() => handleViewPost(post)}
+                      className="w-full text-left p-3 hover:bg-accent rounded-lg transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <MessageSquare className="h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm mb-1 truncate">{post.title}</h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            <span>{post.author?.fullName || 'Unknown'}</span>
+                            <span>•</span>
+                            <span>{post.replies} replies</span>
+                            <span>•</span>
+                            <span>{post.lastActivity}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
-        )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+
+        <Button className="gap-2" onClick={() => setNewPostOpen(true)}>
+          <Plus className="h-4 w-4" />
+          New Post
+        </Button>
       </div>
 
       {/* Categories */}
@@ -380,6 +350,7 @@ const Forum = ({ courseId }) => {
                 categories={categories}
                 onViewPost={handleViewPost}
                 onDeletePost={setDeletePostObject}
+                onEditPost={handleEditPost}
               />
               
               {/* Infinite Scroll Trigger */}
@@ -425,7 +396,6 @@ const Forum = ({ courseId }) => {
         onOpenChange={setViewPostOpen}
         post={selectedPost}
         categories={categories}
-        onDeleteReply={setDeleteReplyObject}
         onEditPost={handleEditPost}
       />
 
@@ -433,6 +403,7 @@ const Forum = ({ courseId }) => {
         open={editPostOpen}
         onOpenChange={setEditPostOpen}
         post={selectedPost}
+        categories={categories}
       />
 
       <DeletePostDialog
@@ -441,14 +412,6 @@ const Forum = ({ courseId }) => {
         onConfirm={() => handleDeletePost(deletePostObject)}
         post={deletePostObject}
         isLoading={deletePostMutation.isPending}
-      />
-
-      <DeleteReplyDialog
-        open={!!deleteReplyObject}
-        onOpenChange={() => setDeleteReplyObject(null)}
-        onConfirm={() => handleDeleteReply(deleteReplyObject)}
-        reply={deleteReplyObject}
-        isLoading={deleteReplyMutation.isPending}
       />
     </div>
   );

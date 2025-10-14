@@ -10,13 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useEditPost } from '../../hooks/forum/useEditPost';
 import { toast } from 'react-toastify';
 
-const EditPostDialog = ({ open, onOpenChange, post }) => {
+const EditPostDialog = ({ open, onOpenChange, post, categories }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [category, setCategory] = useState('');
   const editPostMutation = useEditPost();
 
   // Update form when post changes
@@ -24,6 +26,7 @@ const EditPostDialog = ({ open, onOpenChange, post }) => {
     if (post) {
       setTitle(post.title || '');
       setContent(post.content || '');
+      setCategory(post.category || '');
     }
   }, [post]);
 
@@ -47,6 +50,7 @@ const EditPostDialog = ({ open, onOpenChange, post }) => {
         postId: post.id,
         title: title.trim(),
         content: content.trim(),
+        category: category.trim() || 'Others',
       });
 
       toast.update(toastId, {
@@ -75,6 +79,7 @@ const EditPostDialog = ({ open, onOpenChange, post }) => {
       onOpenChange(false);
       setTitle('');
       setContent('');
+      setCategory('');
     }
   };
 
@@ -109,6 +114,26 @@ const EditPostDialog = ({ open, onOpenChange, post }) => {
               disabled={editPostMutation.isPending}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-category">Category</Label>
+            <Select
+              value={category}
+              onValueChange={setCategory}
+              disabled={editPostMutation.isPending}
+            >
+              <SelectTrigger id="edit-category">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories?.map((cat) => (
+                  <SelectItem key={cat.name} value={cat.name}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>
