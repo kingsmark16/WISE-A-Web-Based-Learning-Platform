@@ -5,10 +5,10 @@ export const useCreatePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ courseId, title, content }) => {
+    mutationFn: async ({ courseId, title, content, category }) => {
       const response = await axiosInstance.post(
         `/course/${courseId}/forum/threads`,
-        { title, content }
+        { title, content, category }
       );
       return response.data;
     },
@@ -16,6 +16,11 @@ export const useCreatePost = () => {
       // Invalidate the posts list for this course
       queryClient.invalidateQueries({
         queryKey: ["forum-posts", variables.courseId],
+      });
+
+      // Invalidate categories to update counts
+      queryClient.invalidateQueries({
+        queryKey: ["forum-categories", variables.courseId],
       });
     },
   });

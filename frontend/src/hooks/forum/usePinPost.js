@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../../lib/axios";
 
-export const useEditPost = () => {
+export const usePinPost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ postId, title, content, category }) => {
-      const response = await axiosInstance.patch(
-        `/course/forum/posts/${postId}`,
-        { title, content, category }
+    mutationFn: async ({ postId, pin }) => {
+      const endpoint = pin ? 'pin' : 'unpin';
+      const response = await axiosInstance.post(
+        `/course/forum/posts/${postId}/${endpoint}`
       );
       return response.data;
     },
@@ -21,11 +21,6 @@ export const useEditPost = () => {
       // Invalidate the specific post
       queryClient.invalidateQueries({
         queryKey: ["forum-post", variables.postId],
-      });
-
-      // Invalidate categories to update counts
-      queryClient.invalidateQueries({
-        queryKey: ["forum-categories"],
       });
     },
   });

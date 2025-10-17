@@ -1,6 +1,8 @@
 import "./env.js";
 
 import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
@@ -28,6 +30,17 @@ import { arcjetRateLimit, strictRateLimit } from "./middlewares/arcjetRateLimit.
 
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: ["http://localhost:5173", "http://192.168.254.180:5173"],
+    credentials: true,
+  }
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -96,7 +109,28 @@ console.log("ARCJET envs:", {
   MODE: process.env.ARCJET_MODE,
 });
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  // Join a specific post room
+  socket.on('join-post', (postId) => {
+    socket.join(`post-${postId}`);
+    console.log(`Socket ${socket.id} joined post-${postId}`);
+  });
+  
+  // Leave a post room
+  socket.on('leave-post', (postId) => {
+    socket.leave(`post-${postId}`);
+    console.log(`Socket ${socket.id} left post-${postId}`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 // Start server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
