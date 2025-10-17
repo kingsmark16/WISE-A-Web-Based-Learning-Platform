@@ -65,7 +65,7 @@ const ModuleContent = () => {
           onSubmit={createModule}
           isLoading={isCreating}
           error={createError || fetchError}
-          disabled={!modules.length && !isLoading}
+          disabled={isCreating}
         />
       </div>
 
