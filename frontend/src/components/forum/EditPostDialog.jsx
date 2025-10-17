@@ -107,6 +107,7 @@ const EditPostDialog = ({ open, onOpenChange, post, categories }) => {
             <div className="space-y-2">
               <Label htmlFor="edit-content">Content</Label>
               <Textarea
+                className="h-24 resize-none"
                 id="edit-content"
                 placeholder="Write your post content..."
                 value={content}

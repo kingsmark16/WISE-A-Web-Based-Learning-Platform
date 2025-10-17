@@ -109,9 +109,10 @@ const CreatePostDialog = ({ open, onOpenChange, categories, courseId }) => {
               Content <span className="text-destructive">*</span>
             </Label>
             <Textarea
+              
               id="content"
               placeholder="Write your post content..."
-              className="min-h-[150px]"
+              className="h-24 resize-none"
               value={newPost.content}
               onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
               disabled={createPostMutation.isPending}
