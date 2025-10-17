@@ -362,6 +362,7 @@ export default function VideoPlayer({
     body.style.top = `-${scrollYRef.current}px`;
     body.style.left = "0";
     body.style.right = "0";
+    body.style.width = "100%";
     body.style.overflow = "hidden";
 
     return () => {
@@ -370,6 +371,7 @@ export default function VideoPlayer({
       body.style.top = "";
       body.style.left = "";
       body.style.right = "";
+      body.style.width = "";
       body.style.overflow = "";
       window.scrollTo(0, scrollYRef.current);
     };
@@ -379,7 +381,7 @@ export default function VideoPlayer({
   
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 min-h-screen w-screen"
       role="dialog"
       aria-modal="true"
       aria-label={title || "Video player"}

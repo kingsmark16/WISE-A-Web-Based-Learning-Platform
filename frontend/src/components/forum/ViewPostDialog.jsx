@@ -11,8 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Pin, 
-  Lock, 
+  Pin,
+  Lock,
   MessageSquare, 
   ThumbsUp, 
   Edit, 
@@ -27,8 +27,6 @@ import { useUser } from '@clerk/clerk-react';
 import { useCreateReply } from '../../hooks/forum/useCreateReply';
 import { useGetPostWithReplies } from '../../hooks/forum/useGetPostWithReplies';
 import { useLikePost } from '../../hooks/forum/useLikePost';
-import { usePinPost } from '../../hooks/forum/usePinPost';
-import { useLockPost } from '../../hooks/forum/useLockPost';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../lib/axios';
 import { useSocket } from '../../contexts/SocketContext';
@@ -59,8 +57,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   
   const createReplyMutation = useCreateReply();
   const likePostMutation = useLikePost();
-  const pinPostMutation = usePinPost();
-  const lockPostMutation = useLockPost();
 
   // Fetch post with initial replies when dialog opens
   const { data: postData, isLoading } = useGetPostWithReplies(post?.id, {
@@ -230,11 +226,10 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   if (!post) return null;
 
   const category = categories.find((c) => c.name === post.category);
+  console.log('ViewPostDialog - Category:', post.category, 'Found:', category);
 
   // Check if current user is the author or admin/faculty
   const isAuthor = user?.id === post.author?.clerkId;
-  const userRole = user?.publicMetadata?.role;
-  const canModerate = userRole === 'ADMIN' || userRole === 'FACULTY';
 
   const handleLike = async () => {
     if (!post.id) return;
@@ -251,48 +246,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
       setLikeCount(prev => isLiked ? prev + 1 : prev - 1);
       console.error('Failed to like post:', error);
       toast.error('Failed to like post');
-    }
-  };
-
-  const handlePin = async () => {
-    if (!post.id) return;
-    
-    // Optimistic update
-    const previousPinned = isPinned;
-    setIsPinned(!isPinned);
-    
-    try {
-      await pinPostMutation.mutateAsync({ 
-        postId: post.id, 
-        pin: !previousPinned 
-      });
-      toast.success(previousPinned ? 'Post unpinned' : 'Post pinned');
-    } catch (error) {
-      // Revert on error
-      setIsPinned(previousPinned);
-      console.error('Failed to pin post:', error);
-      toast.error('Failed to pin post');
-    }
-  };
-
-  const handleLock = async () => {
-    if (!post.id) return;
-    
-    // Optimistic update
-    const previousLocked = isLocked;
-    setIsLocked(!isLocked);
-    
-    try {
-      await lockPostMutation.mutateAsync({ 
-        postId: post.id, 
-        lock: !previousLocked 
-      });
-      toast.success(previousLocked ? 'Post unlocked' : 'Post locked');
-    } catch (error) {
-      // Revert on error
-      setIsLocked(previousLocked);
-      console.error('Failed to lock post:', error);
-      toast.error('Failed to lock post');
     }
   };
 
@@ -502,77 +455,47 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-full sm:max-w-[95vw] md:max-w-6xl h-[100dvh] sm:h-[95vh] flex flex-col overflow-hidden pt-2 pb-2 sm:pt-4 sm:pb-6 px-1 sm:px-6 gap-1">
-  <DialogHeader className="px-3 sm:px-6 pt-2 sm:pt-0 pb-2 sm:pb-4 flex-shrink-0">
+  <DialogContent className="max-w-full sm:max-w-[95vw] md:max-w-6xl h-[100dvh] sm:h-[95vh] flex flex-col overflow-hidden pt-2 pb-2 sm:pt-4 sm:pb-6 px-2 sm:px-6 gap-1">
+  <DialogHeader className="px-2 sm:px-6 pt-2 sm:pt-0 pb-2 sm:pb-4 flex-shrink-0">
           <DialogTitle className="sr-only">View Post</DialogTitle>
         </DialogHeader>
 
-  <div className="flex-1 overflow-y-auto scrollbar-hide pt-2 pb-3 sm:pb-6 px-3 sm:px-0 min-h-0" onScroll={handleScroll} ref={scrollContainerRef}>
+  <div className="flex-1 overflow-y-auto scrollbar-hide pt-2 pb-3 sm:pb-6 px-2 sm:px-1 min-h-0" onScroll={handleScroll} ref={scrollContainerRef}>
           {/* Post Header */}
           <div className="space-y-3 sm:space-y-4 px-0 sm:px-1">
             {/* Title and Badges - Full width on mobile */}
-            <div className="space-y-1.5 sm:space-y-2 pr-8 sm:pr-0">
+            <div className="space-y-1.5 sm:space-y-2 pr-1 sm:pr-0 min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                {category && <Badge className={`${category.color} text-[10px] sm:text-xs px-1.5 sm:px-2`}>{category.name}</Badge>}
+                {category && (
+                  <span 
+                    style={{ 
+                      backgroundColor: category.color, 
+                      color: '#ffffff',
+                      border: 'none'
+                    }} 
+                    className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-md font-medium inline-flex items-center flex-shrink-0"
+                  >
+                    {category.name}
+                  </span>
+                )}
                 {isPinned && (
-                  <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                  <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-shrink-0">
                     <Pin className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    Pinned
+                    <span className="hidden xs:inline">Pinned</span>
                   </Badge>
                 )}
                 {isLocked && (
-                  <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                  <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-shrink-0">
                     <Lock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    Locked
+                    <span className="hidden xs:inline">Locked</span>
                   </Badge>
                 )}
               </div>
-              <h2 className="text-base sm:text-lg md:text-xl font-bold line-clamp-2 sm:line-clamp-none">{post.title}</h2>
+              <h2 className="text-sm sm:text-lg md:text-xl font-bold break-words leading-tight sm:leading-normal">{post.title}</h2>
             </div>
             
             {/* Action buttons - Below title on mobile, inline on desktop */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap sm:justify-end sm:-mt-20 sm:mb-16">
-              {canModerate && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePin}
-                    disabled={pinPostMutation.isPending}
-                    className="gap-1 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
-                  >
-                    <Pin className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-transform ${pinPostMutation.isPending ? 'animate-pulse' : ''}`} />
-                    <span className="hidden sm:inline">{isPinned ? 'Unpin' : 'Pin'}</span>
-                    <span className="sm:hidden">{isPinned ? 'Unpin' : 'Pin'}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleLock}
-                    disabled={lockPostMutation.isPending}
-                    className="gap-1 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
-                  >
-                    <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-transform ${lockPostMutation.isPending ? 'animate-pulse' : ''}`} />
-                    <span className="hidden sm:inline">{isLocked ? 'Unlock' : 'Lock'}</span>
-                    <span className="sm:hidden">{isLocked ? 'Unlock' : 'Lock'}</span>
-                  </Button>
-                </>
-              )}
-              
-              {(isAuthor || canModerate) && !canModerate && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLock}
-                  disabled={lockPostMutation.isPending}
-                  className="gap-1 sm:gap-2 transition-all h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
-                >
-                  <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 transition-transform ${lockPostMutation.isPending ? 'animate-pulse' : ''}`} />
-                  <span className="hidden sm:inline">{isLocked ? 'Unlock' : 'Lock'}</span>
-                  <span className="sm:hidden">{isLocked ? 'Unlock' : 'Lock'}</span>
-                </Button>
-              )}
-              
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0">
               {isAuthor && onEditPost && (
                 <Button
                   variant="outline"

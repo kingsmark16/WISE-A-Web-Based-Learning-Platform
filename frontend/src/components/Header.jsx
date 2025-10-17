@@ -16,10 +16,29 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [debouncedQuery, setDebouncedQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false)
   const searchRef = useRef(null)
 
   // Check if user is admin
   const isAdmin = user?.publicMetadata?.role === "ADMIN"
+
+  // Detect if any video player modal is open
+  useEffect(() => {
+    const checkVideoPlayer = () => {
+      // Check for VideoPlayer (has role="dialog")
+      const videoDialog = document.querySelector('[role="dialog"]')
+      // Check for EmbedYt modal
+      const embedYtModal = document.querySelector('.fixed.inset-0.z-\\[70\\]')
+      setIsVideoPlayerOpen(!!(videoDialog || embedYtModal))
+    }
+
+    checkVideoPlayer()
+    // Listen for DOM changes
+    const observer = new MutationObserver(checkVideoPlayer)
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    return () => observer.disconnect()
+  }, [])
 
   // Debounce search query
   useEffect(() => {
@@ -267,7 +286,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   }
 
   return (
-    <header className={`fixed top-0 right-0 flex items-center justify-between py-4 px-4 md:py-5 md:px-6 lg:py-6 lg:px-8 z-[60] h-20 lg:left-64 ${isSidebarOpen ? 'left-64' : 'left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b'}`}>
+    <header className={`fixed top-0 right-0 flex items-center justify-between py-4 px-4 md:py-5 md:px-6 lg:py-6 lg:px-8 z-[60] h-20 lg:left-64 transition-none ${isVideoPlayerOpen ? 'pointer-events-none' : ''} ${isSidebarOpen ? 'left-64' : 'left-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b'}`}>
       
       {/* Left side - Menu button and Logo */}
       <div className="flex items-center gap-3 flex-shrink-0">

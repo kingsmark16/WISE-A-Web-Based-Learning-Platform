@@ -20,7 +20,7 @@ const Categories = ({ categories, onCategoryClick, activeCategory }) => {
               }`}
             >
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${category.color} flex-shrink-0`} />
+                <div style={{ backgroundColor: category.color }} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0" />
                 <span className="text-xs sm:text-sm font-medium truncate">{category.name}</span>
               </div>
               <Badge 

@@ -4,13 +4,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useUser } from '@clerk/clerk-react';
 
-const PostCard = ({ post, categories, onView, onDelete, onEdit }) => {
+const PostCard = ({ post, categories, onView, onDelete, onEdit, onPin, onLock }) => {
   const { user } = useUser();
   const isAuthor = user?.id === post.author?.clerkId;
+  const userRole = user?.publicMetadata?.role;
+  const canModerate = userRole === 'ADMIN' || userRole === 'FACULTY';
   const getCategoryColor = (categoryName) => {
-    return categories.find(c => c.name === categoryName)?.color || 'bg-gray-500';
+    const color = categories.find(c => c.name === categoryName)?.color || '#64748b';
+    console.log('Category:', categoryName, 'Color:', color);
+    return color;
   };
 
   const getCategoryName = (categoryName) => {
@@ -36,32 +46,100 @@ const PostCard = ({ post, categories, onView, onDelete, onEdit }) => {
               >
                 {post.title}
               </h5>
-              <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                {isAuthor && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground h-7 w-7 sm:h-8 sm:w-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(post);
-                    }}
-                  >
-                    <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 sm:h-8 sm:w-8 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(post);
-                  }}
-                >
-                  <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                </Button>
-              </div>
+            </div>
+            
+            {/* Action buttons - On separate line on mobile */}
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap mb-1 sm:mb-2">
+              {canModerate && (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`transition-all h-7 w-7 sm:h-8 sm:w-8 p-0 ${
+                            post.isPinned 
+                              ? 'text-primary bg-primary/10 hover:bg-primary/20' 
+                              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onPin?.(post);
+                          }}
+                        >
+                          <Pin className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${post.isPinned ? 'fill-current' : ''}`} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {post.isPinned ? 'Unpin Post' : 'Pin Post'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`transition-all h-7 w-7 sm:h-8 sm:w-8 p-0 ${
+                            post.isLocked 
+                              ? 'text-destructive bg-destructive/10 hover:bg-destructive/20' 
+                              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onLock?.(post);
+                          }}
+                        >
+                          <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${post.isLocked ? 'fill-current' : ''}`} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {post.isLocked ? 'Unlock Post' : 'Lock Post'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              )}
+              {isAuthor && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground h-7 w-7 sm:h-8 sm:w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(post);
+                        }}
+                      >
+                        <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit Post</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 sm:h-8 sm:w-8 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(post);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete Post</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2 sm:line-clamp-1">
@@ -72,9 +150,16 @@ const PostCard = ({ post, categories, onView, onDelete, onEdit }) => {
               <span className="truncate max-w-[150px] sm:max-w-none">by <span className="font-medium text-foreground">{post.author?.fullName || 'Unknown'}</span></span>
               <Separator orientation="vertical" className="h-3 sm:h-4 hidden sm:block" />
               {post.category && (
-                <Badge variant="outline" className={`${getCategoryColor(post.category)} text-white border-none text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5`}>
+                <span 
+                  style={{ 
+                    backgroundColor: getCategoryColor(post.category), 
+                    color: '#ffffff',
+                    border: 'none'
+                  }} 
+                  className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-md font-medium inline-flex items-center"
+                >
                   {getCategoryName(post.category)}
-                </Badge>
+                </span>
               )}
             </div>
 

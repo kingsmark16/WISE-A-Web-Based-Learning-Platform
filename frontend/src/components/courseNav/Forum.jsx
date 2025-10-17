@@ -15,6 +15,8 @@ import DeletePostDialog from '../forum/DeletePostDialog';
 import { useGetPostList } from '../../hooks/forum/useGetPostList';
 import { useSearchPosts } from '../../hooks/forum/useSearchPosts';
 import { useDeletePost } from '../../hooks/forum/useDeletePost';
+import { usePinPost } from '../../hooks/forum/usePinPost';
+import { useLockPost } from '../../hooks/forum/useLockPost';
 import { useGetForumCategories } from '../../hooks/forum/useGetForumCategories';
 
 const Forum = ({ courseId }) => {
@@ -49,6 +51,8 @@ const Forum = ({ courseId }) => {
 
   // Mutations
   const deletePostMutation = useDeletePost();
+  const pinPostMutation = usePinPost();
+  const lockPostMutation = useLockPost();
 
   // Fetch forum categories
   const { data: categories = [] } = useGetForumCategories(courseId);
@@ -193,6 +197,48 @@ const Forum = ({ courseId }) => {
       console.error('Failed to delete post:', error);
       toast.update(toastId, {
         render: 'Failed to delete post. Please try again.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handlePinPost = async (post) => {
+    const toastId = toast.loading(post.isPinned ? 'Unpinning post...' : 'Pinning post...');
+    try {
+      await pinPostMutation.mutateAsync({ postId: post.id, pin: !post.isPinned });
+      toast.update(toastId, {
+        render: post.isPinned ? 'Post unpinned successfully' : 'Post pinned successfully',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to pin/unpin post:', error);
+      toast.update(toastId, {
+        render: 'Failed to pin/unpin post. Please try again.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleLockPost = async (post) => {
+    const toastId = toast.loading(post.isLocked ? 'Unlocking post...' : 'Locking post...');
+    try {
+      await lockPostMutation.mutateAsync({ postId: post.id, lock: !post.isLocked });
+      toast.update(toastId, {
+        render: post.isLocked ? 'Post unlocked successfully' : 'Post locked successfully',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to lock/unlock post:', error);
+      toast.update(toastId, {
+        render: 'Failed to lock/unlock post. Please try again.',
         type: 'error',
         isLoading: false,
         autoClose: 3000,
@@ -376,6 +422,8 @@ const Forum = ({ courseId }) => {
                 onViewPost={handleViewPost}
                 onDeletePost={setDeletePostObject}
                 onEditPost={handleEditPost}
+                onPinPost={handlePinPost}
+                onLockPost={handleLockPost}
               />
               
               {/* Infinite Scroll Trigger */}

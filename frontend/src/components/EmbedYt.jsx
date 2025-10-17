@@ -223,12 +223,12 @@ const EmbedYt = ({
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 z-50"
+        className="fixed inset-0 bg-black/50 z-[70] min-h-screen w-screen"
         onClick={() => onOpenChange(false)}
       />
       
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[900px] max-w-[1200px]">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[900px] max-w-[1200px]">
         <div className="bg-white rounded-lg shadow-2xl overflow-hidden">
           {/* YouTube Header */}
           <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-white border-b border-gray-200">

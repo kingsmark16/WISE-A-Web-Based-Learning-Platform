@@ -43,10 +43,10 @@ export const getForumCategories = async (req, res) => {
 
     // Define forum categories with actual counts
     const categories = [
-      { name: 'General Discussion', color: 'bg-blue-500', count: 0 },
-      { name: 'Questions & Answers', color: 'bg-green-500', count: 0 },
-      { name: 'Announcements', color: 'bg-purple-500', count: 0 },
-      { name: 'Others', color: 'bg-gray-500', count: 0 }
+      { name: 'General Discussion', color: '#2563eb', count: 0 },      // Bright Blue (blue-600)
+      { name: 'Questions & Answers', color: '#059669', count: 0 },     // Emerald Green (emerald-600)
+      { name: 'Announcements', color: '#dc2626', count: 0 },           // Red (red-600)
+      { name: 'Others', color: '#64748b', count: 0 }                   // Slate Gray (slate-500)
     ];
 
     // Update counts based on actual data
