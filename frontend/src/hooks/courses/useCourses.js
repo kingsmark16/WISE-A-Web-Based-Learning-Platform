@@ -124,15 +124,58 @@ export const usePublishCourse = () => {
 
             return response.data;
         },
+        onMutate: async ({id, isPublished}) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['course', id] })
+            await queryClient.cancelQueries({ queryKey: ['courses'] })
+            
+            // Snapshot the previous values
+            const previousCourse = queryClient.getQueryData(['course', id])
+            const previousCourses = queryClient.getQueryData(['courses'])
+            
+            // Optimistically update the course cache
+            queryClient.setQueryData(['course', id], (old) => {
+                if (!old?.course) return old
+                return {
+                    ...old,
+                    course: {
+                        ...old.course,
+                        isPublished: isPublished
+                    }
+                }
+            })
+            
+            // Also optimistically update courses list
+            queryClient.setQueryData(['courses'], (old) => {
+                if (!old?.courses || !Array.isArray(old.courses)) return old
+                return {
+                    ...old,
+                    courses: old.courses.map((course) => 
+                        course.id === id 
+                            ? { ...course, isPublished }
+                            : course
+                    )
+                }
+            })
+            
+            return { previousCourse, previousCourses }
+        },
         onSuccess: (data) => {
-            queryClient.invalidateQueries(['courses']);
-            queryClient.invalidateQueries(['course']);
+            queryClient.invalidateQueries({ queryKey: ['courses'] })
+            queryClient.invalidateQueries({ queryKey: ['course'] })
             const message = data.course.isPublished 
                 ? 'Course published successfully!' 
                 : 'Course unpublished successfully!';
             toast.success(message);
         },
-        onError: (error) => {
+        onError: (error, {id}, context) => {
+            // Rollback on error
+            if (context?.previousCourse) {
+                queryClient.setQueryData(['course', id], context.previousCourse)
+            }
+            if (context?.previousCourses) {
+                queryClient.setQueryData(['courses'], context.previousCourses)
+            }
             const errorMessage = error?.response?.data?.message || 'Failed to update course status';
             toast.error(errorMessage);
         }

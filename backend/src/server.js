@@ -26,6 +26,7 @@ import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 import youtubeAuthRoutes from "./routes/youtubeAuthRoutes.js";
 import youtubeVideoRoutes from "./routes/youtubeVideoRoutes.js";
 import linkRoutes from "./routes/linkRoutes.js";
+import quizRoutes from "./routes/quizRoutes.js";
 import { arcjetRateLimit, strictRateLimit } from "./middlewares/arcjetRateLimit.js"; 
 
 
@@ -91,6 +92,8 @@ app.use('/api/link', linkRoutes);
 
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);
+
+app.use('/api/quiz', quizRoutes);
 
 // ===== Public APIs =====
 app.use('/api', strictRateLimit("5m", 10), guestRoutes);
