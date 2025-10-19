@@ -390,31 +390,32 @@ const SortableModule = ({
   };
 
   const handlePublishQuiz = (e) => {
-    if (e?.stopPropagation) e.stopPropagation();
-    
+    e?.stopPropagation?.();
     const quiz = moduleData?.module?.quiz;
     if (!quiz) return;
     
-    publishQuizMutation.mutate(quiz.id, {
-      onSuccess: (updatedQuiz) => {
-        const actionMessage = updatedQuiz.isPublished ? "published" : "unpublished";
-        toast.success(`Quiz ${actionMessage} successfully`, {
-          autoClose: 3000,
-          pauseOnHover: true,
-        });
-        // Cache invalidation is now handled in the usePublishQuiz hook
-      },
-      onError: (error) => {
-        const errorMessage = error?.response?.data?.message || 
-                           error?.message || 
-                           "Failed to update quiz status. Please try again.";
-        toast.error(errorMessage, {
-          autoClose: 4000,
-          pauseOnHover: true,
-        });
-        console.error("Publish quiz error:", error);
-      },
-    });
+    const newState = !quiz.isPublished;
+    const action = newState ? "published" : "unpublished";
+    
+    publishQuizMutation.mutate(
+      { quizId: quiz.id, moduleId },
+      {
+        onSuccess: () => {
+          toast.success(`Quiz ${action} successfully`, {
+            autoClose: 3000,
+            pauseOnHover: true,
+          });
+        },
+        onError: (error) => {
+          const errorMessage = error?.response?.data?.message || 
+                             "Failed to update quiz status. Please try again.";
+          toast.error(errorMessage, {
+            autoClose: 4000,
+            pauseOnHover: true,
+          });
+        },
+      }
+    );
   };
 
   // pass moduleId so hook can optimistic-update the correct cache
@@ -883,21 +884,14 @@ const SortableModule = ({
           <h4 className="text-sm md:text-base font-semibold text-foreground">Quiz</h4>
           {moduleData.module.quiz ? (
             <Card className="w-full border-2">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4">
+              <CardHeader className="">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-base md:text-lg text-foreground">
-                        {moduleData.module.quiz.title}
-                      </CardTitle>
-                    </div>
-                    {moduleData.module.quiz.description && (
-                      <CardDescription className="text-xs md:text-sm mt-2 text-muted-foreground whitespace-pre-wrap break-words">
-                        {moduleData.module.quiz.description}
-                      </CardDescription>
-                    )}
+                    <CardTitle className="text-base md:text-lg text-foreground">
+                      {moduleData.module.quiz.title}
+                    </CardTitle>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex items-center justify-end gap-2 flex-shrink-0 w-40">
                     <Button
                       size="sm"
                       variant="outline"
@@ -957,6 +951,15 @@ const SortableModule = ({
                   </div>
                 </div>
               </CardHeader>
+
+              {moduleData.module.quiz.description && (
+                <div className="px-6">
+                  <span className="font-medium text-sm">Description:</span>
+                  <p className="text-xs md:text-sm mt-1 text-muted-foreground whitespace-pre-wrap break-words">
+                    {moduleData.module.quiz.description}
+                  </p>
+                </div>
+              )}
 
               <CardContent className="space-y-4">
                 {/* Quiz Stats Grid */}
@@ -1024,16 +1027,30 @@ const SortableModule = ({
                           acc.set(q.type, (acc.get(q.type) || 0) + 1);
                           return acc;
                         }, new Map())
-                      ).map(([type, count]) => (
-                        <div
-                          key={type}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          {type === 'MULTIPLE_CHOICE' ? 'Multiple Choice' : type === 'TRUE_FALSE' ? 'True/False' : type}
-                          <span className="text-primary/70">({count})</span>
-                        </div>
-                      ))}
+                      ).map(([type, count]) => {
+                        const getTypeLabel = (t) => {
+                          switch (String(t).toUpperCase()) {
+                            case 'MULTIPLE_CHOICE':
+                              return 'Multiple Choice';
+                            case 'TRUE_FALSE':
+                              return 'True/False';
+                            case 'ENUMERATION':
+                              return 'Enumeration';
+                            default:
+                              return String(t).replace(/_/g, ' ');
+                          }
+                        };
+                        return (
+                          <div
+                            key={type}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                            {getTypeLabel(type)}
+                            <span className="text-primary/70">({Number(count) || 0})</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

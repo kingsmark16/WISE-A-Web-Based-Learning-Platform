@@ -163,17 +163,17 @@ export const publishQuiz = async (req, res) => {
 
     if (!user) return res.status(401).json({ message: 'User not found' });
 
-    // Fetch quiz with module and course info
+    // Fetch quiz with minimal data for authorization check
     const quiz = await prisma.quiz.findUnique({ 
       where: { id },
-      include: { 
+      select: { 
+        id: true,
+        isPublished: true,
         module: { 
           select: { 
-            id: true,
-            course: { select: { id: true, facultyId: true } }
+            course: { select: { facultyId: true } }
           }
-        },
-        questions: true 
+        }
       }
     });
 
@@ -184,11 +184,21 @@ export const publishQuiz = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to publish this quiz' });
     }
 
-    // Toggle publish state
+    // Toggle publish state and return complete quiz data
     const updated = await prisma.quiz.update({
       where: { id },
       data: { isPublished: !quiz.isPublished },
-      include: { questions: true }
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        isPublished: true,
+        timeLimit: true,
+        attemptLimit: true,
+        createdAt: true,
+        updatedAt: true,
+        questions: { select: { id: true } } // Only return question IDs, not full questions
+      }
     });
 
     res.status(200).json({ 
