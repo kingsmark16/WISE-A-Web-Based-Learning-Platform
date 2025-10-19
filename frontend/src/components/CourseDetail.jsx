@@ -12,8 +12,7 @@ import CourseContentNav from "./CourseContentNav";
 const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data, isLoading, error, refetch } = useGetCourse(id);
-  const [publishing, setPublishing] = useState(false);
+  const { data, isLoading, error } = useGetCourse(id);
   const [copied, setCopied] = useState(false);
   const publishMutation = usePublishCourse();
 
@@ -128,17 +127,11 @@ const CourseDetail = () => {
   const handleBack = () => navigate(-1);
   const handleEdit = () => navigate(`/admin/courses/edit/${course.id}`);
 
-  const handlePublishToggle = async () => {
-    setPublishing(true);
-    try {
-      await publishMutation.mutateAsync({
-        id: course.id,
-        isPublished: !course.isPublished,
-      });
-      await refetch();
-    } finally {
-      setPublishing(false);
-    }
+  const handlePublishToggle = () => {
+    publishMutation.mutate({
+      id: course.id,
+      isPublished: !course.isPublished,
+    });
   };
 
   const handleCopyCode = () => {
@@ -330,16 +323,16 @@ const CourseDetail = () => {
               <Button
                 variant={course.isPublished ? "outline" : "default"}
                 onClick={handlePublishToggle}
-                disabled={publishing}
+                disabled={publishMutation.isPending}
                 className={`transition-all duration-200 ${
-                  publishing
+                  publishMutation.isPending
                     ? "opacity-70 cursor-not-allowed"
                     : course.isPublished
                     ? "text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
                     : "bg-primary text-primary-foreground hover:bg-primary/90"
                 }`}
               >
-                {publishing ? "Processing..." : course.isPublished ? "Unpublish" : "Publish"}
+                {publishMutation.isPending ? "Processing..." : course.isPublished ? "Unpublish" : "Publish"}
               </Button>
             </div>
 

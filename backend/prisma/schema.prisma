@@ -145,7 +145,8 @@ model Quiz {
   title       String
   description String?
   isPublished Boolean  @default(false)
-  timeLimit   Int?     // in minutes
+  timeLimit   Int?     @default(0)
+  attemptLimit Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -162,10 +163,8 @@ model QuizQuestion {
   type          QuestionType
   options       String[]
   correctAnswer String
-  explanation   String?
   points        Int              @default(1)
   position      Int
-  
   quizId        String
   quiz          Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
   
@@ -339,7 +338,7 @@ enum Role {
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
-  SHORT_ANSWER
+  ENUMERATION
 }
 
 enum LessonType {
