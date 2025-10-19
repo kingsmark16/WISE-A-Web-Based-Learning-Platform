@@ -112,78 +112,66 @@ export const usePublishQuiz = () => {
     const queryClient = useQueryClient()
     
     return useMutation({
-        mutationFn: (quizId) => quizAPI.publishQuiz(quizId),
-        onMutate: async (quizId) => {
-            // Cancel any outgoing refetches
-            await queryClient.cancelQueries({ queryKey: quizKeys.detail(quizId) })
-            await queryClient.cancelQueries({ queryKey: ["module"] })
+        mutationFn: ({ quizId }) => quizAPI.publishQuiz(quizId),
+        onMutate: async ({ quizId, moduleId }) => {
+            // Cancel any outgoing refetches to prevent race conditions
+            await Promise.all([
+                queryClient.cancelQueries({ queryKey: quizKeys.detail(quizId) }),
+                moduleId && queryClient.cancelQueries({ queryKey: ['module', moduleId] })
+            ])
             
-            // Snapshot the previous values
-            const previousQuiz = queryClient.getQueryData(quizKeys.detail(quizId))
-            const previousModules = queryClient.getQueriesData({ queryKey: ["module"] })
-            
-            // Get the current state to determine the new state
+            // Determine new state from current quiz cache
             const currentQuiz = queryClient.getQueryData(quizKeys.detail(quizId))
             const newPublishedState = !currentQuiz?.isPublished
             
-            // Optimistically update the quiz cache
-            queryClient.setQueryData(quizKeys.detail(quizId), (old) => {
-                if (!old) return old
-                return {
-                    ...old,
-                    isPublished: newPublishedState
-                }
-            })
+            // Snapshot only what we need for rollback
+            const previousModule = moduleId ? queryClient.getQueryData(['module', moduleId]) : null
             
-            // Also optimistically update module caches that contain this quiz
-            queryClient.setQueriesData({ queryKey: ["module"] }, (old) => {
-                if (!old?.module?.quiz || old.module.quiz.id !== quizId) return old
-                return {
-                    ...old,
+            // Optimistically update both caches
+            if (currentQuiz) {
+                queryClient.setQueryData(quizKeys.detail(quizId), {
+                    ...currentQuiz,
+                    isPublished: newPublishedState
+                })
+            }
+            
+            if (moduleId && previousModule?.module?.quiz) {
+                queryClient.setQueryData(['module', moduleId], {
+                    ...previousModule,
                     module: {
-                        ...old.module,
+                        ...previousModule.module,
                         quiz: {
-                            ...old.module.quiz,
+                            ...previousModule.module.quiz,
                             isPublished: newPublishedState
                         }
                     }
-                }
-            })
+                })
+            }
             
-            // Return a context object with the snapshotted values
-            return { previousQuiz, previousModules }
+            return { previousModule, moduleId }
         },
-        onSuccess: (data, quizId) => {
-            // Update specific quiz cache with the returned quiz data
-            const updatedQuiz = data.quiz || data
-            queryClient.setQueryData(
-                quizKeys.detail(quizId),
-                updatedQuiz
-            )
+        onSuccess: (data, { quizId, moduleId }) => {
+            const updatedQuiz = data.quiz
             
-            // Update module queries with the new quiz data (avoid refetch to keep optimistic state stable)
-            queryClient.setQueriesData({ queryKey: ["module"] }, (old) => {
-                if (!old?.module?.quiz || old.module.quiz.id !== quizId) return old
-                return {
+            // Sync with server response - ensures consistency
+            queryClient.setQueryData(quizKeys.detail(quizId), updatedQuiz)
+            
+            if (moduleId) {
+                queryClient.setQueryData(['module', moduleId], (old) => ({
                     ...old,
                     module: {
                         ...old.module,
                         quiz: updatedQuiz
                     }
-                }
-            })
+                }))
+            }
         },
-        onError: (error, quizId, context) => {
-            // If the mutation fails, use the context returned from onMutate to roll back
-            if (context?.previousQuiz) {
-                queryClient.setQueryData(quizKeys.detail(quizId), context.previousQuiz)
+        onError: (error, { moduleId }, context) => {
+            // Rollback: restore previous module state
+            if (context?.previousModule && moduleId) {
+                queryClient.setQueryData(['module', moduleId], context.previousModule)
             }
-            if (context?.previousModules) {
-                context.previousModules.forEach(([queryKey, data]) => {
-                    queryClient.setQueryData(queryKey, data)
-                })
-            }
-            console.error("Failed to publish/unpublish quiz:", error)
+            console.error("Failed to publish/unpublish quiz:", error?.response?.data?.message || error.message)
         },
     })
 }

@@ -253,17 +253,6 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
     setExpandedQuestionId(expandedQuestionId === questionId ? null : questionId);
   };
 
-  const handleResetForm = () => {
-    if (quiz) {
-      setTitle(quiz.title || "");
-      setDescription(quiz.description || "");
-      setTimeLimit(quiz.timeLimit ? Math.floor(quiz.timeLimit / 60) : "");
-      setAttemptLimit(quiz.attemptLimit || "");
-      setQuestions(quiz.questions || []);
-      setExpandedQuestionId(null);
-    }
-  };
-
   const handleAddQuestion = () => {
     const newQuestion = {
       id: `q-${Date.now()}`,
@@ -499,69 +488,71 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
 
           {/* Questions Section */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {/* Questions Header and Add Button */}
-            <div className="flex items-center justify-between gap-4 mb-4 flex-shrink-0 pr-4">
-              <div>
-                <h3 className="font-semibold text-base">Questions</h3>
-                <p className="text-xs text-muted-foreground">
-                  {questions.length === 0 ? "No questions yet" : `${questions.length} question${questions.length !== 1 ? 's' : ''} added`}
-                </p>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleAddQuestion}
-                disabled={isSubmitting}
-                className="gap-2 flex-shrink-0"
-              >
-                <Plus className="h-4 w-4" />
-                Add Question
-              </Button>
-            </div>
+            <h3 className="font-semibold text-base mb-3 flex-shrink-0">Questions</h3>
 
             {/* Questions Layout with Preview */}
             <div className="flex-1 overflow-hidden flex gap-4">
               {/* Questions List - Left Side */}
-              <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted pr-2">
-                {questions.length > 0 ? (
-                  <div className="space-y-2">
-                    {questions.map((q, index) => (
-                      <div key={q.id}>
-                        <QuestionBuilder
-                          question={q}
-                          onUpdate={(updated) => handleUpdateQuestion(q.id, updated)}
-                          onRemove={() => handleRemoveQuestion(q.id)}
-                          onExpand={handleExpandQuestion}
-                          isExpanded={expandedQuestionId === q.id}
-                          questionNumber={index + 1}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                      <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
-                        No questions yet
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        Click "Add Question" to add questions to your quiz
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddQuestion}
-                        disabled={isSubmitting}
-                        className="gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Your First Question
-                      </Button>
+              <div className="flex-1 overflow-hidden flex flex-col">
+                {/* Questions Header with Add Button - Aligned with questions container */}
+                <div className="flex items-center justify-between gap-4 mb-3 flex-shrink-0">
+                  <p className="text-xs text-muted-foreground">
+                    {questions.length === 0 ? "No questions yet" : `${questions.length} question${questions.length !== 1 ? 's' : ''} added`}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddQuestion}
+                    disabled={isSubmitting}
+                    className="gap-2 flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Question
+                  </Button>
+                </div>
+
+                {/* Questions List Scroll Area */}
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted pr-2">
+                  {questions.length > 0 ? (
+                    <div className="space-y-2">
+                      {questions.map((q, index) => (
+                        <div key={q.id}>
+                          <QuestionBuilder
+                            question={q}
+                            onUpdate={(updated) => handleUpdateQuestion(q.id, updated)}
+                            onRemove={() => handleRemoveQuestion(q.id)}
+                            onExpand={handleExpandQuestion}
+                            isExpanded={expandedQuestionId === q.id}
+                            questionNumber={index + 1}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="text-center">
+                        <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-20" />
+                        <p className="text-sm font-medium text-muted-foreground mb-2">
+                          No questions yet
+                        </p>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          Click "Add Question" to add questions to your quiz
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddQuestion}
+                          disabled={isSubmitting}
+                          className="gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Your First Question
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Questions Summary - Right Side */}
@@ -680,7 +671,7 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
         </div>
 
         {/* Footer with Actions */}
-        <DialogFooter className="border-t px-6 py-3 flex gap-2 flex-row-reverse flex-shrink-0 mt-auto items-center justify-between">
+        <DialogFooter className="border-t px-6 py-3 flex gap-2 flex-row-reverse flex-shrink-0 mt-auto items-center justify-end">
           <div className="flex gap-2">
             <Button
               type="submit"
@@ -710,16 +701,6 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
               Cancel
             </Button>
           </div>
-
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleResetForm}
-            disabled={isSubmitting}
-            className="hover:bg-muted/50 transition-colors duration-200"
-          >
-            Reset
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
