@@ -77,13 +77,38 @@ export const getSelectedCourse = async (req, res) => {
                         fullName: true,
                         imageUrl: true,
                     }
+                },
+                _count: {
+                    select: {
+                        enrollments: true,
+                        modules: true
+                    }
+                },
+                modules: {
+                    select: {
+                        _count: {
+                            select: {
+                                lessons: true
+                            }
+                        }
+                    }
                 }
             }
         });
 
         if(!course) return res.status(404).json({message: "Course Not Found"});
 
-        res.status(200).json({data: course});
+        // Calculate total lessons from all modules
+        const totalLessons = course.modules?.reduce((total, module) => total + (module._count?.lessons || 0), 0) || 0;
+
+        // Remove modules from response and add totalLessons
+        const { modules, ...courseData } = course;
+        const responseData = {
+            ...courseData,
+            totalLessons
+        };
+
+        res.status(200).json({data: responseData});
 
     } catch (error) {
         console.error('Error fetching course details:', error);
@@ -98,10 +123,11 @@ export const getSelectedCourse = async (req, res) => {
 export const enrollInCourse = async (req, res) => {
     try {
 
-        const {courseId} = req.body;
+        const {courseId, courseCode} = req.body;
         const userId = req.auth().userId;
 
         if(!courseId) return res.status(400).json({message: "Course ID is required"});
+        if(!courseCode) return res.status(400).json({message: "Course code is required"});
         if(!userId) return res.status(401).json({message: "User not authenticated"});
 
         const course = await prisma.course.findUnique({
@@ -122,6 +148,15 @@ export const enrollInCourse = async (req, res) => {
         if(!course) return res.status(404).json({message: "Course not found"});
         if (!course.isPublished) {
             return res.status(400).json({ message: "Course is not available for enrollment" });
+        }
+
+        // Verify course code
+        if(!course.code) {
+            return res.status(400).json({message: "This course does not have an enrollment code"});
+        }
+
+        if(course.code !== courseCode.trim()) {
+            return res.status(403).json({message: "Invalid course code. Please check and try again."});
         }
 
         const studentId = user.id;
@@ -211,6 +246,64 @@ export const checkEnrollmentStatus = async (req, res) => {
         console.error('Error checking enrollment status:', error);
         res.status(500).json({
             message: 'Failed to check enrollment status',
+            error: error.message
+        });
+    }
+}
+
+export const unenrollInCourse = async (req, res) => {
+    try {
+
+        const {courseId} = req.body;
+        const userId = req.auth().userId;
+
+        if(!courseId) return res.status(400).json({message: "Course ID is required"});
+        if(!userId) return res.status(401).json({message: "User not authenticated"});
+
+        const user = await prisma.user.findUnique({
+            where: {
+                clerkId: userId
+            },
+            select: {
+                id: true
+            }
+        })
+
+        if(!user) return res.status(404).json({message: "User not found in database"});
+
+        const studentId = user.id;
+
+        const existingEnrollment = await prisma.enrollment.findUnique({
+            where: {
+                studentId_courseId: {
+                    studentId,
+                    courseId
+                }
+            }
+        });
+
+        if(!existingEnrollment) {
+            return res.status(404).json({message: "Enrollment not found"});
+        }
+
+        // Delete the enrollment
+        await prisma.enrollment.delete({
+            where: {
+                studentId_courseId: {
+                    studentId,
+                    courseId
+                }
+            }
+        });
+
+        res.status(200).json({
+            message: "Successfully unenrolled from course"
+        });
+
+    } catch (error) {
+        console.error('Error unenrolling from course:', error);
+        res.status(500).json({
+            message: 'Failed to unenroll from course',
             error: error.message
         });
     }

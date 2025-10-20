@@ -14,7 +14,7 @@ const FeaturedCourses = ({featCourses, featuredCoursesLoading, featuredCoursesEr
     <section className="mb-8">
       <Card className="border-none shadow-lg">
         <CardHeader>
-          <CardTitle className="text-md font-semibold text-primary mb-2">
+          <CardTitle className="text-md font-semibold text-foreground mb-2">
             Featured Courses
           </CardTitle>
         </CardHeader>
@@ -25,7 +25,7 @@ const FeaturedCourses = ({featCourses, featuredCoursesLoading, featuredCoursesEr
                 [...Array(5)].map((_, idx) => (
                   <CarouselItem
                     key={idx}
-                    className="pl-2 md:pl-4 cursor-pointer select-none basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
+                    className="pl-2 md:pl-4 cursor-pointer select-none basis-1/2 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
                   >
                     <Card className={`${CARD_HEIGHT} flex flex-col w-full`}>
                       <Skeleton className={`rounded-t-xl w-full ${THUMBNAIL_HEIGHT}`} />
@@ -53,7 +53,7 @@ const FeaturedCourses = ({featCourses, featuredCoursesLoading, featuredCoursesEr
                 featCourses.map((course) => (
                   <CarouselItem
                     key={course.id}
-                    className="pl-2 md:pl-4 cursor-pointer select-none basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
+                    className="pl-2 md:pl-4 cursor-pointer select-none basis-1/2 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4 2xl:basis-1/5"
                   >
                     <div
                       onClick={() => navigate(`/student/homepage/${course.id}/selected-course`)}
@@ -93,8 +93,6 @@ const FeaturedCourses = ({featCourses, featuredCoursesLoading, featuredCoursesEr
                 ))
               )}
             </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
           </Carousel>
         </CardContent>
       </Card>
