@@ -4,11 +4,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, Users, Calendar, BookOpen, Award, BarChart3 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Users, Calendar, BookOpen } from "lucide-react";
+import { useState, useEffect } from "react";
 import CourseEnrollDialog from "@/components/CourseEnrollDialog";
 import UnenrollConfirmationDialog from "@/components/UnenrollConfirmationDialog";
+import CourseTabs from "@/components/CourseTabs";
 
 const CoursePage = () => {
   const { id } = useParams();
@@ -18,11 +18,9 @@ const CoursePage = () => {
   const {mutate: unenrollCourse, isPending: isUnenrollingCourse} = useUnenrollInCourse();
 
   const selectedCourse = course?.data;
-  const [tab, setTab] = useState("info");
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [unenrollDialogOpen, setUnenrollDialogOpen] = useState(false);
   const [isUnenrollingLocally, setIsUnenrollingLocally] = useState(false);
-  const scrollContainerRef = useRef(null);
 
   const handleEnrollment = () => {
     if(enrollmentStatus?.isEnrolled){
@@ -56,19 +54,6 @@ const CoursePage = () => {
       setIsUnenrollingLocally(false);
     }
   }, [isUnenrollingCourse]);
-
-
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -120, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 120, behavior: 'smooth' });
-    }
-  };
 
   return (
     <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
@@ -248,85 +233,14 @@ const CoursePage = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground font-medium mb-1">Lessons</p>
-                    <p className="text-sm sm:text-base font-medium">
+                    <p className="text-xl sm:text-2xl font-bold">
                       {selectedCourse.totalLessons || 0}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <Tabs value={tab} onValueChange={setTab} className="w-full">
-                <div className="relative flex items-center">
-                  {/* Left Arrow - only visible on small screens */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-80 z-10 md:hidden bg-background/80 backdrop-blur-sm h-9 w-8"
-                    onClick={scrollRight}
-                  >
-                    <ChevronLeft className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute left-80 z-10 md:hidden bg-background/80 backdrop-blur-sm h-9 w-8"
-                    onClick={scrollLeft}
-                  >
-                    <ChevronRight className="h-3 w-3" />
-                  </Button>
-
-                  <div 
-                    ref={scrollContainerRef}
-                    className="overflow-x-auto scrollbar-hide md:overflow-visible px-8 md:px-10 lg:px-0 w-full"
-                  >
-                    <TabsList className="flex bg-muted mb-4 md:mb-6 min-w-max md:w-full h-9 md:h-10 gap-1 md:gap-2 p-1">
-                      <TabsTrigger value="info" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-                        Info
-                      </TabsTrigger>
-                      <TabsTrigger value="stream" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-                        Stream
-                      </TabsTrigger>
-                      <TabsTrigger value="certification" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-                        Certification
-                      </TabsTrigger>
-                       <TabsTrigger value="students" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-                        Students
-                      </TabsTrigger>
-                       <TabsTrigger value="forum" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-                        Forum
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
-                </div>
-
-                <TabsContent value="info" className="w-full">
-                  <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-                    Additional course information will be shown here.
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="students" className="w-full">
-                  <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-                    Students will be shown here.
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="stream" className="w-full">
-                  <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-                    Chapters will be shown here.
-                  </div>
-                </TabsContent>
-                <TabsContent value="forum" className="w-full">
-                  <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-                    Forum will be shown here.
-                  </div>
-                </TabsContent>
-                <TabsContent value="certification" className="w-full">
-                  <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-                    Certification details will be shown here.
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <CourseTabs courseId={id} />
             </div>
           </CardContent>
         ) : (
