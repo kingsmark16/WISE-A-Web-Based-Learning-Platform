@@ -1,50 +1,14 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import ModuleAccordion from "./ModuleAccordion";
 
 const CourseTabs = ({ courseId }) => {
   const [tab, setTab] = useState("module");
-  const scrollContainerRef = useRef(null);
-
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -120, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 120, behavior: 'smooth' });
-    }
-  };
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <div className="relative flex items-center">
-        {/* Left Arrow - only visible on small screens */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute right-80 z-10 md:hidden bg-background/80 backdrop-blur-sm h-9 w-8"
-          onClick={scrollRight}
-        >
-          <ChevronLeft className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute left-80 z-10 md:hidden bg-background/80 backdrop-blur-sm h-9 w-8"
-          onClick={scrollLeft}
-        >
-          <ChevronRight className="h-3 w-3" />
-        </Button>
-
-        <div
-          ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-hide md:overflow-visible px-8 md:px-10 lg:px-0 w-full"
-        >
+      <div className="flex items-center">
+        <div className="overflow-x-auto scrollbar-hide md:overflow-visible px-8 md:px-10 lg:px-0 w-full">
           <TabsList className="flex bg-muted mb-4 md:mb-6 min-w-max md:w-full h-9 md:h-10 gap-1 md:gap-2 p-1">
             <TabsTrigger value="module" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
               Module

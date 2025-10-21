@@ -384,6 +384,113 @@ export const getCourseModules = async (req, res) => {
     }
 }
 
+// Get module details including lessons, links, and quiz for enrolled students
+export const getModuleDetailsForStudent = async (req, res) => {
+    try {
+        const { courseId, moduleId } = req.params;
+        const userId = req.auth().userId;
+
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!moduleId) return res.status(400).json({ message: "Module ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+        // Get user ID from clerkId
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) return res.status(404).json({ message: "User not found in database" });
+
+        // Check if student is enrolled in the course
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                studentId_courseId: {
+                    studentId: user.id,
+                    courseId
+                }
+            }
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
+        }
+
+        // Fetch module details with lessons, links, and quiz
+        const module = await prisma.module.findUnique({
+            where: { id: moduleId },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                position: true,
+                courseId: true,
+                updatedAt: true,
+                lessons: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        type: true,
+                        dropboxPath: true,
+                        youtubeId: true,
+                        position: true,
+                        duration: true,
+                        thumbnail: true,
+                        url: true,
+                    },
+                    orderBy: { position: 'asc' }
+                },
+                links: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        url: true,
+                        position: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                    orderBy: { position: 'asc' }
+                },
+                quiz: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        isPublished: true,
+                        timeLimit: true,
+                        attemptLimit: true,
+                        _count: {
+                            select: {
+                                questions: true
+                            }
+                        },
+                        createdAt: true,
+                        updatedAt: true,
+                    }
+                }
+            }
+        });
+
+        if (!module) return res.status(404).json({ message: "Module not found" });
+
+        // Verify the module belongs to the course
+        if (module.courseId !== courseId) {
+            return res.status(400).json({ message: "Module does not belong to this course" });
+        }
+
+        res.status(200).json({ data: module });
+
+    } catch (error) {
+        console.error('Error fetching module details for student:', error);
+        res.status(500).json({
+            message: 'Failed to fetch module details',
+            error: error.message
+        });
+    }
+}
+
 // Mark a lesson as completed by a student
 export const markLessonComplete = async (req, res) => {
     try {

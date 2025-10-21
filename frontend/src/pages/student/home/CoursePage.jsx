@@ -102,13 +102,30 @@ const CoursePage = () => {
                         </div>
                       </div>
                     )}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <Badge
                         variant="secondary"
                         className="rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium bg-primary/10 text-primary border-none"
                       >
                         {selectedCourse.category}
                       </Badge>
+                    </div>
+                    {/* Enroll Button */}
+                    <div className="flex gap-2">
+                      <Button 
+                        className="w-full sm:w-auto h-10 text-sm md:text-base font-medium"
+                        onClick={handleEnrollment}
+                        disabled={isUnenrollingLocally || isUnenrollingCourse || isEnrollmentStatusLoading}
+                        variant={enrollmentStatus?.isEnrolled ? "destructive" : "default"}
+                      >
+                        {(isUnenrollingLocally || isUnenrollingCourse) ? (
+                            "Processing..."
+                        ): enrollmentStatus?.isEnrolled ? (
+                            "Unenroll"
+                        ): (
+                            "Enroll Now"
+                        )}
+                      </Button>
                     </div>
                   </div>
 
@@ -171,24 +188,6 @@ const CoursePage = () => {
                 )}
               </div>
 
-              {/* Action Button */}
-              <div className="flex gap-2">
-                <Button 
-                  className="w-full sm:w-auto h-10 text-sm md:text-base font-medium"
-                  onClick={handleEnrollment}
-                  disabled={isUnenrollingLocally || isUnenrollingCourse || isEnrollmentStatusLoading}
-                  variant={enrollmentStatus?.isEnrolled ? "destructive" : "default"}
-                >
-                  {(isUnenrollingLocally || isUnenrollingCourse) ? (
-                      "Processing..."
-                  ): enrollmentStatus?.isEnrolled ? (
-                      "Unenroll"
-                  ): (
-                      "Enroll Now"
-                  )}
-                </Button>
-              </div>
-
               {/* Description */}
               {selectedCourse.description && (
                 <div className="space-y-2">
@@ -206,7 +205,7 @@ const CoursePage = () => {
                     <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Students Enrolled</p>
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Students</p>
                     <p className="text-xl sm:text-2xl font-bold">
                       {selectedCourse._count?.enrollments || 0}
                     </p>
