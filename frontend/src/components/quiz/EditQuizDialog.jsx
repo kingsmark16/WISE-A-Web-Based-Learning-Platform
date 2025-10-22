@@ -376,8 +376,19 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
     });
   };
 
+  const handleOpenChange = (newOpen) => {
+    if (newOpen && quiz?.isPublished) {
+      toast.warning("You must unpublish the quiz before editing", {
+        autoClose: 3000,
+        pauseOnHover: true,
+      });
+      return;
+    }
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>

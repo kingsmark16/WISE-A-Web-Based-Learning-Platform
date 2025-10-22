@@ -17,7 +17,10 @@ const LinkItem = memo(({ link, index, onOpenLink }) => {
   }, [link, onOpenLink]);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-input bg-card hover:bg-accent/50 transition-colors group">
+    <button
+      onClick={handleClick}
+      className="w-full flex items-center gap-3 p-3 rounded-lg border border-input bg-card hover:bg-accent/50 transition-colors group cursor-pointer text-left"
+    >
       {/* Link Number */}
       <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
         <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">{index + 1}</span>
@@ -51,17 +54,11 @@ const LinkItem = memo(({ link, index, onOpenLink }) => {
         </div>
       </div>
 
-      {/* Open Link Button */}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleClick}
-        className="flex-shrink-0 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"
-        title="Open link in new tab"
-      >
-        <ExternalLink className="h-4 w-4" />
-      </Button>
-    </div>
+      {/* External Link Icon */}
+      <div className="flex-shrink-0">
+        <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+      </div>
+    </button>
   );
 });
 

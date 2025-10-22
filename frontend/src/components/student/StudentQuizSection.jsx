@@ -75,11 +75,6 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false, 
                 </CardDescription>
               )}
             </div>
-            {isPublished && (
-              <Badge className="flex-shrink-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300 dark:border-green-700">
-                Active
-              </Badge>
-            )}
           </div>
         </CardHeader>
 

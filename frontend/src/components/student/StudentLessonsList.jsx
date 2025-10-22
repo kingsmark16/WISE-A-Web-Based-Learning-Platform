@@ -22,9 +22,15 @@ const LessonItem = memo(({ lesson, index, onPlay }) => {
   const getLessonTypeColor = () => {
     const type = String(lesson?.type || '').toUpperCase();
     if (type === 'PDF') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-    if (type === 'YOUTUBE') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+    if (type === 'YOUTUBE') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
     if (type === 'DROPBOX') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
     return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+  };
+
+  const getLessonTypeLabel = () => {
+    const type = String(lesson?.type || '').toUpperCase();
+    if (type === 'YOUTUBE' || type === 'DROPBOX') return 'VIDEO';
+    return type;
   };
 
   const getDurationDisplay = () => {
@@ -35,7 +41,10 @@ const LessonItem = memo(({ lesson, index, onPlay }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-input bg-card hover:bg-accent/50 transition-colors group">
+    <button
+      onClick={handleClick}
+      className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-input bg-card hover:bg-accent/50 transition-colors group cursor-pointer text-left"
+    >
       {/* Lesson Number */}
       <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
         <span className="text-xs font-semibold text-primary">{index + 1}</span>
@@ -62,7 +71,7 @@ const LessonItem = memo(({ lesson, index, onPlay }) => {
             )}
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs">
-                {String(lesson?.type || 'UNKNOWN').toUpperCase()}
+                {getLessonTypeLabel()}
               </Badge>
               {getDurationDisplay() && (
                 <span className="text-xs text-muted-foreground">
@@ -74,17 +83,11 @@ const LessonItem = memo(({ lesson, index, onPlay }) => {
         </div>
       </div>
 
-      {/* Play Button */}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleClick}
-        className="flex-shrink-0 hover:bg-primary/10 hover:text-primary transition-colors"
-        title="Play lesson"
-      >
+      {/* Play Icon */}
+      <div className="flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
         <Play className="h-4 w-4" />
-      </Button>
-    </div>
+      </div>
+    </button>
   );
 });
 

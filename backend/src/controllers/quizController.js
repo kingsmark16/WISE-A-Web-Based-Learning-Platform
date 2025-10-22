@@ -184,20 +184,29 @@ export const publishQuiz = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to publish this quiz' });
     }
 
+    // If unpublishing, close all active quiz sessions
+    if (quiz.isPublished) {
+      // When unpublishing, mark all ongoing submissions as ended
+      // This cancels active sessions while preserving completed ones
+      await prisma.quizSubmission.updateMany({
+        where: {
+          quizId: id,
+          endedAt: null  // Only update submissions that are still ongoing
+        },
+        data: {
+          endedAt: new Date()  // Mark as ended/cancelled
+        }
+      });
+    }
+
     // Toggle publish state and return complete quiz data
     const updated = await prisma.quiz.update({
       where: { id },
       data: { isPublished: !quiz.isPublished },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        isPublished: true,
-        timeLimit: true,
-        attemptLimit: true,
-        createdAt: true,
-        updatedAt: true,
-        questions: { select: { id: true } } // Only return question IDs, not full questions
+      include: {
+        questions: {
+          orderBy: { position: 'asc' }
+        }
       }
     });
 

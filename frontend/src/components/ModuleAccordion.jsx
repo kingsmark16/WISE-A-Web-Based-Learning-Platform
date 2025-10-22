@@ -10,10 +10,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, AlertCircle, RotateCcw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import StudentLessonsList from "@/components/student/StudentLessonsList";
 import StudentLinksList from "@/components/student/StudentLinksList";
 import StudentQuizSection from "@/components/student/StudentQuizSection";
+import PdfViewer from "@/components/PdfViewer";
+import EmbedYt from "@/components/EmbedYt";
+import VideoPlayer from "@/components/VideoPlayer";
 
 // Loading skeleton component
 const ModulesSkeleton = () => (
@@ -60,9 +63,33 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
     true
   );
 
+  const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
+  const [pdfPlayerOpen, setPdfPlayerOpen] = useState(false);
+  const [dropboxPlayerOpen, setDropboxPlayerOpen] = useState(false);
+  const [currentLesson, setCurrentLesson] = useState(null);
+
   const handlePlayLesson = useCallback((lesson) => {
-    // Handle lesson play - can integrate with video player
-    console.log('Playing lesson:', lesson);
+    const type = String(lesson?.type || '').toUpperCase();
+    const url = lesson?.url;
+
+    if (!url) {
+      console.error('Lesson URL not available');
+      return;
+    }
+
+    if (type === 'PDF') {
+      setCurrentLesson(lesson);
+      setPdfPlayerOpen(true);
+    } else if (type === 'YOUTUBE') {
+      setCurrentLesson(lesson);
+      setVideoPlayerOpen(true);
+    } else if (type === 'DROPBOX') {
+      setCurrentLesson(lesson);
+      setDropboxPlayerOpen(true);
+    } else {
+      // Fallback for unknown types
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   }, []);
 
   const handleOpenLink = useCallback((link) => {
@@ -117,10 +144,13 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
     <div className="space-y-6">
       {/* Module Description */}
       {moduleDetails.description && (
-        <div className="p-3 md:p-4 rounded-lg bg-muted/40 border border-input">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {moduleDetails.description}
-          </p>
+        <div className="space-y-3">
+          <h3 className="text-base font-semibold text-foreground">Description</h3>
+          <div className="p-3 md:p-4 rounded-lg bg-muted/40 border border-input">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {moduleDetails.description}
+            </p>
+          </div>
         </div>
       )}
 
@@ -162,19 +192,42 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
             <p>No content available in this module yet.</p>
           </div>
         )}
+
+      {/* PDF Viewer Modal */}
+      <PdfViewer 
+        open={pdfPlayerOpen} 
+        onClose={() => setPdfPlayerOpen(false)} 
+        pdfUrl={currentLesson?.url}
+      />
+
+      {/* YouTube Video Player Modal */}
+      <EmbedYt 
+        open={videoPlayerOpen} 
+        onOpenChange={setVideoPlayerOpen} 
+        lesson={currentLesson}
+      />
+
+      {/* Dropbox Video Player Modal */}
+      <VideoPlayer 
+        open={dropboxPlayerOpen} 
+        onClose={() => setDropboxPlayerOpen(false)} 
+        url={currentLesson?.url}
+        title={currentLesson?.title}
+      />
     </div>
   );
 };
 
 // Module item component
-const ModuleItem = ({ module, courseId }) => {
+const ModuleItem = ({ module, courseId, index }) => {
   return (
-    <AccordionItem
-      value={module.id}
-      className="border rounded-lg bg-card hover:bg-accent/50 transition-colors"
-    >
+    <div className="relative rounded-lg border-2 border-input shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/30 [&.open]:border-primary/50 w-full bg-card overflow-clip">
+      <AccordionItem
+        value={module.id}
+        className="border-0"
+      >
       <AccordionTrigger
-        className="hover:no-underline px-4 py-3 md:py-4"
+        className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden hover:no-underline"
       >
         <div className="flex items-center gap-3 text-left flex-1">
           <div className="flex-shrink-0 bg-primary/10 rounded-lg p-2">
@@ -183,7 +236,7 @@ const ModuleItem = ({ module, courseId }) => {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-sm md:text-base truncate">
-                {module.title}
+                Module {index + 1}: {module.title}
               </span>
               <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded whitespace-nowrap">
                 {module.totalLessons} lesson{module.totalLessons !== 1 ? "s" : ""}
@@ -208,6 +261,7 @@ const ModuleItem = ({ module, courseId }) => {
         />
       </AccordionContent>
     </AccordionItem>
+    </div>
   );
 };
 
@@ -230,10 +284,11 @@ const ModuleAccordion = ({ courseId }) => {
   return (
     <div className="p-4 md:p-6">
       <Accordion type="single" collapsible className="w-full space-y-2">
-        {modules.map((module) => (
-          <ModuleItem key={module.id} module={module} courseId={courseId} />
+        {modules.map((module, index) => (
+          <ModuleItem key={module.id} module={module} courseId={courseId} index={index} />
         ))}
       </Accordion>
+      <div className="h-4" />
     </div>
   );
 };

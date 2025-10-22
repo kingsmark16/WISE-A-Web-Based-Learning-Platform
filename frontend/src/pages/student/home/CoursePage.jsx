@@ -190,8 +190,9 @@ const CoursePage = () => {
 
               {/* Description */}
               {selectedCourse.description && (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                <div className="space-y-3">
+                  <h2 className="text-lg font-semibold text-foreground">Description</h2>
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     {selectedCourse.description}
                   </p>
                 </div>
