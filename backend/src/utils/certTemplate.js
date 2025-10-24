@@ -51,16 +51,6 @@ export function buildCertificateHTML({
     height: 100%;
   }
 
-  /******************************************************************
-    1. STUDENT NAME
-    -----------------------------------------------------------------
-    Goal: Write the student's full name on top of the underline to the
-    right of "Congratulations,".
-    We tuned from previous attempts. The base white content starts
-    ~310px from the left, and the blank name line is significantly to
-    the right of that, so we'll land around x ~600.
-    We'll drop a little lower (~245px) so it visually hugs the line.
-  ******************************************************************/
   .student-name {
     position: absolute;
     left: 620px;    /* move left/right if needed */
@@ -78,15 +68,6 @@ export function buildCertificateHTML({
     /* no underline here; line already exists in bg */
   }
 
-  /******************************************************************
-    2. COURSE TITLE
-    -----------------------------------------------------------------
-    This should sit just above that thick black line in the middle
-    section of your template (the line that was being labeled before).
-    From eyeballing your base PNG: that block starts roughly ~360px
-    from the left edge of the page, and about ~360px from the top.
-    We'll set top: 360px, left: 360px. We'll bold it.
-  ******************************************************************/
   .course-title {
     position: absolute;
     left: 385px;   /* nudge left/right if it's not starting at that block */
@@ -102,15 +83,6 @@ export function buildCertificateHTML({
     text-overflow: ellipsis;
   }
 
-  /******************************************************************
-    3. VERIFY + QR
-    -----------------------------------------------------------------
-    Your PNG template doesn’t include QR or Verify text.
-    We'll add them in the bottom-right open space.
-    We'll stack the verify line above the QR box.
-
-    We'll start around left ~825px, top ~560px. Adjust after viewing.
-  ******************************************************************/
   .verify-text {
     position: absolute;
     left: 825px;
