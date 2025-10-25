@@ -683,3 +683,333 @@ export const getStudentLessonProgress = async (req, res) => {
         });
     }
 }
+
+// Helper to hide correct answers for students
+const sanitizeQuestionsForStudent = (questions) => {
+  return questions.map((q) => ({
+    id: q.id,
+    question: q.question,
+    type: q.type,
+    options: q.options,
+    points: q.points,
+    position: q.position,
+  }));
+};
+
+// Start a quiz for a student
+export const startStudentQuiz = async (req, res) => {
+    try {
+        const { quizId } = req.body;
+        const { courseId, moduleId } = req.params;
+
+        if (!quizId) {
+            return res.status(400).json({ message: 'Quiz ID is required' });
+        }
+
+        const auth = req.auth();
+        const userId = auth.userId;
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+
+        // Verify student is enrolled in the course
+        const enrollment = await prisma.enrollment.findFirst({
+            where: {
+                studentId: user.id,
+                courseId: courseId
+            }
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: 'Not enrolled in this course' });
+        }
+
+        // Get quiz with questions
+        const quiz = await prisma.quiz.findUnique({
+            where: { id: quizId },
+            include: {
+                questions: {
+                    orderBy: { position: 'asc' }
+                },
+                module: {
+                    select: {
+                        id: true,
+                        courseId: true
+                    }
+                }
+            }
+        });
+
+        if (!quiz) {
+            return res.status(404).json({ message: 'Quiz not found' });
+        }
+
+        // Verify quiz belongs to the module
+        if (quiz.moduleId !== moduleId) {
+            return res.status(400).json({ message: 'Quiz does not belong to this module' });
+        }
+
+        // Check if quiz is published
+        if (!quiz.isPublished) {
+            return res.status(403).json({ message: 'Quiz is not yet published' });
+        }
+
+        // Check attempt limit
+        if (typeof quiz.attemptLimit === 'number' && quiz.attemptLimit > 0) {
+            const attempts = await prisma.quizSubmission.count({
+                where: { quizId, studentId: user.id }
+            });
+            if (attempts >= quiz.attemptLimit) {
+                return res.status(403).json({ message: 'Attempt limit reached' });
+            }
+        }
+
+        // Return quiz without creating submission yet
+        // Submission will be created only when student submits answers
+        const sanitizedQuiz = {
+            ...quiz,
+            questions: sanitizeQuestionsForStudent(quiz.questions)
+        };
+
+        res.status(200).json({
+            quiz: sanitizedQuiz,
+            startedAt: new Date()
+        });
+
+    } catch (error) {
+        console.error('Error starting student quiz:', error);
+        res.status(500).json({
+            message: 'Failed to start quiz',
+            error: error.message
+        });
+    }
+};
+
+// Submit quiz answers for a student
+export const submitStudentQuiz = async (req, res) => {
+    try {
+        const { submissionId, answers, quizId, startedAt } = req.body;
+        const { courseId, moduleId } = req.params;
+
+        if (!quizId || !Array.isArray(answers)) {
+            return res.status(400).json({ message: 'Quiz ID and answers array are required' });
+        }
+
+        const auth = req.auth();
+        const userId = auth.userId;
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+
+        // Verify student is enrolled in the course
+        const enrollment = await prisma.enrollment.findFirst({
+            where: {
+                studentId: user.id,
+                courseId: courseId
+            }
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: 'Not enrolled in this course' });
+        }
+
+        // Get quiz with questions
+        const quiz = await prisma.quiz.findUnique({
+            where: { id: quizId },
+            include: {
+                questions: true
+            }
+        });
+
+        if (!quiz) {
+            return res.status(404).json({ message: 'Quiz not found' });
+        }
+
+        // Verify quiz belongs to the module
+        if (quiz.moduleId !== moduleId) {
+            return res.status(400).json({ message: 'Quiz does not belong to this module' });
+        }
+
+        // Check attempt limit before creating submission
+        if (typeof quiz.attemptLimit === 'number' && quiz.attemptLimit > 0) {
+            const attempts = await prisma.quizSubmission.count({
+                where: { quizId, studentId: user.id }
+            });
+            if (attempts >= quiz.attemptLimit) {
+                return res.status(403).json({ message: 'Attempt limit reached' });
+            }
+        }
+
+        // Calculate score
+        let totalScore = 0;
+        const maxScore = quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+
+        const answerRecords = answers.map(answer => {
+            const question = quiz.questions.find(q => q.id === answer.questionId);
+            if (!question) return null;
+
+            const isCorrect = (() => {
+                if (question.type === 'MULTIPLE_CHOICE' || question.type === 'ENUMERATION' || question.type === 'TRUE_FALSE') {
+                    // Compare as strings with trimming
+                    return String(answer.answer).trim() === String(question.correctAnswer).trim();
+                }
+                return false;
+            })();
+
+            if (isCorrect) {
+                totalScore += question.points || 0;
+            }
+
+            return {
+                questionId: answer.questionId,
+                answer: answer.answer,
+                isCorrect
+            };
+        }).filter(Boolean);
+
+        // Create submission with all data in one transaction
+        const submissionData = {
+            quizId,
+            studentId: user.id,
+            score: totalScore,
+            endedAt: new Date(),
+            answers: {
+                createMany: {
+                    data: answerRecords
+                }
+            }
+        };
+
+        // Only set startedAt if provided
+        if (startedAt) {
+            submissionData.startedAt = new Date(startedAt);
+        }
+
+        const submission = await prisma.quizSubmission.create({
+            data: submissionData,
+            include: {
+                answers: true
+            }
+        });
+
+        res.status(201).json({
+            message: 'Quiz submitted successfully',
+            submissionId: submission.id,
+            score: totalScore,
+            maxScore,
+            percentage: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0
+        });
+
+    } catch (error) {
+        console.error('Error submitting student quiz:', error);
+        res.status(500).json({
+            message: 'Failed to submit quiz',
+            error: error.message
+        });
+    }
+};
+
+// Get all quiz submissions/attempts for a student in a quiz
+export const getStudentQuizSubmissions = async (req, res) => {
+    try {
+        const { quizId } = req.params;
+
+        if (!quizId) {
+            return res.status(400).json({ message: 'Quiz ID is required' });
+        }
+
+        const auth = req.auth();
+        const userId = auth.userId;
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+
+        // Get all submissions for this quiz by the student
+        // Get the quiz first to get max points
+        const quiz = await prisma.quiz.findUnique({
+            where: { id: quizId },
+            include: { questions: true }
+        });
+
+        if (!quiz) {
+            return res.status(404).json({ message: 'Quiz not found' });
+        }
+
+        const maxScore = quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+
+        const submissions = await prisma.quizSubmission.findMany({
+            where: {
+                quizId: quizId,
+                studentId: user.id
+            },
+            include: {
+                answers: {
+                    include: {
+                        question: {
+                            select: {
+                                id: true,
+                                question: true,
+                                type: true,
+                                correctAnswer: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                startedAt: 'desc'
+            }
+        });
+
+        // Calculate scores for each submission using current question points
+        const submissionsWithScores = submissions.map(submission => {
+            let totalScore = 0;
+
+            submission.answers.forEach(answer => {
+                if (answer.isCorrect) {
+                    // Find the current points for this question from the quiz
+                    const questionId = answer.question?.id || answer.questionId;
+                    const currentQuestionPoints = quiz.questions.find(q => q.id === questionId)?.points || 0;
+                    totalScore += currentQuestionPoints;
+                }
+            });
+
+            return {
+                id: submission.id,
+                score: totalScore, // Always use recalculated score
+                maxScore: maxScore,
+                percentage: maxScore > 0 ? Math.round(totalScore / maxScore * 100) : 0,
+                startedAt: submission.startedAt,
+                endedAt: submission.endedAt,
+                answers: submission.answers
+            };
+        });
+
+        res.status(200).json({
+            data: submissionsWithScores,
+            totalAttempts: submissionsWithScores.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching student quiz submissions:', error);
+        res.status(500).json({
+            message: 'Failed to fetch quiz submissions',
+            error: error.message
+        });
+    }
+};

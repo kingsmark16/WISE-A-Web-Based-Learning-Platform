@@ -1,14 +1,22 @@
-import React, { memo } from 'react';
-import { HelpCircle, Loader2, CheckCircle2, Clock, Zap } from 'lucide-react';
+import React, { memo, useState } from 'react';
+import { HelpCircle, Loader2, CheckCircle2, Clock, Zap, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useStartStudentQuiz } from '@/hooks/student/useStudentQuiz';
+import StudentQuizComponent from '@/components/student/StudentQuizComponent';
+import StudentQuizHistory from '@/components/student/StudentQuizHistory';
 
 /**
  * Quiz component - memoized for performance
  * Displays quiz information and allows students to start the quiz
  */
-const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false, onStartQuiz }) => {
+const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }) => {
+  const [isQuizActive, setIsQuizActive] = useState(false);
+  const [quizData, setQuizData] = useState(null);
+
+  // TanStack Query hooks
+  const startQuizMutation = useStartStudentQuiz();
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
@@ -43,8 +51,34 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false, 
     return `${minutes}m`;
   };
 
+  const handleStartQuiz = async () => {
+    try {
+      const result = await startQuizMutation.mutateAsync({
+        quizId: quiz.id,
+        courseId,
+        moduleId
+      });
+
+      setQuizData(result.quiz);
+      setIsQuizActive(true);
+    } catch (error) {
+      // Error is handled by the mutation
+      console.error('Failed to start quiz:', error);
+    }
+  };
+
+  const handleQuizComplete = () => {
+    setIsQuizActive(false);
+    setQuizData(null);
+  };
+
+  const handleQuizCancel = () => {
+    setIsQuizActive(false);
+    setQuizData(null);
+  };
+
   const questionCount = quiz._count?.questions || 0;
-  const timeLimit = quiz.timeLimit ? formatTime(quiz.timeLimit) : null;
+  const timeLimit = quiz.timeLimit ? formatTime(Math.floor(quiz.timeLimit / 60)) : null;
   const isPublished = quiz.isPublished;
 
   return (
@@ -116,11 +150,20 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false, 
           {/* Start Quiz Button */}
           <Button
             className="w-full"
-            disabled={!isPublished || isLoading}
-            onClick={() => onStartQuiz?.(quiz, courseId, moduleId)}
+            disabled={!isPublished || isLoading || startQuizMutation.isPending}
+            onClick={handleStartQuiz}
           >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            {isPublished ? 'Start Quiz' : 'Coming Soon'}
+            {startQuizMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Starting Quiz...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Start Quiz
+              </>
+            )}
           </Button>
 
           {!isPublished && (
@@ -130,6 +173,46 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false, 
           )}
         </CardContent>
       </Card>
+
+      {/* Error Alert */}
+      {startQuizMutation.error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {startQuizMutation.error?.response?.data?.message ||
+             startQuizMutation.error?.message ||
+             'Failed to start quiz'}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => startQuizMutation.reset()}
+              className="ml-2 h-auto p-1"
+            >
+              ×
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Active Quiz Component */}
+      {isQuizActive && quizData && (
+        <div className="mt-6">
+          <StudentQuizComponent
+            quiz={quizData}
+            courseId={courseId}
+            moduleId={moduleId}
+            onQuizComplete={handleQuizComplete}
+            onQuizCancel={handleQuizCancel}
+          />
+        </div>
+      )}
+
+      {/* Quiz History */}
+      {!isQuizActive && quiz && (
+        <div className="mt-6">
+          <StudentQuizHistory quizId={quiz.id} />
+        </div>
+      )}
     </div>
   );
 });

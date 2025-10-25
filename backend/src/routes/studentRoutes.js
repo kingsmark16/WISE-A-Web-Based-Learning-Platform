@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireRole } from "../middlewares/authMiddleware.js";
-import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress } from "../controllers/studentController.js";
+import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions } from "../controllers/studentController.js";
 
 const router = Router();
 
@@ -18,6 +18,11 @@ router.get('/lesson-progress/:courseId', requireRole(['STUDENT']), getStudentLes
 router.post('/enroll', requireRole(['STUDENT']), enrollInCourse);
 router.post('/unenroll', requireRole(['STUDENT']), unenrollInCourse);
 router.get('/enrollment-status/:courseId', requireRole(['STUDENT']), checkEnrollmentStatus);
+
+// Quiz routes
+router.post('/quiz/start/:courseId/:moduleId', requireRole(['STUDENT']), startStudentQuiz);
+router.post('/quiz/submit/:courseId/:moduleId', requireRole(['STUDENT']), submitStudentQuiz);
+router.get('/quiz/submissions/:quizId', requireRole(['STUDENT']), getStudentQuizSubmissions);
 
 
 export default router;
