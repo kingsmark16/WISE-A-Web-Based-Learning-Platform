@@ -213,8 +213,8 @@ export const useEnrollInCourse = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (courseId) => {
-            const response = await axiosInstance.post('/student/enroll', {courseId});
+        mutationFn: async ({courseId, courseCode}) => {
+            const response = await axiosInstance.post('/student/enroll', {courseId, courseCode});
 
             return response.data;
         },
@@ -224,6 +224,46 @@ export const useEnrollInCourse = () => {
         },
         onError: (error) => {
             const errorMessage = error?.response?.data?.message || 'Failed to enroll in course';
+            toast.error(errorMessage);
+        }
+
+    })
+}
+
+export const useUnenrollInCourse = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (courseId) => {
+            const response = await axiosInstance.post('/student/unenroll', {courseId});
+
+            return response.data;
+        },
+        onMutate: async (courseId) => {
+            // Cancel any outgoing refetches for enrollment status
+            await queryClient.cancelQueries({ queryKey: ['enrollmet-status', courseId] });
+
+            // Snapshot the previous enrollment status
+            const previousEnrollmentStatus = queryClient.getQueryData(['enrollmet-status', courseId]);
+
+            // Optimistically update the enrollment status to not enrolled
+            queryClient.setQueryData(['enrollmet-status', courseId], {
+                isEnrolled: false,
+                enrollmentDate: null
+            });
+
+            return { previousEnrollmentStatus };
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries();
+            toast.success('Successfully unenrolled from course!');
+        },
+        onError: (error, courseId, context) => {
+            // Rollback on error
+            if (context?.previousEnrollmentStatus) {
+                queryClient.setQueryData(['enrollmet-status', courseId], context.previousEnrollmentStatus);
+            }
+            const errorMessage = error?.response?.data?.message || 'Failed to unenroll from course';
             toast.error(errorMessage);
         }
 

@@ -232,10 +232,27 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
   const [timeLimit, setTimeLimit] = useState("");
   const [attemptLimit, setAttemptLimit] = useState("");
   const [questions, setQuestions] = useState([]);
+  const [originalQuestions, setOriginalQuestions] = useState([]);
   const [expandedQuestionId, setExpandedQuestionId] = useState(null);
   
   const updateQuizMutation = useUpdateQuiz();
   const isSubmitting = updateQuizMutation.isPending;
+
+  // Check if questions have changed
+  const questionsHaveChanged = (() => {
+    if (questions.length !== originalQuestions.length) return true;
+    return questions.some((newQ, idx) => {
+      const oldQ = originalQuestions[idx];
+      if (!oldQ) return true;
+      return (
+        newQ.question !== oldQ.question ||
+        newQ.type !== oldQ.type ||
+        JSON.stringify(newQ.options) !== JSON.stringify(oldQ.options) ||
+        newQ.correctAnswer !== oldQ.correctAnswer ||
+        (newQ.points ?? 1) !== (oldQ.points ?? 1)
+      );
+    });
+  })();
 
   // Initialize form with quiz data
   useEffect(() => {
@@ -245,6 +262,7 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
       setTimeLimit(quiz.timeLimit ? Math.floor(quiz.timeLimit / 60) : "");
       setAttemptLimit(quiz.attemptLimit || "");
       setQuestions(quiz.questions || []);
+      setOriginalQuestions(quiz.questions || []);
       setExpandedQuestionId(null);
     }
   }, [quiz, open]);
@@ -376,8 +394,19 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
     });
   };
 
+  const handleOpenChange = (newOpen) => {
+    if (newOpen && quiz?.isPublished) {
+      toast.warning("You must unpublish the quiz before editing", {
+        autoClose: 3000,
+        pauseOnHover: true,
+      });
+      return;
+    }
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
@@ -671,35 +700,46 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
         </div>
 
         {/* Footer with Actions */}
-        <DialogFooter className="border-t px-6 py-3 flex gap-2 flex-row-reverse flex-shrink-0 mt-auto items-center justify-end">
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              onClick={handleSubmit}
-              disabled={isSubmitting || questions.length < 5}
-              className="gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Update Quiz
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isSubmitting}
-              className="hover:bg-muted/50 transition-colors duration-200"
-            >
-              Cancel
-            </Button>
+        <DialogFooter className="border-t px-6 py-3 flex flex-shrink-0 mt-auto">
+          <div className="w-full flex items-center justify-between">
+            {questionsHaveChanged && (
+              <Alert variant="destructive" className="flex-1 mr-4 py-2 px-3 h-auto">
+                <AlertCircle className="h-3 w-3" />
+                <AlertDescription className="text-sm whitespace-nowrap">
+                  <p><strong>Warning:</strong> Modifying questions will delete all student submissions.</p>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="flex gap-2 ml-auto">
+              <Button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={isSubmitting || questions.length < 5}
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Update Quiz
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isSubmitting}
+                className="hover:bg-muted/50 transition-colors duration-200"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>

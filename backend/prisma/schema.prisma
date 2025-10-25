@@ -32,6 +32,8 @@ model User {
   certificates     Certificate[]
   
   quizSubmissions  QuizSubmission[]
+  lessonProgress   LessonProgress[] @relation("StudentLessonProgress")
+  courseProgress   CourseProgress[] @relation("StudentCourseProgress")
 
   forumPosts       ForumPost[]
   forumReplies     ForumReply[]
@@ -71,6 +73,7 @@ model Course {
   // Completion tracking
   completions        CourseCompletion[]
   certificates       Certificate[]
+  courseProgress     CourseProgress[] @relation("CourseProgress")
   
   // Forum
   forumPosts         ForumPost[]
@@ -85,7 +88,6 @@ model Module {
   title       String
   description String?
   position    Int
-  isPublished Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -117,6 +119,8 @@ model Lesson {
 
   moduleId    String
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  lessonProgress LessonProgress[]
 
   @@unique([moduleId, position])
   @@index([moduleId])
@@ -315,6 +319,47 @@ model Enrollment {
 
   student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+// Progress Tracking
+model LessonProgress {
+  id          String   @id @default(ulid())
+  studentId   String
+  student     User     @relation("StudentLessonProgress", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  isCompleted Boolean  @default(false)
+  progress    Int      @default(0)  // 0-100 percentage
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+}
+
+model CourseProgress {
+  id          String   @id @default(ulid())
+  studentId   String
+  student     User     @relation("StudentCourseProgress", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId    String
+  course      Course   @relation("CourseProgress", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  progressPercentage  Int      @default(0)  // 0-100
+  lessonsCompleted    Int      @default(0)
+  totalLessons        Int      @default(0)
+  quizzesCompleted    Int      @default(0)
+  totalQuizzes        Int      @default(0)
+  lastAccessedAt      DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@unique([studentId, courseId])
   @@index([studentId])

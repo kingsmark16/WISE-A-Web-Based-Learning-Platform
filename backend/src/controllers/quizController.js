@@ -95,18 +95,48 @@ export const updateQuiz = async (req, res) => {
       const q = await tx.quiz.update({ where: { id }, data: { title, description, timeLimit, attemptLimit } });
 
       if (Array.isArray(questions)) {
-        // delete existing then create new
-        await tx.quizQuestion.deleteMany({ where: { quizId: id } });
-        const toCreate = questions.map((qq, idx) => ({
-          question: qq.question,
-          type: qq.type,
-          options: qq.options || [],
-          correctAnswer: qq.correctAnswer,
-          points: qq.points ?? 1,
-          position: qq.position ?? (idx + 1),
-          quizId: id,
-        }));
-        if (toCreate.length > 0) await tx.quizQuestion.createMany({ data: toCreate });
+        // Check if questions have actually changed
+        const questionsChanged = questions.length !== existing.questions.length ||
+          questions.some((newQ, idx) => {
+            const oldQ = existing.questions[idx];
+            if (!oldQ) return true; // New question added
+            return (
+              newQ.question !== oldQ.question ||
+              newQ.type !== oldQ.type ||
+              JSON.stringify(newQ.options) !== JSON.stringify(oldQ.options) ||
+              newQ.correctAnswer !== oldQ.correctAnswer ||
+              (newQ.points ?? 1) !== (oldQ.points ?? 1)
+            );
+          });
+
+        // Only delete submissions if questions have actually changed
+        if (questionsChanged) {
+          // First delete all answers associated with submissions
+          const submissionsToDelete = await tx.quizSubmission.findMany({
+            where: { quizId: id },
+            select: { id: true }
+          });
+          
+          for (const submission of submissionsToDelete) {
+            await tx.quizAnswer.deleteMany({ where: { submissionId: submission.id } });
+          }
+          
+          // Then delete all submissions
+          await tx.quizSubmission.deleteMany({ where: { quizId: id } });
+          
+          // delete existing questions then create new
+          await tx.quizQuestion.deleteMany({ where: { quizId: id } });
+          const toCreate = questions.map((qq, idx) => ({
+            question: qq.question,
+            type: qq.type,
+            options: qq.options || [],
+            correctAnswer: qq.correctAnswer,
+            points: qq.points ?? 1,
+            position: qq.position ?? (idx + 1),
+            quizId: id,
+          }));
+          if (toCreate.length > 0) await tx.quizQuestion.createMany({ data: toCreate });
+        }
       }
 
       return tx.quiz.findUnique({ where: { id }, include: { questions: true } });
@@ -184,20 +214,29 @@ export const publishQuiz = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to publish this quiz' });
     }
 
+    // If unpublishing, close all active quiz sessions
+    if (quiz.isPublished) {
+      // When unpublishing, mark all ongoing submissions as ended
+      // This cancels active sessions while preserving completed ones
+      await prisma.quizSubmission.updateMany({
+        where: {
+          quizId: id,
+          endedAt: null  // Only update submissions that are still ongoing
+        },
+        data: {
+          endedAt: new Date()  // Mark as ended/cancelled
+        }
+      });
+    }
+
     // Toggle publish state and return complete quiz data
     const updated = await prisma.quiz.update({
       where: { id },
       data: { isPublished: !quiz.isPublished },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        isPublished: true,
-        timeLimit: true,
-        attemptLimit: true,
-        createdAt: true,
-        updatedAt: true,
-        questions: { select: { id: true } } // Only return question IDs, not full questions
+      include: {
+        questions: {
+          orderBy: { position: 'asc' }
+        }
       }
     });
 
@@ -323,10 +362,28 @@ export const submitAnswers = async (req, res) => {
         await tx.quizAnswer.create({ data: r });
       }
 
-      await tx.quizSubmission.update({ where: { id: submissionId }, data: { score: totalScore, endedAt: new Date() } });
+      // Only store completion time, not score (will be calculated dynamically)
+      await tx.quizSubmission.update({ where: { id: submissionId }, data: { endedAt: new Date() } });
     });
 
-    res.status(200).json({ message: 'Submitted', score: totalScore, totalPoints });
+    // Calculate score based on current question points
+    const currentTotalScore = answerRecords.reduce((score, record) => {
+      if (record.isCorrect) {
+        const question = questionMap.get(record.questionId);
+        return score + (question?.points || 0);
+      }
+      return score;
+    }, 0);
+
+    const currentMaxScore = submission.quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+    const percentage = currentMaxScore > 0 ? Math.round((currentTotalScore / currentMaxScore) * 100) : 0;
+
+    res.status(200).json({ 
+      message: 'Submitted', 
+      score: currentTotalScore, 
+      maxScore: currentMaxScore,
+      percentage 
+    });
   } catch (error) {
     console.error('submitAnswers error', error);
     res.status(500).json({ message: 'Internal server error' });

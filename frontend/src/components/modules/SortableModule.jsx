@@ -1110,14 +1110,17 @@ const SortableModule = ({
 
   return (
     <>
-      <AccordionItem
-        value={item.id}
-        key={item.id}
+      <div
         ref={setModuleNodeRef}
-        className="relative rounded-lg border-2 bg-card shadow-lg hover:shadow-xl border-input transition-all duration-200 hover:border-primary/30 [&[data-state=open]]:border-primary/50 w-full overflow-hidden"
+        className="relative rounded-lg border-2 bg-card shadow-lg hover:shadow-xl border-input transition-all duration-200 hover:border-primary/30 w-full overflow-clip"
         style={style}
       >
-        <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden">
+        <AccordionItem
+          value={item.id}
+          key={item.id}
+          className="border-0"
+        >
+          <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden">
           <div
             className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-pointer active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
             {...(listenersDisabled ? {} : { ...moduleAttributes })}
@@ -1167,6 +1170,7 @@ const SortableModule = ({
           {renderModuleContent()}
         </AccordionContent>
       </AccordionItem>
+      </div>
 
       {/* modal instance (open when user triggers upload and parent didn't handle upload) */}
       <DropboxUploadModal open={showDropboxModal} onClose={() => setShowDropboxModal(false)} moduleId={moduleId} />
