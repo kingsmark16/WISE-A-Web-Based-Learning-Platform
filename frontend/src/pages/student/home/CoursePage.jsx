@@ -240,7 +240,10 @@ const CoursePage = () => {
                 </div>
               </div>
 
-              <CourseTabs courseId={id} />
+              {/* Course Content - Only show if enrolled */}
+              {!isEnrollmentStatusLoading && enrollmentStatus?.isEnrolled && (
+                <CourseTabs courseId={id} />
+              )}
             </div>
           </CardContent>
         ) : (
@@ -252,6 +255,25 @@ const CoursePage = () => {
           </div>
         )}
       </Card>
+
+      {/* Locked Course Content */}
+      {!isEnrollmentStatusLoading && !enrollmentStatus?.isEnrolled && selectedCourse && (
+        <Card className="shadow-lg border-none bg-muted/20">
+          <CardContent className="p-8 md:p-12">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                <BookOpen className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Course Content Locked</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  You need to enroll in this course to access the modules, forum, and other course content.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Course Enrollment Dialog */}
       <CourseEnrollDialog

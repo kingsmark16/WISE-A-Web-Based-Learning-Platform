@@ -24,42 +24,42 @@ const ALL = ['ADMIN', 'FACULTY', 'STUDENT'];
 
 // ---------- FORUM CATEGORIES ----------
 // GET /api/course/:courseId/forum/categories
-router.get('/:courseId/forum/categories', requireRole(ALL), getForumCategories);
+router.get('/:courseId/forum/categories', requireRole(ALL), requireCourseMembership(), getForumCategories);
 
 // ---------- FORUM THREADS ----------
 // GET /api/course/:courseId/forum/threads
-router.get('/:courseId/forum/threads', requireRole(ALL), listOfPost);
+router.get('/:courseId/forum/threads', requireRole(ALL), requireCourseMembership(), listOfPost);
 
 // POST /api/course/:courseId/forum/threads
 router.post('/:courseId/forum/threads', requireRole(ALL), requireCourseMembership(), createPost);
 
 // GET /api/course/forum/posts/:postId
-router.get('/forum/posts/:postId', requireRole(ALL), getPost);
+router.get('/forum/posts/:postId', requireRole(ALL), requireCourseMembership(), getPost);
 
 // PATCH /api/course/forum/posts/:postId
-router.patch('/forum/posts/:postId', requireRole(ALL), updatePost);
+router.patch('/forum/posts/:postId', requireRole(ALL), requireCourseMembership(), updatePost);
 
 // DELETE /api/course/forum/posts/:postId
-router.delete('/forum/posts/:postId', requireRole(['ADMIN', 'FACULTY']), deletePost);
+router.delete('/forum/posts/:postId', requireRole(ALL), requireCourseMembership(), deletePost);
 
-// moderation (faculty/admin for pin, faculty/admin/author for lock)
-router.post('/forum/posts/:postId/pin',   requireRole(['ADMIN','FACULTY']), setPostFlag('pin',  true));
-router.post('/forum/posts/:postId/unpin', requireRole(['ADMIN','FACULTY']), setPostFlag('pin',  false));
-router.post('/forum/posts/:postId/lock',  requireRole(ALL), setPostFlag('lock', true));
-router.post('/forum/posts/:postId/unlock',requireRole(ALL), setPostFlag('lock', false));
+// moderation (all roles for pin, all roles for lock)
+router.post('/forum/posts/:postId/pin',   requireRole(ALL), requireCourseMembership(), setPostFlag('pin',  true));
+router.post('/forum/posts/:postId/unpin', requireRole(ALL), requireCourseMembership(), setPostFlag('pin',  false));
+router.post('/forum/posts/:postId/lock',  requireRole(ALL), requireCourseMembership(), setPostFlag('lock', true));
+router.post('/forum/posts/:postId/unlock',requireRole(ALL), requireCourseMembership(), setPostFlag('lock', false));
 
 // POST /api/course/forum/posts/:postId/like - Toggle like on a post
-router.post('/forum/posts/:postId/like', requireRole(ALL), toggleLikePost);
+router.post('/forum/posts/:postId/like', requireRole(ALL), requireCourseMembership(), toggleLikePost);
 
 // ---------- FORUM REPLIES ----------
 // POST /api/course/forum/posts/:postId/replies
-router.post('/forum/posts/:postId/replies', requireRole(ALL), createReply);
+router.post('/forum/posts/:postId/replies', requireRole(ALL), requireCourseMembership(), createReply);
 
 // PATCH /api/course/forum/posts/:postId/replies/:replyId
-router.patch('/forum/posts/:postId/replies/:replyId', requireRole(ALL), updateReply);
+router.patch('/forum/posts/:postId/replies/:replyId', requireRole(ALL), requireCourseMembership(), updateReply);
 
 // DELETE /api/course/forum/posts/:postId/replies/:replyId
-router.delete('/forum/posts/:postId/replies/:replyId', requireRole(ALL), deleteReply);
+router.delete('/forum/posts/:postId/replies/:replyId', requireRole(ALL), requireCourseMembership(), deleteReply);
 
 // Lesson reorder within a module
 router.post("/modules/:id/lessons/reorder", reorderLessons);

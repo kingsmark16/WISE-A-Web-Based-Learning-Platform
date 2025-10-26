@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ModuleAccordion from "./ModuleAccordion";
+import Forum from "./courseNav/Forum";
 
 const CourseTabs = ({ courseId }) => {
   const [tab, setTab] = useState("module");
@@ -31,9 +32,7 @@ const CourseTabs = ({ courseId }) => {
       </TabsContent>
 
       <TabsContent value="forum" className="w-full">
-        <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-          Forum will be shown here.
-        </div>
+        <Forum courseId={courseId} />
       </TabsContent>
 
       <TabsContent value="students" className="w-full">
