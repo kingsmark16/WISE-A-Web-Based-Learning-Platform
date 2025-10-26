@@ -94,8 +94,8 @@ app.use('/api/link', linkRoutes);
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);
 
-app.use('/api', certificatesRoutes);
-app.use('/api', completionsRoutes);
+app.use('/api/certificate', certificatesRoutes);
+app.use('/api/completions', completionsRoutes);
 app.use('/api/quiz', quizRoutes);
 
 // ===== Public APIs =====
