@@ -12,8 +12,7 @@ import CourseContentNav from "./CourseContentNav";
 const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data, isLoading, error, refetch } = useGetCourse(id);
-  const [publishing, setPublishing] = useState(false);
+  const { data, isLoading, error } = useGetCourse(id);
   const [copied, setCopied] = useState(false);
   const publishMutation = usePublishCourse();
 
@@ -26,8 +25,8 @@ const CourseDetail = () => {
         </div>
 
         {/* Main Course Card */}
-        <Card className="shadow-lg overflow-hidden">
-          <CardContent className="px-3 sm:px-6 w-full overflow-hidden">
+        <Card className="shadow-lg overflow-hidden border-none bg-transparent">
+          <CardContent className="px-0 w-full overflow-hidden">
             <div className="flex flex-col gap-6">
               {/* Thumbnail and Course Info Row */}
               <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
@@ -93,7 +92,7 @@ const CourseDetail = () => {
             </div>
 
             {/* Course Content Navigation */}
-            <div className="mt-2 border-t w-full overflow-hidden">
+            <div className="mt-2 w-full overflow-hidden">
               <CourseContentNav courseId={id} />
             </div>
           </CardContent>
@@ -128,17 +127,11 @@ const CourseDetail = () => {
   const handleBack = () => navigate(-1);
   const handleEdit = () => navigate(`/admin/courses/edit/${course.id}`);
 
-  const handlePublishToggle = async () => {
-    setPublishing(true);
-    try {
-      await publishMutation.mutateAsync({
-        id: course.id,
-        isPublished: !course.isPublished,
-      });
-      await refetch();
-    } finally {
-      setPublishing(false);
-    }
+  const handlePublishToggle = () => {
+    publishMutation.mutate({
+      id: course.id,
+      isPublished: !course.isPublished,
+    });
   };
 
   const handleCopyCode = () => {
@@ -173,7 +166,7 @@ const CourseDetail = () => {
         <Button 
           variant="outline" 
           onClick={handleBack} 
-          className="items-center gap-2 border-2 hover:bg-primary/5 hidden sm:flex"
+          className="items-center gap-2 hover:bg-primary/5 hidden sm:flex"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -181,8 +174,8 @@ const CourseDetail = () => {
       </div>
 
       {/* Main Course Card */}
-      <Card className="shadow-lg overflow-hidden">
-        <CardContent className="px-3 sm:px-6 w-full overflow-hidden">
+      <Card className="shadow-lg overflow-hidden border-none bg-transparent">
+        <CardContent className="px-0 w-full overflow-hidden">
           <div className="flex flex-col gap-6">
             {/* Thumbnail and Course Info Row */}
             <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
@@ -200,7 +193,7 @@ const CourseDetail = () => {
                         <img
                           src={course.thumbnail}
                           alt={course.title}
-                          className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover border-2 border-primary/20 shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                          className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
                         />
                       </div>
                     </div>
@@ -237,7 +230,7 @@ const CourseDetail = () => {
                     <span className="text-sm font-medium text-muted-foreground">Course Code:</span>
                     <Badge 
                       variant="outline" 
-                      className="rounded-full px-3 py-1 font-mono text-xs bg-background border-2"
+                      className="rounded-full px-3 py-1 font-mono text-xs bg-background"
                     >
                       {course.code}
                     </Badge>
@@ -312,7 +305,7 @@ const CourseDetail = () => {
                     <img
                       src={course.thumbnail}
                       alt={course.title}
-                      className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover border-2 border-primary/20 shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                      className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
                     />
                   </div>
                 </div>
@@ -330,16 +323,16 @@ const CourseDetail = () => {
               <Button
                 variant={course.isPublished ? "outline" : "default"}
                 onClick={handlePublishToggle}
-                disabled={publishing}
+                disabled={publishMutation.isPending}
                 className={`transition-all duration-200 ${
-                  publishing
+                  publishMutation.isPending
                     ? "opacity-70 cursor-not-allowed"
                     : course.isPublished
-                    ? "border-2 border-green-500 text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                    ? "text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
                     : "bg-primary text-primary-foreground hover:bg-primary/90"
                 }`}
               >
-                {publishing ? "Processing..." : course.isPublished ? "Unpublish" : "Publish"}
+                {publishMutation.isPending ? "Processing..." : course.isPublished ? "Unpublish" : "Publish"}
               </Button>
             </div>
 
@@ -355,7 +348,7 @@ const CourseDetail = () => {
           </div>
 
           {/* Course Content Navigation */}
-          <div className="mt-2 border-t w-full overflow-hidden">
+          <div className="mt-2 w-full overflow-hidden">
             <CourseContentNav courseId={id} />
           </div>
         </CardContent>

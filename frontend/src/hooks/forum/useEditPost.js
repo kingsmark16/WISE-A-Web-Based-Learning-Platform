@@ -5,10 +5,10 @@ export const useEditPost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ postId, title, content }) => {
+    mutationFn: async ({ postId, title, content, category }) => {
       const response = await axiosInstance.patch(
         `/course/forum/posts/${postId}`,
-        { title, content }
+        { title, content, category }
       );
       return response.data;
     },
@@ -21,6 +21,11 @@ export const useEditPost = () => {
       // Invalidate the specific post
       queryClient.invalidateQueries({
         queryKey: ["forum-post", variables.postId],
+      });
+
+      // Invalidate categories to update counts
+      queryClient.invalidateQueries({
+        queryKey: ["forum-categories"],
       });
     },
   });

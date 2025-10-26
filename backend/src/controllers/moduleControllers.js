@@ -89,6 +89,7 @@ export const getModules = async (req, res) => {
             select: {
                 id: true,
                 title: true,
+                description: true,
                 position: true,
                 updatedAt: true,
                 _count: {
@@ -165,8 +166,12 @@ export const getModule = async (req, res) => {
                         id: true,
                         title: true,
                         description: true,
+                        isPublished: true,
                         timeLimit: true,
+                        attemptLimit: true,
                         questions: true,
+                        createdAt: true,
+                        updatedAt: true,
                     }
                 }
             },

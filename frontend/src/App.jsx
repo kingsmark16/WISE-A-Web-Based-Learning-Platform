@@ -14,9 +14,10 @@ import EditCourse from "./pages/admin/course/EditCourse"
 import Analytics from "./pages/admin/analytics/Analytics"
 import FacultyManagement from "./pages/admin/userManagement/FacultyManagement"
 import FacultyInfo from "./pages/admin/userManagement/FacultyInfo"
+import SearchResults from "./pages/admin/SearchResults"
 import MainLayout from "./pages/MainLayout"
-import HomePage from "./pages/student/HomePage"
-import CoursePage from "./pages/student/CoursePage"
+import HomePage from "./pages/student/home/HomePage"
+import CoursePage from "./pages/student/home/CoursePage"
 import FacultyHomePage from "./pages/faculty/FacultyHomePage"
 import StudentInfo from "./pages/admin/userManagement/StudentInfo"
 import StudentManagement from "./pages/admin/userManagement/StudentManagement"
@@ -61,6 +62,7 @@ const App = () => {
         >
           <Route index element={<Analytics/>}/>
           <Route path="analytics" element={<Analytics/>}/>
+          <Route path="search" element={<SearchResults/>}/>
           <Route path="courses" element={<Courses/>}/>
           <Route path="courses/create" element={<CreateCourse/>}/>
           <Route path="courses/view/:id" element={<CourseDetail/>}/>

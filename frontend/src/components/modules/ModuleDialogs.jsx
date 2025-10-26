@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Plus, Loader2, Trash2, AlertTriangle } from "lucide-react"; // Changed ExternalLink to Plus
+import { useState, useEffect } from "react";
+import { Plus, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,7 +55,7 @@ export const AddModuleDialog = ({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] border-2 border-border">
         <DialogHeader>
           <DialogTitle>Add Module</DialogTitle>
           <DialogDescription>
@@ -132,15 +132,19 @@ export const EditModuleDialog = ({
   error,
   module 
 }) => {
-  const [title, setTitle] = useState(module?.title ?? "");
-  const [description, setDescription] = useState(module?.description ?? "");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
-  React.useEffect(() => {
-    if (module) {
+  useEffect(() => {
+    if (open && module) {
       setTitle(module.title ?? "");
       setDescription(module.description ?? "");
+    } else if (!open) {
+      // Reset form when dialog closes
+      setTitle("");
+      setDescription("");
     }
-  }, [module]);
+  }, [open, module]);
 
   // Async submit: await onSubmit if it returns a promise, then close on success
   const handleSubmit = async (e) => {
@@ -165,20 +169,23 @@ export const EditModuleDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] border-2 border-border">
         <DialogHeader>
           <DialogTitle>Edit Module</DialogTitle>
           <DialogDescription>Update title or description.</DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="grid gap-4 py-2">
+          {/* Hidden input to prevent auto-focus on title */}
+          <input type="text" style={{ position: 'absolute', left: '-9999px' }} />
+          
           <div className="grid gap-1">
             <label className="text-sm font-medium">Title</label>
             <Input 
               value={title} 
               onChange={(e) => setTitle(e.target.value.slice(0, 100))} 
               maxLength={100} 
-              required 
+              required
             />
             <div className="text-xs text-muted-foreground mt-1">
               {title.length}/100
@@ -248,14 +255,16 @@ export const DeleteModuleDialog = ({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-          <AlertDialogContent>
+          <AlertDialogContent className="border-2 border-border">
             <AlertDialogHeader>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
                 <AlertDialogTitle>Delete Module</AlertDialogTitle>
               </div>
-              <AlertDialogDescription>
-                Are you sure you want to delete <strong>"{displayTitle}"</strong>?
+              <AlertDialogDescription className="break-words max-w-full">
+                Are you sure you want to delete <strong className="break-words max-w-full" title={displayTitle}>{
+                  displayTitle.length > 50 ? `${displayTitle.substring(0, 50)}...` : displayTitle
+                }</strong>?
               </AlertDialogDescription>
             </AlertDialogHeader>
             

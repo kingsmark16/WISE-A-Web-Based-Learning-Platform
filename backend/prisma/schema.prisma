@@ -32,9 +32,12 @@ model User {
   certificates     Certificate[]
   
   quizSubmissions  QuizSubmission[]
+  lessonProgress   LessonProgress[] @relation("StudentLessonProgress")
+  courseProgress   CourseProgress[] @relation("StudentCourseProgress")
 
   forumPosts       ForumPost[]
   forumReplies     ForumReply[]
+  forumPostLikes   ForumPostLike[]
 }
 model DailyUserActivity {
   id       String   @id @default(ulid())
@@ -70,6 +73,7 @@ model Course {
   // Completion tracking
   completions        CourseCompletion[]
   certificates       Certificate[]
+  courseProgress     CourseProgress[] @relation("CourseProgress")
   
   // Forum
   forumPosts         ForumPost[]
@@ -84,7 +88,6 @@ model Module {
   title       String
   description String?
   position    Int
-  isPublished Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -117,6 +120,8 @@ model Lesson {
   moduleId    String
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
+  lessonProgress LessonProgress[]
+
   @@unique([moduleId, position])
   @@index([moduleId])
 }
@@ -144,7 +149,8 @@ model Quiz {
   title       String
   description String?
   isPublished Boolean  @default(false)
-  timeLimit   Int?     // in minutes
+  timeLimit   Int?     @default(0)
+  attemptLimit Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -161,10 +167,8 @@ model QuizQuestion {
   type          QuestionType
   options       String[]
   correctAnswer String
-  explanation   String?
   points        Int              @default(1)
   position      Int
-  
   quizId        String
   quiz          Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
   
@@ -214,6 +218,8 @@ model ForumPost {
   id          String      @id @default(ulid())
   title       String
   content     String
+  category    String?
+  likes      Int         @default(0)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   isPinned    Boolean     @default(false)
@@ -226,6 +232,7 @@ model ForumPost {
   author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
   replies     ForumReply[]
+  likedBy     ForumPostLike[]
 
   @@index([courseId])
   @@index([authorId])
@@ -248,6 +255,21 @@ model ForumReply {
   @@index([postId])
   @@index([authorId])
   @@index([createdAt])
+}
+
+model ForumPostLike {
+  id          String      @id @default(ulid())
+  createdAt   DateTime    @default(now())
+  
+  postId      String
+  post        ForumPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 // Course completion and certification
@@ -303,6 +325,47 @@ model Enrollment {
   @@index([courseId])
 }
 
+// Progress Tracking
+model LessonProgress {
+  id          String   @id @default(ulid())
+  studentId   String
+  student     User     @relation("StudentLessonProgress", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  isCompleted Boolean  @default(false)
+  progress    Int      @default(0)  // 0-100 percentage
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+}
+
+model CourseProgress {
+  id          String   @id @default(ulid())
+  studentId   String
+  student     User     @relation("StudentCourseProgress", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId    String
+  course      Course   @relation("CourseProgress", fields: [courseId], references: [id], onDelete: Cascade)
+  
+  progressPercentage  Int      @default(0)  // 0-100
+  lessonsCompleted    Int      @default(0)
+  totalLessons        Int      @default(0)
+  quizzesCompleted    Int      @default(0)
+  totalQuizzes        Int      @default(0)
+  lastAccessedAt      DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
 model DropboxToken {
   id          String   @id @default(ulid())
   access_token String
@@ -320,7 +383,7 @@ enum Role {
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
-  SHORT_ANSWER
+  ENUMERATION
 }
 
 enum LessonType {

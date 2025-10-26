@@ -41,7 +41,8 @@ export const useGetModule = (moduleId, enabled = true) => {
             const response = await axiosInstance.get(`/course/module/${moduleId}`);
             return response.data;
         },
-        enabled: enabled && !!moduleId
+        enabled: enabled && !!moduleId,
+        staleTime: 5 * 60 * 1000, // 5 minutes - keeps cache fresh after optimistic updates
     });
 };
 
