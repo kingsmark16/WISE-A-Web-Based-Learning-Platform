@@ -15,8 +15,6 @@ import { useUser } from '@clerk/clerk-react';
 const PostCard = ({ post, categories, onView, onDelete, onEdit, onPin, onLock }) => {
   const { user } = useUser();
   const isAuthor = user?.id === post.author?.clerkId;
-  const userRole = user?.publicMetadata?.role;
-  const canModerate = userRole === 'ADMIN' || userRole === 'FACULTY';
   const getCategoryColor = (categoryName) => {
     const color = categories.find(c => c.name === categoryName)?.color || '#64748b';
     console.log('Category:', categoryName, 'Color:', color);
@@ -50,57 +48,55 @@ const PostCard = ({ post, categories, onView, onDelete, onEdit, onPin, onLock })
             
             {/* Action buttons - On separate line on mobile */}
             <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap mb-1 sm:mb-2">
-              {canModerate && (
-                <>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`transition-all h-7 w-7 sm:h-8 sm:w-8 p-0 ${
-                            post.isPinned 
-                              ? 'text-primary bg-primary/10 hover:bg-primary/20' 
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onPin?.(post);
-                          }}
-                        >
-                          <Pin className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${post.isPinned ? 'fill-current' : ''}`} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {post.isPinned ? 'Unpin Post' : 'Pin Post'}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`transition-all h-7 w-7 sm:h-8 sm:w-8 p-0 ${
-                            post.isLocked 
-                              ? 'text-destructive bg-destructive/10 hover:bg-destructive/20' 
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onLock?.(post);
-                          }}
-                        >
-                          <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${post.isLocked ? 'fill-current' : ''}`} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {post.isLocked ? 'Unlock Post' : 'Lock Post'}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`transition-all h-7 w-7 sm:h-8 sm:w-8 p-0 ${
+                        post.isPinned 
+                          ? 'text-primary bg-primary/10 hover:bg-primary/20' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPin?.(post);
+                      }}
+                    >
+                      <Pin className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${post.isPinned ? 'fill-current' : ''}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {post.isPinned ? 'Unpin Post' : 'Pin Post'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {isAuthor && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`transition-all h-7 w-7 sm:h-8 sm:w-8 p-0 ${
+                          post.isLocked 
+                            ? 'text-destructive bg-destructive/10 hover:bg-destructive/20' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLock?.(post);
+                        }}
+                      >
+                        <Lock className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${post.isLocked ? 'fill-current' : ''}`} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {post.isLocked ? 'Unlock Post' : 'Lock Post'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               {isAuthor && (
                 <TooltipProvider>
@@ -122,24 +118,26 @@ const PostCard = ({ post, categories, onView, onDelete, onEdit, onPin, onLock })
                   </Tooltip>
                 </TooltipProvider>
               )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 sm:h-8 sm:w-8 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(post);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Delete Post</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {isAuthor && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 sm:h-8 sm:w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(post);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete Post</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
 
             <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2 sm:line-clamp-1">

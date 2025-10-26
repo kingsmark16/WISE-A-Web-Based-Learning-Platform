@@ -226,6 +226,21 @@ export const getPost = async (req, res) => {
     });
     if (!post) return res.status(404).json({ message: 'Thread not found' });
 
+    // Verify user is enrolled in the course (for students)
+    if (dbUser && dbUser.role === 'STUDENT') {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: post.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to view forum posts' });
+      }
+    }
+
     // Check if current user has liked this post
     const isLikedByCurrentUser = dbUser && post.likedBy && post.likedBy.length > 0;
 
@@ -269,7 +284,7 @@ export const updatePost = async (req, res) => {
 
     const existing = await prisma.forumPost.findUnique({
       where: { id: String(postId) },
-      select: { id: true, authorId: true }
+      select: { id: true, authorId: true, courseId: true }
     });
     if (!existing) return res.status(404).json({ message: 'Thread not found' });
 
@@ -280,6 +295,22 @@ export const updatePost = async (req, res) => {
 
     const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
+
+    // Verify user is enrolled in the course (for students)
+    if (dbUser.role === 'STUDENT') {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: existing.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to update forum posts' });
+      }
+    }
+
     if (!ensureAuthorOrStaff(dbUser, existing.authorId))
       return res.status(403).json({ message: 'Not allowed to edit this thread' });
 
@@ -300,16 +331,45 @@ export const updatePost = async (req, res) => {
 
 /**
  * DELETE /forum/posts/:postId
- * Staff only (faculty/admin)
+ * Author only (post creator)
  */
 export const deletePost = async (req, res) => {
   try {
     const { postId } = req.params;
 
-    const existing = await prisma.forumPost.findUnique({ where: { id: String(postId) } });
+    const existing = await prisma.forumPost.findUnique({
+      where: { id: String(postId) },
+      select: { id: true, authorId: true, courseId: true }
+    });
     if (!existing) return res.status(404).json({ message: 'Thread not found' });
 
-    await prisma.forumPost.delete({ where: { id: existing.id } });
+    const clerkUserId = req.auth?.userId;
+    if (!clerkUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const dbUser = await getDbUser(clerkUserId);
+    if (!dbUser) return res.status(401).json({ message: 'User not found' });
+
+    // Check if user is the author or staff
+    if (!ensureAuthorOrStaff(dbUser, existing.authorId)) {
+      return res.status(403).json({ message: 'Not allowed to delete this thread' });
+    }
+
+    // For students who are NOT the author, verify they are enrolled in the course
+    if (dbUser.role === 'STUDENT' && dbUser.id !== existing.authorId) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: existing.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to delete forum posts' });
+      }
+    }    await prisma.forumPost.delete({ where: { id: existing.id } });
     return res.json({ message: 'Deleted' });
   } catch (err) {
     console.error('deleteThread error', err);
@@ -319,15 +379,14 @@ export const deletePost = async (req, res) => {
 
 /**
  * POST /forum/posts/:postId/pin|unpin|lock|unlock
- * Pin: Staff only (faculty/admin)
- * Lock: Staff or post author
+ * Pin: All roles
+ * Lock: All roles (post author only)
  */
 export const setPostFlag = (flag, value) => {
   return async (req, res) => {
     try {
       const { postId } = req.params;
-      const userId = req.user.clerkId;
-      const userRole = req.user.role;
+      const clerkUserId = req.auth().userId;
       
       const data =
         flag === 'pin' ? { isPinned: value } :
@@ -336,22 +395,42 @@ export const setPostFlag = (flag, value) => {
 
       if (!data) return res.status(400).json({ message: 'Unknown flag' });
 
-      // For lock/unlock, check if user is author or staff
-      if (flag === 'lock') {
-        const post = await prisma.forumPost.findUnique({
-          where: { id: String(postId) },
-          select: { authorId: true }
+      // Get the database user
+      const dbUser = await getDbUser(clerkUserId);
+      if (!dbUser) {
+        return res.status(401).json({ message: 'User not found in database' });
+      }
+
+      // Get the post to check course enrollment
+      const post = await prisma.forumPost.findUnique({
+        where: { id: String(postId) },
+        select: { id: true, authorId: true, courseId: true }
+      });
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      // Verify user is enrolled in the course (for students)
+      if (dbUser.role === 'STUDENT') {
+        const enrollment = await prisma.enrollment.findUnique({
+          where: {
+            studentId_courseId: {
+              studentId: dbUser.id,
+              courseId: post.courseId
+            }
+          }
         });
-        
-        if (!post) {
-          return res.status(404).json({ message: 'Post not found' });
+        if (!enrollment) {
+          return res.status(403).json({ message: 'You must be enrolled in this course to moderate forum posts' });
         }
+      }
+
+      // For lock/unlock, only allow the post author
+      if (flag === 'lock') {
+        const isAuthor = post.authorId === dbUser.id;
         
-        const isAuthor = post.authorId === userId;
-        const isStaff = userRole === 'ADMIN' || userRole === 'FACULTY';
-        
-        if (!isAuthor && !isStaff) {
-          return res.status(403).json({ message: 'Not authorized to lock/unlock this post' });
+        if (!isAuthor) {
+          return res.status(403).json({ message: 'Only the post author can lock/unlock this post' });
         }
       }
 
@@ -381,7 +460,7 @@ export const createReply = async (req, res) => {
 
     const post = await prisma.forumPost.findUnique({
       where: { id: String(postId) },
-      select: { id: true, isLocked: true }
+      select: { id: true, isLocked: true, courseId: true }
     });
     if (!post) return res.status(404).json({ message: 'Thread not found' });
     if (post.isLocked) return res.status(403).json({ message: 'Thread is locked' });
@@ -393,6 +472,21 @@ export const createReply = async (req, res) => {
 
     const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
+
+    // Verify user is enrolled in the course (for students)
+    if (dbUser.role === 'STUDENT') {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: post.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to reply to forum posts' });
+      }
+    }
 
     const reply = await prisma.forumReply.create({
       data: { postId: post.id, content, authorId: dbUser.id },
@@ -441,7 +535,12 @@ export const updateReply = async (req, res) => {
 
     const existing = await prisma.forumReply.findUnique({
       where: { id: String(replyId) },
-      select: { id: true, authorId: true, postId: true }
+      select: { 
+        id: true, 
+        authorId: true, 
+        postId: true,
+        post: { select: { courseId: true } }
+      }
     });
     if (!existing) return res.status(404).json({ message: 'Reply not found' });
 
@@ -452,6 +551,21 @@ export const updateReply = async (req, res) => {
 
     const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
+
+    // Verify user is enrolled in the course (for students)
+    if (dbUser.role === 'STUDENT') {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: existing.post.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to update forum replies' });
+      }
+    }
     if (!ensureAuthorOrStaff(dbUser, existing.authorId))
       return res.status(403).json({ message: 'Not allowed to edit this reply' });
 
@@ -483,7 +597,12 @@ export const deleteReply = async (req, res) => {
 
     const existing = await prisma.forumReply.findUnique({
       where: { id: String(replyId) },
-      select: { id: true, authorId: true, postId: true }
+      select: { 
+        id: true, 
+        authorId: true, 
+        postId: true,
+        post: { select: { courseId: true } }
+      }
     });
     if (!existing) return res.status(404).json({ message: 'Reply not found' });
 
@@ -494,6 +613,22 @@ export const deleteReply = async (req, res) => {
 
     const dbUser = await getDbUser(clerkUserId);
     if (!dbUser) return res.status(401).json({ message: 'User not found' });
+
+    // Verify user is enrolled in the course (for students)
+    if (dbUser.role === 'STUDENT') {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: existing.post.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to delete forum replies' });
+      }
+    }
+
     if (!ensureAuthorOrStaff(dbUser, existing.authorId))
       return res.status(403).json({ message: 'Not allowed to delete this reply' });
 
@@ -533,9 +668,24 @@ export const toggleLikePost = async (req, res) => {
 
     const post = await prisma.forumPost.findUnique({
       where: { id: String(postId) },
-      select: { id: true, likes: true }
+      select: { id: true, likes: true, courseId: true }
     });
     if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Verify user is enrolled in the course (for students)
+    if (dbUser.role === 'STUDENT') {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: dbUser.id,
+            courseId: post.courseId
+          }
+        }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ message: 'You must be enrolled in this course to like forum posts' });
+      }
+    }
 
     // Check if user already liked this post
     const existingLike = await prisma.forumPostLike.findUnique({

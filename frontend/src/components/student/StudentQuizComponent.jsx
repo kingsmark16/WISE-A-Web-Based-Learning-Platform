@@ -374,7 +374,6 @@ const StudentQuizComponent = ({
             <Button
               onClick={handleSubmitQuiz}
               disabled={submitQuizMutation.isPending || isSubmitting}
-              className="bg-green-600 hover:bg-green-700"
             >
               {submitQuizMutation.isPending || isSubmitting ? (
                 <>

@@ -32,7 +32,7 @@ import axiosInstance from '../../lib/axios';
 import { useSocket } from '../../contexts/SocketContext';
 import DeleteReplyDialog from './DeleteReplyDialog';
 
-const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) => {
+const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) => {
   const { user } = useUser();
   const { socket } = useSocket();
   const [replyContent, setReplyContent] = useState('');
@@ -50,8 +50,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   const [sortOrder, setSortOrder] = useState('oldest');
   const [showNewRepliesButton, setShowNewRepliesButton] = useState(false);
   const [newRepliesCount, setNewRepliesCount] = useState(0);
-  const [showNewRepliesTopButton, setShowNewRepliesTopButton] = useState(false);
-  const [newRepliesTopCount, setNewRepliesTopCount] = useState(0);
   const [deleteReplyObject, setDeleteReplyObject] = useState(null);
   const [isDeletingReply, setIsDeletingReply] = useState(false);
   
@@ -80,8 +78,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
       hasScrolledRef.current = false; // Reset scroll flag
       setShowNewRepliesButton(false);
       setNewRepliesCount(0);
-      setShowNewRepliesTopButton(false);
-      setNewRepliesTopCount(0);
       
       // Add history state when modal opens to handle back button
       window.history.pushState({ modalOpen: true }, '');
@@ -96,8 +92,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
       hasScrolledRef.current = false;
       setShowNewRepliesButton(false);
       setNewRepliesCount(0);
-      setShowNewRepliesTopButton(false);
-      setNewRepliesTopCount(0);
     }
   }, [open, postData]);
 
@@ -169,20 +163,10 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
                   setNewRepliesCount(prev => prev + 1);
                   setShowNewRepliesButton(true);
                 }
-              } else {
-                // For newest first, show button at top if not at top
-                const isAtTop = currentScrollTop <= 5;
-                
-                if (!isAtTop) {
-                  setNewRepliesTopCount(prev => prev + 1);
-                  setShowNewRepliesTopButton(true);
-                }
               }
             }
           }, 100);
           
-          // Show toast notification
-          toast.info(`New reply from ${data.reply.author?.fullName || 'Someone'}`);
         }
       }
     };
@@ -229,7 +213,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
   console.log('ViewPostDialog - Category:', post.category, 'Found:', category);
 
   // Check if current user is the author or admin/faculty
-  const isAuthor = user?.id === post.author?.clerkId;
+  const isAuthor = user?.id && post?.author?.clerkId && user.id === post.author.clerkId;
 
   const handleLike = async () => {
     if (!post.id) return;
@@ -291,18 +275,11 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
     const currentScrollTop = element.scrollTop;
     
     const isBottom = element.scrollHeight - currentScrollTop <= element.clientHeight + 100;
-    const isTop = currentScrollTop <= 5;
     
     // Hide new replies button if user scrolls to bottom (for oldest first)
     if (isBottom) {
       setShowNewRepliesButton(false);
       setNewRepliesCount(0);
-    }
-    
-    // Hide new replies top button if user scrolls to top (for newest first)
-    if (isTop) {
-      setShowNewRepliesTopButton(false);
-      setNewRepliesTopCount(0);
     }
     
     if (isBottom && hasMore && !loadingMore) {
@@ -318,22 +295,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
       });
       setShowNewRepliesButton(false);
       setNewRepliesCount(0);
-    }
-  };
-
-  const handleScrollToTop = async () => {
-    // If there are more replies to load, load them all first
-    if (hasMore && repliesCursor) {
-      await loadAllRemainingReplies();
-    }
-    
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-      setShowNewRepliesTopButton(false);
-      setNewRepliesTopCount(0);
     }
   };
 
@@ -496,19 +457,19 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
             
             {/* Action buttons - Below title on mobile, inline on desktop */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0">
-              {isAuthor && onEditPost && (
+              {isAuthor && onDeletePost && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    onEditPost(post);
+                    onDeletePost(post);
                     onOpenChange(false);
                   }}
-                  className="gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                  className="gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm text-destructive hover:text-destructive"
                 >
-                  <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                  <span className="hidden sm:inline">Edit</span>
-                  <span className="sm:hidden">Edit</span>
+                  <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                  <span className="sm:hidden">Delete</span>
                 </Button>
               )}
             </div>
@@ -651,24 +612,9 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onEditPost }) =>
           </div>
         </div>
 
-        {/* New Replies Button at Top - For newest first sort */}
-        {showNewRepliesTopButton && newRepliesTopCount > 0 && sortOrder === 'newest' && (
-          <div className="absolute top-12 sm:top-16 left-1/2 transform -translate-x-1/2 z-10">
-            <Button
-              onClick={handleScrollToTop}
-              className="shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 sm:gap-2 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 animate-bounce text-xs sm:text-sm"
-              size="sm"
-            >
-              <ArrowUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">{newRepliesTopCount} new {newRepliesTopCount === 1 ? 'reply' : 'replies'}</span>
-              <span className="sm:hidden">{newRepliesTopCount}</span>
-            </Button>
-          </div>
-        )}
-
         {/* New Replies Button at Bottom - For oldest first sort */}
         {showNewRepliesButton && newRepliesCount > 0 && sortOrder === 'oldest' && (
-          <div className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="absolute bottom-20 sm:bottom-24 md:bottom-32 right-4 z-10">
             <Button
               onClick={handleScrollToBottom}
               className="shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 sm:gap-2 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 animate-bounce text-xs sm:text-sm"
