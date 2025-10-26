@@ -28,8 +28,9 @@ import youtubeVideoRoutes from "./routes/youtubeVideoRoutes.js";
 import linkRoutes from "./routes/linkRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import { arcjetRateLimit, strictRateLimit } from "./middlewares/arcjetRateLimit.js"; 
-
-
+import certificatesRoutes from "./routes/certificatesRoutes.js";
+import completionsRoutes from "./routes/completionsRoutes.js";
+ 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -93,6 +94,8 @@ app.use('/api/link', linkRoutes);
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);
 
+app.use('/api', certificatesRoutes);
+app.use('/api', completionsRoutes);
 app.use('/api/quiz', quizRoutes);
 
 // ===== Public APIs =====
