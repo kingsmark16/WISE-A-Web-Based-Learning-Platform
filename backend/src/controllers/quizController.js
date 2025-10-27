@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import ProgressService from "../services/progress.service.js";
 
 // Helper to hide correct answers for students
 const sanitizeQuestionsForStudent = (questions) => {
@@ -62,6 +63,9 @@ export const createQuiz = async (req, res) => {
 
       return tx.quiz.findUnique({ where: { id: quiz.id }, include: { questions: true } });
     });
+
+    // Mark module as incomplete for all enrolled students if it was previously completed
+    await ProgressService.markModuleIncompleteIfCompleted(moduleId);
 
     res.status(201).json({ message: 'Quiz created', quiz: created });
   } catch (error) {
@@ -141,6 +145,11 @@ export const updateQuiz = async (req, res) => {
 
       return tx.quiz.findUnique({ where: { id }, include: { questions: true } });
     });
+
+    // If questions were changed, mark module as incomplete for all enrolled students
+    if (questions && questionsChanged) {
+      await ProgressService.markModuleIncompleteIfCompleted(existing.module.id);
+    }
 
     res.status(200).json({ message: 'Quiz updated', quiz: updated });
   } catch (error) {

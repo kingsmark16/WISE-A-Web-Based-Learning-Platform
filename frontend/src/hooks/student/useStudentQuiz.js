@@ -57,6 +57,10 @@ export const useSubmitStudentQuiz = () => {
         onSuccess: (data, variables) => {
             // Immediately refetch quiz submissions to show new attempt in history
             queryClient.refetchQueries({ queryKey: studentQuizKeys.submissionsByQuiz(variables.quizId) });
+
+            // Invalidate modules query to update progress bars
+            queryClient.invalidateQueries({ queryKey: ['modules'] });
+            queryClient.invalidateQueries({ queryKey: ['course-progress'] });
         },
         onError: (error) => {
             console.error("Failed to submit student quiz:", error);

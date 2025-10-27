@@ -131,6 +131,15 @@ export const uploadPdf = async (req, res) => {
           });
 
           console.log('[uploadPdf] Lesson created:', lesson.id);
+
+          // Mark module as incomplete for all enrolled students if it was previously completed
+          try {
+            const ProgressService = (await import('../../services/progress.service.js')).default;
+            await ProgressService.markModuleIncompleteIfCompleted(moduleId);
+          } catch (progressError) {
+            console.error('[uploadPdf] Failed to update progress:', progressError);
+          }
+
           break; // success
         } catch (err) {
           // If unique constraint on (moduleId, position) happened, retry a few times

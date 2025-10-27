@@ -34,6 +34,7 @@ model User {
   quizSubmissions  QuizSubmission[]
   lessonProgress   LessonProgress[] @relation("StudentLessonProgress")
   courseProgress   CourseProgress[] @relation("StudentCourseProgress")
+  moduleProgress   ModuleProgress[] @relation("StudentModuleProgress")
 
   forumPosts       ForumPost[]
   forumReplies     ForumReply[]
@@ -97,6 +98,7 @@ model Module {
   lessons Lesson[]
   links   Link[]
   quiz         Quiz?
+  moduleProgress ModuleProgress[]
 
   @@unique([courseId, position])
   @@index([courseId])
@@ -181,6 +183,7 @@ model QuizQuestion {
 model QuizSubmission {
   id        String   @id @default(ulid())
   score     Int?
+  timeSpent Int?     // in seconds
   startedAt DateTime @default(now())
   endedAt   DateTime?
   
@@ -330,14 +333,16 @@ model LessonProgress {
   id          String   @id @default(ulid())
   studentId   String
   student     User     @relation("StudentLessonProgress", fields: [studentId], references: [id], onDelete: Cascade)
-  
+
   lessonId    String
   lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  
+
   isCompleted Boolean  @default(false)
   progress    Int      @default(0)  // 0-100 percentage
+  viewCount   Int      @default(0)  // how many times accessed
   startedAt   DateTime @default(now())
   completedAt DateTime?
+  lastAccessedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([studentId, lessonId])
@@ -355,15 +360,37 @@ model CourseProgress {
   
   progressPercentage  Int      @default(0)  // 0-100
   lessonsCompleted    Int      @default(0)
-  totalLessons        Int      @default(0)
   quizzesCompleted    Int      @default(0)
-  totalQuizzes        Int      @default(0)
+  averageQuizScore    Float?   // calculated from quiz submissions
+  currentModuleId     String?  // track which module student is currently on
   lastAccessedAt      DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   @@unique([studentId, courseId])
   @@index([studentId])
   @@index([courseId])
+}
+
+model ModuleProgress {
+  id          String   @id @default(ulid())
+  studentId   String
+  student     User     @relation("StudentModuleProgress", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  progressPercentage  Int      @default(0)  // 0-100
+  lessonsCompleted    Int      @default(0)
+  quizCompleted       Boolean  @default(false)
+  quizScore           Int?     // best score achieved
+  isCompleted         Boolean  @default(false)
+  completedAt         DateTime?
+  lastAccessedAt      DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([studentId, moduleId])
+  @@index([studentId])
+  @@index([moduleId])
 }
 
 model DropboxToken {
