@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js';
+import ProgressService from '../services/progress.service.js';
 
 export const getCourseCategories = async (req, res) => {
     try {
@@ -345,7 +346,7 @@ export const getCourseModules = async (req, res) => {
             return res.status(403).json({message: "You are not enrolled in this course"});
         }
 
-        // Fetch modules with lesson count
+        // Fetch modules with lesson count and progress
         const modules = await prisma.module.findMany({
             where: {
                 courseId
@@ -354,6 +355,7 @@ export const getCourseModules = async (req, res) => {
                 id: true,
                 title: true,
                 updatedAt: true,
+                position: true,
                 _count: {
                     select: {
                         lessons: true
@@ -365,13 +367,68 @@ export const getCourseModules = async (req, res) => {
             }
         });
 
-        // Format response
-        const formattedModules = modules.map(module => ({
-            id: module.id,
-            title: module.title,
-            updatedAt: module.updatedAt,
-            totalLessons: module._count.lessons
-        }));
+        // Get module progress for locking logic
+        const moduleProgressList = await prisma.moduleProgress.findMany({
+            where: {
+                studentId,
+                module: {
+                    courseId
+                }
+            },
+            select: {
+                moduleId: true,
+                isCompleted: true,
+                progressPercentage: true,
+                lessonsCompleted: true
+            }
+        });
+
+        // Create a map of module progress data
+        const moduleProgressMap = new Map();
+        moduleProgressList.forEach(progress => {
+            moduleProgressMap.set(progress.moduleId, {
+                isCompleted: progress.isCompleted,
+                progressPercentage: progress.progressPercentage,
+                lessonsCompleted: progress.lessonsCompleted
+            });
+        });
+
+        // Apply locking logic: strict sequential progression - lock incomplete modules after the first incomplete one
+        // Completed modules are always unlocked (can revisit completed content)
+        // Find the first incomplete module by position
+        let firstIncompletePosition = Infinity;
+        modules.forEach(module => {
+            const progress = moduleProgressMap.get(module.id);
+            const isCompleted = progress?.isCompleted || false;
+            if (!isCompleted && module.position < firstIncompletePosition) {
+                firstIncompletePosition = module.position;
+            }
+        });
+
+        const formattedModules = modules.map((module) => {
+            const moduleProgress = moduleProgressMap.get(module.id) || {
+                isCompleted: false,
+                progressPercentage: 0,
+                lessonsCompleted: 0
+            };
+
+            // Module is locked if:
+            // 1. It comes after the first incomplete module AND
+            // 2. It is not completed itself
+            const isLocked = module.position > firstIncompletePosition && !moduleProgress.isCompleted;
+
+            return {
+                id: module.id,
+                title: module.title,
+                updatedAt: module.updatedAt,
+                position: module.position,
+                totalLessons: module._count.lessons,
+                isLocked,
+                isCompleted: moduleProgress.isCompleted,
+                progressPercentage: moduleProgress.progressPercentage,
+                lessonsCompleted: moduleProgress.lessonsCompleted
+            };
+        });
 
         res.status(200).json({data: formattedModules});
 
@@ -416,8 +473,68 @@ export const getModuleDetailsForStudent = async (req, res) => {
             return res.status(403).json({ message: "You are not enrolled in this course" });
         }
 
-        // Fetch module details with lessons, links, and quiz
+        // Check if module is locked (sequential progression)
         const module = await prisma.module.findUnique({
+            where: { id: moduleId },
+            select: {
+                id: true,
+                position: true,
+                courseId: true
+            }
+        });
+
+        if (!module) {
+            return res.status(404).json({ message: "Module not found" });
+        }
+
+        // Check if module access is allowed (consistent with module locking logic)
+        // Get all modules in the course to determine locking rules
+        const allModules = await prisma.module.findMany({
+            where: { courseId: module.courseId },
+            select: { id: true, position: true },
+            orderBy: { position: 'asc' }
+        });
+
+        // Get progress for all modules
+        const allModuleProgress = await prisma.moduleProgress.findMany({
+            where: {
+                studentId: user.id,
+                module: { courseId: module.courseId }
+            },
+            select: {
+                moduleId: true,
+                isCompleted: true
+            }
+        });
+
+        // Create progress map
+        const progressMap = new Map();
+        allModuleProgress.forEach(progress => {
+            progressMap.set(progress.moduleId, progress.isCompleted);
+        });
+
+        // Find the first incomplete module by position
+        let firstIncompletePosition = Infinity;
+        allModules.forEach(moduleItem => {
+            const isCompleted = progressMap.get(moduleItem.id) || false;
+            if (!isCompleted && moduleItem.position < firstIncompletePosition) {
+                firstIncompletePosition = moduleItem.position;
+            }
+        });
+
+        // Check if current module access is allowed
+        const currentModuleProgress = progressMap.get(moduleId) || false;
+        const isAccessAllowed = module.position <= firstIncompletePosition || currentModuleProgress;
+
+        if (!isAccessAllowed) {
+            return res.status(403).json({
+                message: "Complete earlier modules before accessing this module",
+                isLocked: true
+            });
+        }
+
+        // Fetch module details with lessons, links, and quiz
+        const moduleDetails = await prisma.module.findUnique({
             where: { id: moduleId },
             select: {
                 id: true,
@@ -438,6 +555,16 @@ export const getModuleDetailsForStudent = async (req, res) => {
                         duration: true,
                         thumbnail: true,
                         url: true,
+                        lessonProgress: {
+                            where: {
+                                studentId: user.id
+                            },
+                            select: {
+                                isCompleted: true,
+                                completedAt: true,
+                                viewCount: true
+                            }
+                        }
                     },
                     orderBy: { position: 'asc' }
                 },
@@ -473,14 +600,14 @@ export const getModuleDetailsForStudent = async (req, res) => {
             }
         });
 
-        if (!module) return res.status(404).json({ message: "Module not found" });
+        if (!moduleDetails) return res.status(404).json({ message: "Module not found" });
 
         // Verify the module belongs to the course
-        if (module.courseId !== courseId) {
+        if (moduleDetails.courseId !== courseId) {
             return res.status(400).json({ message: "Module does not belong to this course" });
         }
 
-        res.status(200).json({ data: module });
+        res.status(200).json({ data: moduleDetails });
 
     } catch (error) {
         console.error('Error fetching module details for student:', error);
@@ -507,28 +634,8 @@ export const markLessonComplete = async (req, res) => {
 
         if(!user) return res.status(404).json({message: "User not found"});
 
-        // Create or update lesson progress
-        const lessonProgress = await prisma.lessonProgress.upsert({
-            where: {
-                studentId_lessonId: {
-                    studentId: user.id,
-                    lessonId
-                }
-            },
-            update: {
-                isCompleted: true,
-                progress: 100,
-                completedAt: new Date(),
-                updatedAt: new Date()
-            },
-            create: {
-                studentId: user.id,
-                lessonId,
-                isCompleted: true,
-                progress: 100,
-                completedAt: new Date()
-            }
-        });
+        // Use the progress service to mark lesson complete
+        const lessonProgress = await ProgressService.markLessonCompleted(user.id, lessonId);
 
         res.status(200).json({
             message: "Lesson marked as completed",
@@ -574,50 +681,8 @@ export const getStudentCourseProgress = async (req, res) => {
             return res.status(403).json({message: "You are not enrolled in this course"});
         }
 
-        // Get course progress
-        const courseProgress = await prisma.courseProgress.findUnique({
-            where: {
-                studentId_courseId: {
-                    studentId: user.id,
-                    courseId
-                }
-            }
-        });
-
-        // If no progress record exists, create default one
-        if (!courseProgress) {
-            // Calculate total lessons and quizzes in course
-            const course = await prisma.course.findUnique({
-                where: { id: courseId },
-                select: {
-                    modules: {
-                        select: {
-                            _count: {
-                                select: { lessons: true }
-                            },
-                            quiz: {
-                                select: { id: true }
-                            }
-                        }
-                    }
-                }
-            });
-
-            const totalLessons = course.modules.reduce((sum, m) => sum + m._count.lessons, 0);
-            const totalQuizzes = course.modules.filter(m => m.quiz).length;
-
-            const newProgress = await prisma.courseProgress.create({
-                data: {
-                    studentId: user.id,
-                    courseId,
-                    totalLessons,
-                    totalQuizzes,
-                    progressPercentage: 0
-                }
-            });
-
-            return res.status(200).json({ data: newProgress });
-        }
+        // Use the progress service to get comprehensive course progress
+        const courseProgress = await ProgressService.getCourseProgress(user.id, courseId);
 
         res.status(200).json({ data: courseProgress });
 
@@ -902,6 +967,9 @@ export const submitStudentQuiz = async (req, res) => {
             }
         });
 
+        // Update progress after quiz submission
+        await ProgressService.updateQuizProgress(user.id, quizId, totalScore);
+
         res.status(201).json({
             message: 'Quiz submitted successfully',
             submissionId: submission.id,
@@ -1009,6 +1077,216 @@ export const getStudentQuizSubmissions = async (req, res) => {
         console.error('Error fetching student quiz submissions:', error);
         res.status(500).json({
             message: 'Failed to fetch quiz submissions',
+            error: error.message
+        });
+    }
+};
+
+// Track lesson access - automatically marks as completed
+export const trackLessonAccess = async (req, res) => {
+    try {
+        const { lessonId } = req.body;
+        const userId = req.auth().userId;
+
+        if(!lessonId) return res.status(400).json({message: "Lesson ID is required"});
+        if(!userId) return res.status(401).json({message: "User not authenticated"});
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if(!user) return res.status(404).json({message: "User not found"});
+
+        // Check if the lesson's module is locked
+        const lesson = await prisma.lesson.findUnique({
+            where: { id: lessonId },
+            select: {
+                module: {
+                    select: {
+                        id: true,
+                        position: true,
+                        courseId: true
+                    }
+                }
+            }
+        });
+
+        if (!lesson) return res.status(404).json({message: "Lesson not found"});
+
+        const moduleData = lesson.module;
+
+        // Check if module access is allowed (consistent with module locking logic)
+        // Get all modules in the course to determine locking rules
+        const allModules = await prisma.module.findMany({
+            where: { courseId: moduleData.courseId },
+            select: { id: true, position: true },
+            orderBy: { position: 'asc' }
+        });
+
+        // Get progress for all modules
+        const allModuleProgress = await prisma.moduleProgress.findMany({
+            where: {
+                studentId: user.id,
+                module: { courseId: moduleData.courseId }
+            },
+            select: {
+                moduleId: true,
+                isCompleted: true
+            }
+        });
+
+        // Create progress map
+        const progressMap = new Map();
+        allModuleProgress.forEach(progress => {
+            progressMap.set(progress.moduleId, progress.isCompleted);
+        });
+
+        // Find the first incomplete module by position
+        let firstIncompletePosition = Infinity;
+        allModules.forEach(module => {
+            const isCompleted = progressMap.get(module.id) || false;
+            if (!isCompleted && module.position < firstIncompletePosition) {
+                firstIncompletePosition = module.position;
+            }
+        });
+
+        // Check if current module access is allowed
+        const currentModuleProgress = progressMap.get(moduleData.id) || false;
+        const isAccessAllowed = moduleData.position <= firstIncompletePosition || currentModuleProgress;
+
+        if (!isAccessAllowed) {
+            return res.status(403).json({
+                message: "Complete earlier modules before accessing lessons in this module",
+                isLocked: true
+            });
+        }
+
+        // Use the progress service to track lesson access
+        const lessonProgress = await ProgressService.trackLessonAccess(user.id, lessonId);
+
+        res.status(200).json({
+            message: "Lesson access tracked",
+            data: lessonProgress
+        });
+
+    } catch (error) {
+        console.error('Error tracking lesson access:', error);
+        res.status(500).json({
+            message: 'Failed to track lesson access',
+            error: error.message
+        });
+    }
+};
+
+// Get student's module progress
+export const getStudentModuleProgress = async (req, res) => {
+    try {
+        const { moduleId } = req.params;
+        const userId = req.auth().userId;
+
+        if(!moduleId) return res.status(400).json({message: "Module ID is required"});
+        if(!userId) return res.status(401).json({message: "User not authenticated"});
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if(!user) return res.status(404).json({message: "User not found"});
+
+        // Get module progress with detailed lesson and quiz information
+        const moduleProgress = await prisma.moduleProgress.findUnique({
+            where: {
+                studentId_moduleId: {
+                    studentId: user.id,
+                    moduleId
+                }
+            },
+            include: {
+                module: {
+                    include: {
+                        lessons: {
+                            include: {
+                                lessonProgress: {
+                                    where: { studentId: user.id }
+                                }
+                            },
+                            orderBy: { position: 'asc' }
+                        },
+                        quiz: {
+                            include: {
+                                submissions: {
+                                    where: { studentId: user.id },
+                                    orderBy: { score: 'desc' },
+                                    take: 1
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!moduleProgress) {
+            return res.status(404).json({message: "Module progress not found"});
+        }
+
+        res.status(200).json({ data: moduleProgress });
+
+    } catch (error) {
+        console.error('Error fetching module progress:', error);
+        res.status(500).json({
+            message: 'Failed to fetch module progress',
+            error: error.message
+        });
+    }
+};
+
+// Get student's progress summary for all enrolled courses
+export const getStudentProgressSummary = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+
+        if(!userId) return res.status(401).json({message: "User not authenticated"});
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if(!user) return res.status(404).json({message: "User not found"});
+
+        // Get all enrolled courses with progress
+        const enrollments = await prisma.enrollment.findMany({
+            where: { studentId: user.id },
+            include: {
+                course: {
+                    include: {
+                        courseProgress: {
+                            where: { studentId: user.id }
+                        }
+                    }
+                }
+            }
+        });
+
+        const progressSummary = enrollments.map(enrollment => ({
+            courseId: enrollment.course.id,
+            courseTitle: enrollment.course.title,
+            progress: enrollment.course.courseProgress[0] || {
+                progressPercentage: 0,
+                lessonsCompleted: 0,
+                quizzesCompleted: 0
+            }
+        }));
+
+        res.status(200).json({ data: progressSummary });
+
+    } catch (error) {
+        console.error('Error fetching progress summary:', error);
+        res.status(500).json({
+            message: 'Failed to fetch progress summary',
             error: error.message
         });
     }

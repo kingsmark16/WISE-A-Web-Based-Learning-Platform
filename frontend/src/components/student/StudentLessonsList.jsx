@@ -1,12 +1,12 @@
 import React, { memo, useCallback } from 'react';
-import { Play, FileText, ExternalLink, Loader2 } from 'lucide-react';
+import { Play, FileText, ExternalLink, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 /**
  * Individual lesson item component - memoized for performance
  */
-const LessonItem = memo(({ lesson, onPlay, index }) => {
+const LessonItem = memo(({ lesson, onPlay, index, isCompleted = false }) => {
   const handleClick = useCallback(() => {
     if (typeof onPlay === 'function') {
       onPlay(lesson);
@@ -29,11 +29,11 @@ const LessonItem = memo(({ lesson, onPlay, index }) => {
   return (
     <button
       onClick={handleClick}
-      className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-input bg-card hover:bg-accent/50 transition-colors group cursor-pointer text-left"
+      className='w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-colors group cursor-pointer text-left border-input bg-card hover:bg-accent/50'
     >
-      {/* Lesson Number */}
-      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-        <span className="text-xs font-semibold text-primary">{index + 1}</span>
+      {/* Lesson Number or Completion Check */}
+      <div className='flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center'>
+          <span className="text-xs font-semibold text-primary">{index + 1}</span>
       </div>
 
       {/* Thumbnail/Icon Section */}
@@ -81,9 +81,14 @@ const LessonItem = memo(({ lesson, onPlay, index }) => {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-              {lesson?.title || 'Untitled Lesson'}
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className='text-sm font-medium truncate transition-colors text-foreground group-hover:text-primary'>
+                {lesson?.title || 'Untitled Lesson'}
+              </h4>
+              {isCompleted && (
+                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              )}
+            </div>
             {lesson?.description && (
               <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                 {lesson.description}
@@ -93,6 +98,11 @@ const LessonItem = memo(({ lesson, onPlay, index }) => {
               <Badge variant="secondary" className="text-xs">
                 {getLessonTypeLabel()}
               </Badge>
+              {isCompleted && (
+                <Badge variant="outline" className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap font-medium">
+                  Completed
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -140,6 +150,7 @@ const StudentLessonsList = memo(({ lessons = [], isLoading = false, onPlayLesson
             lesson={lesson}
             index={index}
             onPlay={onPlayLesson}
+            isCompleted={lesson?.lessonProgress?.[0]?.isCompleted || false}
           />
         ))}
       </div>

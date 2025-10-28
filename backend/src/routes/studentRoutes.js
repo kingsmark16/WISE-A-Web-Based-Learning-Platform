@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireRole } from "../middlewares/authMiddleware.js";
-import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions } from "../controllers/studentController.js";
+import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions, trackLessonAccess, getStudentModuleProgress, getStudentProgressSummary } from "../controllers/studentController.js";
 
 const router = Router();
 
@@ -12,8 +12,11 @@ router.get('/module-details/:courseId/:moduleId', requireRole(['STUDENT']), getM
 
 // Progress tracking routes
 router.post('/lesson-complete', requireRole(['STUDENT']), markLessonComplete);
+router.post('/lesson-access', requireRole(['STUDENT']), trackLessonAccess);
 router.get('/course-progress/:courseId', requireRole(['STUDENT']), getStudentCourseProgress);
+router.get('/module-progress/:moduleId', requireRole(['STUDENT']), getStudentModuleProgress);
 router.get('/lesson-progress/:courseId', requireRole(['STUDENT']), getStudentLessonProgress);
+router.get('/progress-summary', requireRole(['STUDENT']), getStudentProgressSummary);
 
 router.post('/enroll', requireRole(['STUDENT']), enrollInCourse);
 router.post('/unenroll', requireRole(['STUDENT']), unenrollInCourse);

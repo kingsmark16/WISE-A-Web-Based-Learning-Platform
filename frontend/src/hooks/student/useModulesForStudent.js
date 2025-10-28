@@ -14,6 +14,7 @@ const fetchModules = async (courseId) => {
 
 /**
  * Hook to fetch course modules for students
+ * Now includes locking status and completion status
  * @param {string} courseId - The ID of the course
  * @returns {Object} Query object with data, isLoading, error, and refetch
  */
@@ -22,8 +23,10 @@ export const useModulesForStudent = (courseId) => {
     queryKey: [...MODULES_QUERY_KEY, courseId],
     queryFn: () => fetchModules(courseId),
     enabled: !!courseId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchInterval: 1000 * 60, // Refetch every minute
     retry: 1,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

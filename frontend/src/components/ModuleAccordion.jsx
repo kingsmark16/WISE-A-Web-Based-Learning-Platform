@@ -1,5 +1,8 @@
 import { useModulesForStudent } from "@/hooks/student/useModulesForStudent";
 import { useStudentModuleDetails } from "@/hooks/student/useStudentModuleDetails";
+import { useTrackLessonAccess } from "@/hooks/student/useTrackLessonAccess";
+import { useStudentCourseProgress } from "@/hooks/student/useStudentCourseProgress";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Accordion,
   AccordionItem,
@@ -7,10 +10,11 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, AlertCircle, RotateCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { BookOpen, AlertCircle, RotateCcw, Lock, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import StudentLessonsList from "@/components/student/StudentLessonsList";
 import StudentLinksList from "@/components/student/StudentLinksList";
 import StudentQuizSection from "@/components/student/StudentQuizSection";
@@ -63,10 +67,29 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
     true
   );
 
+  const trackLessonAccess = useTrackLessonAccess(courseId, moduleId);
+  const queryClient = useQueryClient();
+
   const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
   const [pdfPlayerOpen, setPdfPlayerOpen] = useState(false);
   const [dropboxPlayerOpen, setDropboxPlayerOpen] = useState(false);
   const [currentLesson, setCurrentLesson] = useState(null);
+
+  // Handle visibility change to refetch data when user comes back from PDF tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // User came back to the tab, refetch module details
+        queryClient.invalidateQueries({
+          queryKey: ['student-module-details', courseId, moduleId],
+          exact: true
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [courseId, moduleId, queryClient]);
 
   const handlePlayLesson = useCallback((lesson) => {
     const type = String(lesson?.type || '').toUpperCase();
@@ -76,6 +99,21 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
       console.error('Lesson URL not available');
       return;
     }
+
+    // Track lesson access - this will mark it as completed
+    trackLessonAccess.mutate(lesson.id, {
+      onError: (error) => {
+        if (error.response?.status === 403 && error.response?.data?.isLocked) {
+          alert('This module is locked. Complete the previous module first.');
+          return;
+        }
+        console.error('Failed to track lesson access:', error);
+        alert('Failed to track lesson access. Please try again.');
+      },
+      onSuccess: () => {
+        console.log('Lesson access tracked successfully');
+      }
+    });
 
     if (type === 'PDF') {
       setCurrentLesson(lesson);
@@ -90,7 +128,7 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
       // Fallback for unknown types
       window.open(url, '_blank', 'noopener,noreferrer');
     }
-  }, []);
+  }, [trackLessonAccess]);
 
   const handleOpenLink = useCallback((link) => {
     // Handle link open - already opens in new tab
@@ -196,21 +234,44 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
       {/* PDF Viewer Modal */}
       <PdfViewer 
         open={pdfPlayerOpen} 
-        onClose={() => setPdfPlayerOpen(false)} 
+        onClose={() => {
+          setPdfPlayerOpen(false);
+          // Refetch data when modal closes
+          queryClient.invalidateQueries({
+            queryKey: ['student-module-details', courseId, moduleId],
+            exact: true
+          });
+        }}
         pdfUrl={currentLesson?.url}
       />
 
       {/* YouTube Video Player Modal */}
       <EmbedYt 
         open={videoPlayerOpen} 
-        onOpenChange={setVideoPlayerOpen} 
+        onOpenChange={(open) => {
+          setVideoPlayerOpen(open);
+          // Refetch data when modal closes
+          if (!open) {
+            queryClient.invalidateQueries({
+              queryKey: ['student-module-details', courseId, moduleId],
+              exact: true
+            });
+          }
+        }}
         lesson={currentLesson}
       />
 
       {/* Dropbox Video Player Modal */}
       <VideoPlayer 
         open={dropboxPlayerOpen} 
-        onClose={() => setDropboxPlayerOpen(false)} 
+        onClose={() => {
+          setDropboxPlayerOpen(false);
+          // Refetch data when modal closes
+          queryClient.invalidateQueries({
+            queryKey: ['student-module-details', courseId, moduleId],
+            exact: true
+          });
+        }}
         url={currentLesson?.url}
         title={currentLesson?.title}
       />
@@ -220,28 +281,55 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
 
 // Module item component
 const ModuleItem = ({ module, courseId, index }) => {
+  const isLocked = module.isLocked;
+  const isCompleted = module.isCompleted;
+
+  // Use the actual progress percentage from the backend
+  const progressPercentage = module.progressPercentage || 0;
+
   return (
-    <div className="relative rounded-lg border-2 border-input shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/30 [&.open]:border-primary/50 w-full bg-card overflow-clip">
+    <div className={`relative rounded-lg border-2 shadow-lg bg-card hover:shadow-xl transition-all duration-200 w-full overflow-clip`}>
       <AccordionItem
         value={module.id}
         className="border-0"
+        disabled={isLocked}
       >
       <AccordionTrigger
-        className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden hover:no-underline"
+        className={`group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden hover:no-underline ${
+          isLocked ? 'cursor-not-allowed opacity-60' : ''
+        }`}
+        disabled={isLocked}
       >
         <div className="flex items-center gap-3 text-left flex-1">
-          <div className="flex-shrink-0 bg-primary/10 rounded-lg p-2">
-            <BookOpen className="h-4 w-4 text-primary" />
+          <div className={`flex-shrink-0 rounded-lg p-2 ${
+            isLocked
+              ? 'bg-muted'
+              : isCompleted
+              ? 'bg-green-100'
+              : 'bg-primary/10'
+          }`}>
+            {isLocked ? (
+              <Lock className="h-4 w-4 text-muted-foreground" />
+            ) : isCompleted ? (
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            ) : (
+              <BookOpen className="h-4 w-4 text-primary" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-sm md:text-base truncate">
+              <span className={`font-semibold text-sm md:text-base truncate ${
+                isLocked ? '' : ''
+              }`}>
                 Module {index + 1}: {module.title}
               </span>
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded whitespace-nowrap">
-                {module.totalLessons} lesson{module.totalLessons !== 1 ? "s" : ""}
-              </span>
+              {isCompleted && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap font-medium">
+                  ✓ Completed
+                </span>
+              )}
             </div>
+
             <p className="text-xs text-muted-foreground mt-1">
               Updated: {new Date(module.updatedAt).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -251,15 +339,47 @@ const ModuleItem = ({ module, courseId, index }) => {
                 minute: '2-digit'
               })}
             </p>
+            {isLocked && (
+              <p className="text-xs text-orange-600 mt-1 font-medium">
+                Complete the previous module to unlock
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Progress Bar - Positioned to the right */}
+        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2 text-xs">
+            <span className={`font-medium ${
+              isLocked
+                ? 'text-muted-foreground'
+                : isCompleted
+                ? 'text-green-600'
+                : 'text-primary'
+            }`}>
+              {progressPercentage}%
+            </span>
+          </div>
+          <Progress
+            value={progressPercentage}
+            className={`h-2 w-20 sm:w-24 md:w-32 lg:w-40 ${
+              isLocked
+                ? '[&>div]:bg-muted-foreground/30'
+                : isCompleted
+                ? '[&>div]:bg-green-500'
+                : '[&>div]:bg-primary'
+            }`}
+          />
+        </div>
       </AccordionTrigger>
-      <AccordionContent className="px-4 py-3 md:py-4 border-t">
-        <ModuleContentDisplay
-          courseId={courseId}
-          moduleId={module.id}
-        />
-      </AccordionContent>
+      {!isLocked && (
+        <AccordionContent className="px-4 py-3 md:py-4 border-t">
+          <ModuleContentDisplay
+            courseId={courseId}
+            moduleId={module.id}
+          />
+        </AccordionContent>
+      )}
     </AccordionItem>
     </div>
   );
@@ -268,6 +388,7 @@ const ModuleItem = ({ module, courseId, index }) => {
 // Main component
 const ModuleAccordion = ({ courseId }) => {
   const { data: modules = [], isLoading, error, refetch } = useModulesForStudent(courseId);
+  const { data: courseProgress } = useStudentCourseProgress(courseId);
 
   if (isLoading) {
     return <ModulesSkeleton />;
@@ -285,7 +406,13 @@ const ModuleAccordion = ({ courseId }) => {
     <div className="p-4 md:p-6">
       <Accordion type="single" collapsible className="w-full space-y-2">
         {modules.map((module, index) => (
-          <ModuleItem key={module.id} module={module} courseId={courseId} index={index} />
+          <ModuleItem
+            key={module.id}
+            module={module}
+            courseId={courseId}
+            index={index}
+            courseProgress={courseProgress}
+          />
         ))}
       </Accordion>
       <div className="h-4" />

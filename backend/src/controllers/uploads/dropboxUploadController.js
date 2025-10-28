@@ -117,6 +117,14 @@ export const uploadDropboxVideo = async (req, res) => {
         }
       });
 
+      // Mark module as incomplete for all enrolled students if it was previously completed
+      try {
+        const ProgressService = (await import('../../services/progress.service.js')).default;
+        await ProgressService.markModuleIncompleteIfCompleted(moduleId);
+      } catch (progressError) {
+        console.error('Failed to update progress:', progressError);
+      }
+
       results.push({ lesson, streamableVideoUrl, thumbnailLink, duration });
     }
 

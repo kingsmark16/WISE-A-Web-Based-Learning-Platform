@@ -2,6 +2,7 @@ import { getYouTubeClient } from '../../services/googleAuth.js';
 
 import { toPhDateString } from '../../utils/time.js';
 import prisma from '../../lib/prisma.js';
+import ProgressService from '../../services/progress.service.js';
 import { Readable } from 'stream';
 import multer from 'multer';
 import fs from 'fs';
@@ -162,6 +163,9 @@ async function createLesson({ moduleId, videoId, meta, title, description }) {
 
     return created;
   });
+
+  // Mark module as incomplete for all enrolled students if it was previously completed
+  await ProgressService.markModuleIncompleteIfCompleted(moduleId);
 
   return created;
 }

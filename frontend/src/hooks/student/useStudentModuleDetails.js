@@ -35,7 +35,7 @@ export const useStudentModuleDetails = (courseId, moduleId, enabled = true) => {
     queryKey: [MODULE_DETAILS_QUERY_KEY, courseId, moduleId],
     queryFn: () => fetchModuleDetails(courseId, moduleId),
     enabled: enabled && !!courseId && !!moduleId,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
