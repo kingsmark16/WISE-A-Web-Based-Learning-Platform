@@ -1291,3 +1291,208 @@ export const getStudentProgressSummary = async (req, res) => {
         });
     }
 };
+
+export const getEnrolledCourses = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found in database" });
+        }
+
+        // Optimized query: Get enrollments with course data and progress in a single query
+        const enrollments = await prisma.enrollment.findMany({
+            where: {
+                studentId: user.id
+            },
+            select: {
+                enrolledAt: true,
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        thumbnail: true,
+                        category: true,
+                        updatedAt: true,
+                        isPublished: true,
+                        managedBy: {
+                            select: {
+                                fullName: true,
+                                imageUrl: true
+                            }
+                        },
+                        _count: {
+                            select: {
+                                enrollments: true,
+                                modules: true
+                            }
+                        },
+                        modules: {
+                            select: {
+                                _count: {
+                                    select: {
+                                        lessons: true
+                                    }
+                                }
+                            }
+                        },
+                        courseProgress: {
+                            where: { studentId: user.id },
+                            select: {
+                                progressPercentage: true,
+                                lessonsCompleted: true,
+                                quizzesCompleted: true,
+                                lastAccessedAt: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                enrolledAt: 'desc' // Most recently enrolled first
+            }
+        });
+
+        // Format the response data
+        const enrolledCourses = enrollments.map(enrollment => {
+            const course = enrollment.course;
+
+            // Calculate total lessons from all modules
+            const totalLessons = course.modules?.reduce((total, module) =>
+                total + (module._count?.lessons || 0), 0) || 0;
+
+            // Get progress data (default to 0 if not exists)
+            const progress = course.courseProgress?.[0] || {
+                progressPercentage: 0,
+                lessonsCompleted: 0,
+                quizzesCompleted: 0,
+                lastAccessedAt: null
+            };
+
+            return {
+                id: course.id,
+                title: course.title,
+                description: course.description,
+                thumbnail: course.thumbnail,
+                category: course.category,
+                updatedAt: course.updatedAt,
+                isPublished: course.isPublished,
+                managedBy: course.managedBy,
+                totalEnrollments: course._count.enrollments,
+                totalModules: course._count.modules,
+                totalLessons,
+                enrolledAt: enrollment.enrolledAt,
+                progress: {
+                    percentage: progress.progressPercentage,
+                    lessonsCompleted: progress.lessonsCompleted,
+                    quizzesCompleted: progress.quizzesCompleted,
+                    lastAccessedAt: progress.lastAccessedAt
+                }
+            };
+        });
+
+        res.status(200).json({
+            data: enrolledCourses,
+            total: enrolledCourses.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching enrolled courses:', error);
+        res.status(500).json({
+            message: 'Failed to fetch enrolled courses',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Get course completion and certificate for a student
+ * Returns the completion record and certificate if the course is completed
+ * Returns 404 if course is not completed
+ */
+export const getCourseCompletion = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const userId = req.auth().userId;
+
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) return res.status(404).json({ message: "User not found in database" });
+
+        // Check if student is enrolled in the course
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                studentId_courseId: {
+                    studentId: user.id,
+                    courseId
+                }
+            }
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
+        }
+
+        // Get course completion and certificate
+        const completion = await prisma.courseCompletion.findUnique({
+            where: {
+                userId_courseId: {
+                    userId: user.id,
+                    courseId
+                }
+            },
+            include: {
+                certificate: {
+                    select: {
+                        id: true,
+                        certificateNumber: true,
+                        certificateUrl: true,
+                        issueDate: true
+                    }
+                }
+            }
+        });
+
+        // If no completion record, return 200 with null data (not completed)
+        if (!completion) {
+            return res.status(200).json({
+                data: null,
+                message: "Course not completed",
+                isCompleted: false
+            });
+        }
+
+        // Return completion with certificate
+        res.status(200).json({
+            data: {
+                completedAt: completion.completedAt,
+                certificate: completion.certificate
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching course completion:', error);
+        res.status(500).json({
+            message: 'Failed to fetch course completion',
+            error: error.message
+        });
+    }
+};

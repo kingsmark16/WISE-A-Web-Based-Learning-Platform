@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ModuleAccordion from "./ModuleAccordion";
 import Forum from "./courseNav/Forum";
+import CertificationTab from "./student/CertificationTab";
 
-const CourseTabs = ({ courseId }) => {
+const CourseTabs = ({ courseId, courseTitle }) => {
   const [tab, setTab] = useState("module");
 
   return (
@@ -42,9 +43,7 @@ const CourseTabs = ({ courseId }) => {
       </TabsContent>
 
       <TabsContent value="certification" className="w-full">
-        <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-          Certification details will be shown here.
-        </div>
+        <CertificationTab courseId={courseId} courseTitle={courseTitle} />
       </TabsContent>
     </Tabs>
   );

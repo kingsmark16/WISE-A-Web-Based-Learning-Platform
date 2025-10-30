@@ -55,12 +55,23 @@ export const useSubmitStudentQuiz = () => {
     return useMutation({
         mutationFn: studentQuizAPI.submitQuiz,
         onSuccess: (data, variables) => {
+            // Immediately invalidate and refetch enrolled courses for instant progress update
+            queryClient.invalidateQueries({ queryKey: ['enrolled-courses'] });
+            queryClient.refetchQueries({ queryKey: ['enrolled-courses'] });
+
+            // Invalidate course completion queries (may unlock certification if course is now complete)
+            if (variables.courseId) {
+                queryClient.invalidateQueries({ queryKey: ['course-completion', variables.courseId] });
+                queryClient.refetchQueries({ queryKey: ['course-completion', variables.courseId] });
+            }
+
             // Immediately refetch quiz submissions to show new attempt in history
             queryClient.refetchQueries({ queryKey: studentQuizKeys.submissionsByQuiz(variables.quizId) });
 
             // Invalidate modules query to update progress bars
             queryClient.invalidateQueries({ queryKey: ['modules'] });
             queryClient.invalidateQueries({ queryKey: ['course-progress'] });
+            queryClient.invalidateQueries({ queryKey: ['progress-summary'] }); // Refresh progress summary
         },
         onError: (error) => {
             console.error("Failed to submit student quiz:", error);

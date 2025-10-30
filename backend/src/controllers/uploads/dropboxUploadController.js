@@ -5,6 +5,8 @@ import prisma from '../../lib/prisma.js';
 import ffmpeg from 'fluent-ffmpeg';
 import { uploadToDropbox, getPermanentLink, getVideoDuration, deleteFromDropbox, renameDropboxFile, getStreamableLink } from '../../services/dropboxService.js';
 import cloudinary from '../../lib/cloudinary.js';
+import { invalidateCoursesCertificates } from '../../services/invalidateCertificates.service.js';
+import ProgressService from '../../services/progress.service.js';
 
 export const uploadDropboxVideo = async (req, res) => {
   try {
@@ -123,6 +125,23 @@ export const uploadDropboxVideo = async (req, res) => {
         await ProgressService.markModuleIncompleteIfCompleted(moduleId);
       } catch (progressError) {
         console.error('Failed to update progress:', progressError);
+      }
+
+      // Invalidate any existing certificates for this course (new content added)
+      try {
+        const moduleData = await prisma.module.findUnique({
+          where: { id: moduleId },
+          select: { courseId: true }
+        });
+        if (moduleData) {
+          const invalidResult = await invalidateCoursesCertificates(moduleData.courseId);
+          if (invalidResult.deletedCount > 0) {
+            console.log(`[uploadDropbox] Invalidated ${invalidResult.deletedCount} certificates for course ${moduleData.courseId}`);
+          }
+        }
+      } catch (error) {
+        console.error(`[uploadDropbox] Failed to invalidate certificates:`, error);
+        // Continue anyway - lesson creation should not fail
       }
 
       results.push({ lesson, streamableVideoUrl, thumbnailLink, duration });
@@ -262,6 +281,15 @@ export const deleteDropboxLesson = async (req, res) => {
         // Log and continue — this should be rare, but avoid aborting the whole operation
         console.error('Failed to update lesson position for id', s.id, err);
       }
+    }
+
+    // Handle progress recalculation after deletion
+    try {
+      const progressResult = await ProgressService.handleLessonDeletion(deleted.id, deleted.moduleId);
+      console.log(`[deleteDropboxLesson] Progress cleanup completed:`, progressResult);
+    } catch (progressError) {
+      console.error(`[deleteDropboxLesson] Error updating progress after deletion:`, progressError);
+      // Don't fail the delete operation if progress update fails
     }
 
     return res.json({

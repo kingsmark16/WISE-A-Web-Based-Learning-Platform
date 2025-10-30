@@ -26,6 +26,12 @@ export async function signedUrl({ key, expiresIn = 60 * 60, downloadName }) {
 }
 
 export async function removeObject(key) {
-  const { error } = await supabase.storage.from(BUCKET).remove([key]);
-  if (error) throw error;
+  console.log(`[supabase.removeObject] Deleting: ${key} from bucket: ${BUCKET}`);
+  const { data, error } = await supabase.storage.from(BUCKET).remove([key]);
+  if (error) {
+    console.error(`[supabase.removeObject] Error deleting ${key}:`, error);
+    throw error;
+  }
+  console.log(`[supabase.removeObject] Successfully deleted: ${key}`, data);
+  return { data, key };
 }

@@ -3,6 +3,7 @@ import { getYouTubeClient } from '../../services/googleAuth.js';
 import { toPhDateString } from '../../utils/time.js';
 import prisma from '../../lib/prisma.js';
 import ProgressService from '../../services/progress.service.js';
+import { invalidateCoursesCertificates } from '../../services/invalidateCertificates.service.js';
 import { Readable } from 'stream';
 import multer from 'multer';
 import fs from 'fs';
@@ -136,6 +137,16 @@ function parseDuration(duration) {
 async function createLesson({ moduleId, videoId, meta, title, description }) {
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
+  // Get module's course ID for certificate invalidation
+  const module = await prisma.module.findUnique({
+    where: { id: moduleId },
+    select: { courseId: true }
+  });
+
+  if (!module) {
+    throw new Error(`Module ${moduleId} not found`);
+  }
+
   // Always append to the end to avoid position conflicts
   // You can implement reordering as a separate operation
   const created = await prisma.$transaction(async (tx) => {
@@ -166,6 +177,17 @@ async function createLesson({ moduleId, videoId, meta, title, description }) {
 
   // Mark module as incomplete for all enrolled students if it was previously completed
   await ProgressService.markModuleIncompleteIfCompleted(moduleId);
+
+  // Invalidate any existing certificates for this course (new content added)
+  try {
+    const invalidResult = await invalidateCoursesCertificates(module.courseId);
+    if (invalidResult.deletedCount > 0) {
+      console.log(`[createLesson] Invalidated ${invalidResult.deletedCount} certificates for course ${module.courseId}`);
+    }
+  } catch (error) {
+    console.error(`[createLesson] Failed to invalidate certificates:`, error);
+    // Continue anyway - lesson creation should not fail
+  }
 
   return created;
 }
@@ -926,6 +948,15 @@ export async function remove(req, res) {
         });
       }
     });
+
+    // Handle progress recalculation after deletion
+    try {
+      const progressResult = await ProgressService.handleLessonDeletion(id, ex.moduleId);
+      console.log(`[youtubeRemove] Progress cleanup completed:`, progressResult);
+    } catch (progressError) {
+      console.error(`[youtubeRemove] Error updating progress after deletion:`, progressError);
+      // Don't fail the delete operation if progress update fails
+    }
 
     res.json({ message: `Deleted${deleteFromYouTube ? ' (YouTube + DB)' : ' (DB only)'}` });
   } catch (e) {

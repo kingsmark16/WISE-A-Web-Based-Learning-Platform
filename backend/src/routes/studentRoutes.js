@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { requireRole } from "../middlewares/authMiddleware.js";
-import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions, trackLessonAccess, getStudentModuleProgress, getStudentProgressSummary } from "../controllers/studentController.js";
+import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions, trackLessonAccess, getStudentModuleProgress, getStudentProgressSummary, getEnrolledCourses, getCourseCompletion } from "../controllers/studentController.js";
 
 const router = Router();
 
 router.get('/categories', requireRole(['STUDENT']), getCourseCategories);
 router.get('/selected-course/:id', requireRole(['STUDENT']), getSelectedCourse);
 router.get('/featured-courses', requireRole(['STUDENT']), getFeaturedCourses);
+router.get('/enrolled-courses', requireRole(['STUDENT']), getEnrolledCourses);
 router.get('/modules/:courseId', requireRole(['STUDENT']), getCourseModules);
 router.get('/module-details/:courseId/:moduleId', requireRole(['STUDENT']), getModuleDetailsForStudent);
 
@@ -21,6 +22,9 @@ router.get('/progress-summary', requireRole(['STUDENT']), getStudentProgressSumm
 router.post('/enroll', requireRole(['STUDENT']), enrollInCourse);
 router.post('/unenroll', requireRole(['STUDENT']), unenrollInCourse);
 router.get('/enrollment-status/:courseId', requireRole(['STUDENT']), checkEnrollmentStatus);
+
+// Course completion and certification
+router.get('/course-completion/:courseId', requireRole(['STUDENT']), getCourseCompletion);
 
 // Quiz routes
 router.post('/quiz/start/:courseId/:moduleId', requireRole(['STUDENT']), startStudentQuiz);
