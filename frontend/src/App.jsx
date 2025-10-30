@@ -21,6 +21,8 @@ import CoursePage from "./pages/student/home/CoursePage"
 import FacultyHomePage from "./pages/faculty/FacultyHomePage"
 import StudentInfo from "./pages/admin/userManagement/StudentInfo"
 import StudentManagement from "./pages/admin/userManagement/StudentManagement"
+import MyCourses from "./pages/student/MyCourses"
+import VerifyCertificate from "./pages/VerifyCertificate"
 
 const App = () => {
   const location = useLocation();
@@ -48,6 +50,9 @@ const App = () => {
 
         <Route path="/sso-callback" element={<SSOCallbackPage/>}/>
         <Route path="/auth-callback" element={<AuthCallbackPage/>}/>
+        
+        {/* Public certificate verification route - no auth required */}
+        <Route path="/verify" element={<VerifyCertificate/>}/>
 
         {/* Admin Routes - Only accessible by ADMIN */}
         <Route
@@ -87,6 +92,7 @@ const App = () => {
           <Route index element={<HomePage/>}/>
           <Route path="student-homepage" element={<HomePage/>}/>
           <Route path="homepage/:id/selected-course" element={<CoursePage/>}/>
+          <Route path="my-courses" element={<MyCourses/>}/>
         </Route>
 
         {/* Faculty Routes - Only accessible by FACULTY and ADMIN */}

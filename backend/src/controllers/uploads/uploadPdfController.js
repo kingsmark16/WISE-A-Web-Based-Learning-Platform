@@ -1,6 +1,8 @@
 import path from "path";
 import { storage } from "../../storage/index.js";
 import prisma from "../../lib/prisma.js";
+import { invalidateCoursesCertificates } from "../../services/invalidateCertificates.service.js";
+import ProgressService from "../../services/progress.service.js";
 
 const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 const EXPIRES_SEC = 60 * 60 * 4; // 4 hours
@@ -138,6 +140,23 @@ export const uploadPdf = async (req, res) => {
             await ProgressService.markModuleIncompleteIfCompleted(moduleId);
           } catch (progressError) {
             console.error('[uploadPdf] Failed to update progress:', progressError);
+          }
+
+          // Invalidate any existing certificates for this course (new content added)
+          try {
+            const moduleData = await prisma.module.findUnique({
+              where: { id: moduleId },
+              select: { courseId: true }
+            });
+            if (moduleData) {
+              const invalidResult = await invalidateCoursesCertificates(moduleData.courseId);
+              if (invalidResult.deletedCount > 0) {
+                console.log(`[uploadPdf] Invalidated ${invalidResult.deletedCount} certificates for course ${moduleData.courseId}`);
+              }
+            }
+          } catch (error) {
+            console.error(`[uploadPdf] Failed to invalidate certificates:`, error);
+            // Continue anyway - lesson creation should not fail
           }
 
           break; // success
@@ -333,7 +352,6 @@ export const deletePdf = async (req, res) => {
         }
       }
     }
-
     // Delete DB record
     const deleted = await prisma.lesson.delete({ where });
 
@@ -352,6 +370,15 @@ export const deletePdf = async (req, res) => {
         where: { id: s.id },
         data: { position: s.position - 1 }
       });
+    }
+
+    // Handle progress recalculation after deletion
+    try {
+      const progressResult = await ProgressService.handleLessonDeletion(deleted.id, deleted.moduleId);
+      console.log(`[deletePdf] Progress cleanup completed:`, progressResult);
+    } catch (progressError) {
+      console.error(`[deletePdf] Error updating progress after deletion:`, progressError);
+      // Don't fail the delete operation if progress update fails
     }
 
     return res.json({

@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import puppeteer from "puppeteer";
 import QRCode from "qrcode";
-import { format } from "date-fns";
 import fs from "fs/promises";
 import path from "node:path";
 
@@ -38,9 +37,7 @@ export async function issueCertificateForCompletion(completionId) {
   const html = buildCertificateHTML({
     studentName: completion.user.fullName || completion.user.emailAddress,
     courseTitle: completion.course.title,
-    completedOn: format(completion.completedAt, "MMMM d, yyyy"),
     certificateNumber,
-    orgName: process.env.CERT_ORG_NAME || "WISE LEARNING PLATFORM",
     qrDataUrl,
     bgDataUrl,
   });

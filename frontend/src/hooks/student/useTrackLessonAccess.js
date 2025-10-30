@@ -52,11 +52,21 @@ export const useTrackLessonAccess = (courseId = null, moduleId = null) => {
   return useMutation({
     mutationFn: trackLessonAccess,
     onSuccess: () => {
+      // Immediately invalidate and refetch enrolled courses for instant progress update
+      queryClient.invalidateQueries({ queryKey: ['enrolled-courses'] });
+      queryClient.refetchQueries({ queryKey: ['enrolled-courses'] });
+
+      // Invalidate course completion queries (may unlock certification if course is now complete)
+      if (courseId) {
+        queryClient.invalidateQueries({ queryKey: ['course-completion', courseId] });
+        queryClient.refetchQueries({ queryKey: ['course-completion', courseId] });
+      }
 
       // Invalidate related queries to refresh progress
       queryClient.invalidateQueries({ queryKey: LESSON_ACCESS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: MODULES_QUERY_KEY }); // This invalidates ['modules', courseId] queries
       queryClient.invalidateQueries({ queryKey: COURSE_PROGRESS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['progress-summary'] }); // Refresh progress summary
 
       // Invalidate specific module details if courseId and moduleId provided
       if (courseId && moduleId) {

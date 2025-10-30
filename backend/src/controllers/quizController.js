@@ -42,7 +42,7 @@ export const createQuiz = async (req, res) => {
     }
 
     // Create quiz and questions in a transaction
-    const created = await prisma.$transaction(async (tx) => {
+    const quizId = await prisma.$transaction(async (tx) => {
       const quiz = await tx.quiz.create({
         data: { title, description, timeLimit: timeLimit || 0, attemptLimit: attemptLimit ?? null, moduleId },
       });
@@ -61,7 +61,13 @@ export const createQuiz = async (req, res) => {
         await tx.quizQuestion.createMany({ data: toCreate });
       }
 
-      return tx.quiz.findUnique({ where: { id: quiz.id }, include: { questions: true } });
+      return quiz.id;
+    });
+
+    // Fetch the created quiz outside the transaction
+    const created = await prisma.quiz.findUnique({ 
+      where: { id: quizId }, 
+      include: { questions: true } 
     });
 
     // Mark module as incomplete for all enrolled students if it was previously completed
@@ -95,12 +101,14 @@ export const updateQuiz = async (req, res) => {
     }
 
     // Update basic fields and replace questions if provided
-    const updated = await prisma.$transaction(async (tx) => {
-      const q = await tx.quiz.update({ where: { id }, data: { title, description, timeLimit, attemptLimit } });
+    let questionsChanged = false;
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.quiz.update({ where: { id }, data: { title, description, timeLimit, attemptLimit } });
 
       if (Array.isArray(questions)) {
         // Check if questions have actually changed
-        const questionsChanged = questions.length !== existing.questions.length ||
+        questionsChanged = questions.length !== existing.questions.length ||
           questions.some((newQ, idx) => {
             const oldQ = existing.questions[idx];
             if (!oldQ) return true; // New question added
@@ -142,8 +150,12 @@ export const updateQuiz = async (req, res) => {
           if (toCreate.length > 0) await tx.quizQuestion.createMany({ data: toCreate });
         }
       }
+    });
 
-      return tx.quiz.findUnique({ where: { id }, include: { questions: true } });
+    // Fetch updated quiz outside the transaction
+    const updated = await prisma.quiz.findUnique({ 
+      where: { id }, 
+      include: { questions: true } 
     });
 
     // If questions were changed, mark module as incomplete for all enrolled students
@@ -176,6 +188,19 @@ export const deleteQuiz = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this quiz' });
     }
 
+    // Handle progress cleanup BEFORE deleting the quiz (so we can still query submissions)
+    try {
+      const progressCleanup = await ProgressService.handleQuizDeletion(id, existing.module.id);
+      console.log("Quiz deletion progress cleanup completed:", {
+        affectedStudents: progressCleanup.affectedStudents,
+        updatedModuleProgressRecords: progressCleanup.updatedModuleProgressRecords
+      });
+    } catch (progressError) {
+      console.warn("Warning: Quiz deletion progress cleanup failed:", progressError);
+      // Don't fail the deletion, just log the warning
+    }
+
+    // Delete quiz and its questions (after progress cleanup)
     await prisma.$transaction(async (tx) => {
       await tx.quizQuestion.deleteMany({ where: { quizId: id } });
       await tx.quiz.delete({ where: { id } });
