@@ -19,7 +19,7 @@ export const useGetCourses = ({ page = 1, limit = 12, search = '', status = 'all
             return response.data;
         },
         keepPreviousData: true, // Keep previous data while fetching new page
-        staleTime: 1000 * 60 * 5,
+        staleTime: 0, // Data is immediately stale, forcing refetch on invalidation
     })
 }
 
@@ -27,7 +27,6 @@ export const useGetCourses = ({ page = 1, limit = 12, search = '', status = 'all
 export const useCreateCourse = () => {
 
     const queryClient = useQueryClient();
-    const navigate = useNavigate();
 
     return useMutation({
         mutationFn: async (courseData) => {
@@ -38,10 +37,24 @@ export const useCreateCourse = () => {
             });
             return response.data;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['courses']);
+        onSuccess: async () => {
+            // Clear all course cache
+            queryClient.removeQueries({
+                queryKey: ['courses'],
+                exact: false
+            });
+            
+            // Pre-fetch the first page with default filters
+            await queryClient.prefetchQuery({
+                queryKey: ['courses', 1, 12, '', 'all', 'all'],
+                queryFn: async () => {
+                    const response = await axiosInstance.get('/course?page=1&limit=12&search=&status=all&category=all');
+                    return response.data;
+                },
+                staleTime: 0
+            });
+            
             toast.success('Course created successfully!');
-            navigate('/admin/courses');
         },
         onError: (error) => {
             const errorMessage = error?.response?.data?.message || 'Failed to create course';
@@ -51,20 +64,20 @@ export const useCreateCourse = () => {
 }
 
 
-export const useDeleteCourse = () => {
+export const useArchiveCourse = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (id) => {
-            const response = await axiosInstance.delete(`/course/${id}`);
+            const response = await axiosInstance.patch(`/course/${id}/archive`);
             return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['courses']);
-            toast.success('Course deleted successfully!');
+            toast.success('Course archived successfully!');
         },
         onError: (error) => {
-            const errorMessage = error?.response?.data?.message || 'Failed to delete course';
+            const errorMessage = error?.response?.data?.message || 'Failed to archive course';
             toast.error(errorMessage);
         }
     })
@@ -117,14 +130,14 @@ export const usePublishCourse = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({id, isPublished}) => {
-            const response = await axiosInstance.patch(`/course/${id}/publish`, {isPublished}, {
+        mutationFn: async ({id, status}) => {
+            const response = await axiosInstance.patch(`/course/${id}/publish`, {status}, {
                 headers: {'Content-Type': 'application/json'}
             });
 
             return response.data;
         },
-        onMutate: async ({id, isPublished}) => {
+        onMutate: async ({id, status}) => {
             // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: ['course', id] })
             await queryClient.cancelQueries({ queryKey: ['courses'] })
@@ -140,7 +153,7 @@ export const usePublishCourse = () => {
                     ...old,
                     course: {
                         ...old.course,
-                        isPublished: isPublished
+                        status: status
                     }
                 }
             })
@@ -152,7 +165,7 @@ export const usePublishCourse = () => {
                     ...old,
                     courses: old.courses.map((course) => 
                         course.id === id 
-                            ? { ...course, isPublished }
+                            ? { ...course, status }
                             : course
                     )
                 }
@@ -163,9 +176,11 @@ export const usePublishCourse = () => {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['courses'] })
             queryClient.invalidateQueries({ queryKey: ['course'] })
-            const message = data.course.isPublished 
+            const message = data.course.status === 'PUBLISHED'
                 ? 'Course published successfully!' 
-                : 'Course unpublished successfully!';
+                : data.course.status === 'DRAFT'
+                ? 'Course changed to draft successfully!'
+                : 'Course archived successfully!';
             toast.success(message);
         },
         onError: (error, {id}, context) => {

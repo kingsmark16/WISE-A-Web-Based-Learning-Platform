@@ -10,7 +10,7 @@ export const getCourseCategories = async (req, res) => {
             },
             distinct: ['category'],
             where: {
-                isPublished: true
+                status: 'PUBLISHED'
             }
         });
 
@@ -41,7 +41,7 @@ export const getFeaturedCourses = async (req, res) => {
                 u."fullName" AS managedBy
             FROM "Course" c
             LEFT JOIN "User" u ON c."facultyId" = u.id
-            WHERE c."isPublished" = true
+            WHERE c."status" = 'PUBLISHED'
             ORDER BY RANDOM()
             LIMIT 10
         `;
@@ -132,7 +132,7 @@ export const enrollInCourse = async (req, res) => {
         if(!userId) return res.status(401).json({message: "User not authenticated"});
 
         const course = await prisma.course.findUnique({
-            where: {id: courseId, isPublished: true}
+            where: {id: courseId, status: 'PUBLISHED'}
         });
 
         const user = await prisma.user.findUnique({
@@ -146,10 +146,7 @@ export const enrollInCourse = async (req, res) => {
 
         if(!user) return res.status(404).json({message: "User not found in database"});
 
-        if(!course) return res.status(404).json({message: "Course not found"});
-        if (!course.isPublished) {
-            return res.status(400).json({ message: "Course is not available for enrollment" });
-        }
+        if(!course) return res.status(404).json({message: "Course not found or not published"});
 
         // Verify course code
         if(!course.code) {
@@ -1325,7 +1322,7 @@ export const getEnrolledCourses = async (req, res) => {
                         thumbnail: true,
                         category: true,
                         updatedAt: true,
-                        isPublished: true,
+                        status: true,
                         managedBy: {
                             select: {
                                 fullName: true,
@@ -1387,7 +1384,7 @@ export const getEnrolledCourses = async (req, res) => {
                 thumbnail: course.thumbnail,
                 category: course.category,
                 updatedAt: course.updatedAt,
-                isPublished: course.isPublished,
+                status: course.status,
                 managedBy: course.managedBy,
                 totalEnrollments: course._count.enrollments,
                 totalModules: course._count.modules,

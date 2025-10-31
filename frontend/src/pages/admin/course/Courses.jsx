@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { useDeleteCourse, useGetCourses } from "../../../hooks/courses/useCourses";
+import { useGetCourses } from "../../../hooks/courses/useCourses";
 import { useUser } from "@clerk/clerk-react";
 import { 
   Eye, 
@@ -41,7 +41,9 @@ import {
   Filter,
   X,
   BookOpen,
-  Calendar
+  Calendar,
+  ArrowUpDown,
+  Archive as ArchiveIcon
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -64,9 +66,8 @@ const Courses = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest"); // newest, oldest, title-asc, title-desc
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [courseToDelete, setCourseToDelete] = useState(null);
 
   const searchRef = useRef(null);
 
@@ -83,8 +84,6 @@ const Courses = () => {
     status: statusFilter,
     category: categoryFilter
   });
-
-  const { mutate: deleteCourse, isPending: isDeleting } = useDeleteCourse();
 
   // Get all unique categories for filter dropdown
   const { data: allCoursesData } = useGetCourses({ limit: 1000 });
@@ -125,30 +124,6 @@ const Courses = () => {
     navigate(`/admin/courses/view/${courseId}`);
   };
 
-  const handleEdit = (courseId) => {
-    navigate(`/admin/courses/edit/${courseId}`);
-  };
-
-  const handleDelete = (course) => {
-    setCourseToDelete(course);
-    setShowDeleteDialog(true);
-  };
-
-  const confirmDelete = () => {
-    if (courseToDelete) {
-      deleteCourse(courseToDelete.id, {
-        onSuccess: () => {
-          setShowDeleteDialog(false);
-          setCourseToDelete(null);
-        },
-        onError: () => {
-          setShowDeleteDialog(false);
-          setCourseToDelete(null);
-        }
-      });
-    }
-  };
-
   const handleCreateCourse = () => {
     navigate('/admin/courses/create');
   };
@@ -181,14 +156,31 @@ const Courses = () => {
 
   const hasActiveFilters = searchInput || statusFilter !== "all" || categoryFilter !== "all";
 
-  // Display filtered courses
+  // Display filtered and sorted courses
   const displayedCourses = useMemo(() => {
-    const courses = courseData?.courses || [];
+    let courses = courseData?.courses || [];
     if (selectedCourse) {
       return [selectedCourse];
     }
-    return courses;
-  }, [selectedCourse, courseData?.courses]);
+    
+    // Apply sorting
+    const sortedCourses = [...courses].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case "oldest":
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+    
+    return sortedCourses;
+  }, [selectedCourse, courseData?.courses, sortBy]);
 
   const pagination = courseData?.pagination || {};
 
@@ -306,12 +298,14 @@ const Courses = () => {
                           )}
                           <Badge
                             className={`text-xs ${
-                              course.isPublished 
-                                ? "bg-green-500 text-white" 
-                                : "bg-yellow-500 text-white"
+                              course.status === 'PUBLISHED'
+                                ? "bg-green-500 text-white"
+                                : course.status === 'DRAFT'
+                                ? "bg-yellow-500 text-white"
+                                : "bg-gray-500 text-white"
                             }`}
                           >
-                            {course.isPublished ? "Published" : "Draft"}
+                            {course.status === 'PUBLISHED' ? "Published" : course.status === 'DRAFT' ? "Draft" : "Archived"}
                           </Badge>
                         </div>
                       </div>
@@ -330,9 +324,10 @@ const Courses = () => {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Status</SelectItem>
-              <SelectItem value="published">✓ Published</SelectItem>
-              <SelectItem value="draft">✎ Draft</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="PUBLISHED">Published</SelectItem>
+              <SelectItem value="DRAFT">Draft</SelectItem>
+              <SelectItem value="ARCHIVED">Archived</SelectItem>
             </SelectContent>
           </Select>
 
@@ -350,6 +345,23 @@ const Courses = () => {
                   {category}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={(value) => {
+            setSortBy(value);
+          }}>
+            <SelectTrigger className="w-full md:w-[180px] border-2">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4" />
+                <SelectValue placeholder="Sort by" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+              <SelectItem value="title-desc">Title (Z-A)</SelectItem>
             </SelectContent>
           </Select>
 
@@ -404,12 +416,14 @@ const Courses = () => {
                   <TableCell className="min-w-[100px]">
                     <Badge
                       className={`text-xs font-medium ${
-                        course.isPublished 
-                          ? "bg-green-500 hover:bg-green-600 text-white" 
-                          : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                        course.status === 'PUBLISHED'
+                          ? "bg-green-500 hover:bg-green-600 text-white"
+                          : course.status === 'DRAFT'
+                          ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                          : "bg-gray-500 hover:bg-gray-600 text-white"
                       }`}
                     >
-                      {course.isPublished ? "Published" : "Draft"}
+                      {course.status === 'PUBLISHED' ? "Published" : course.status === 'DRAFT' ? "Draft" : "Archived"}
                     </Badge>
                   </TableCell>
                   <TableCell className="min-w-[150px]">
@@ -481,21 +495,6 @@ const Courses = () => {
                           <Eye className="mr-2 h-4 w-4 text-blue-500" />
                           <span className="font-medium">View</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleEdit(course.id)}
-                          className="cursor-pointer"
-                        >
-                          <Edit className="mr-2 h-4 w-4 text-orange-500" />
-                          <span className="font-medium">Edit</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(course)}
-                          className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span className="font-medium">Delete</span>
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -551,37 +550,6 @@ const Courses = () => {
           </div>
         </div>
       )}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Delete Course
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the course "{courseToDelete?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
     </div>
   );

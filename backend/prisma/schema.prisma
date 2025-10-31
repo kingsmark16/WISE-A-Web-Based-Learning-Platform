@@ -40,6 +40,13 @@ model User {
   forumReplies     ForumReply[]
   forumPostLikes   ForumPostLike[]
 }
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model DailyUserActivity {
   id       String   @id @default(ulid())
   userId   String
@@ -54,7 +61,7 @@ model Course {
   description String?
   thumbnail   String?
   category    String
-  isPublished Boolean   @default(false)
+  status      CourseStatus @default(DRAFT)
   code        String?   @unique
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

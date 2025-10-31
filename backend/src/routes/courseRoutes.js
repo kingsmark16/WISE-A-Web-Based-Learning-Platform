@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createCourse, deleteCourse, getCourse, getCourses, publishCourse, updateCourse } from "../controllers/courseController.js";
+import { createCourse, archiveCourse, getCourse, getCourses, publishCourse, updateCourse } from "../controllers/courseController.js";
 import { requireRole } from "../middlewares/authMiddleware.js";
 import { createModule, deleteModule, getModule, getModules, reorderModules, updateModule } from "../controllers/moduleControllers.js";
 import { reorderLessons } from "../controllers/lessonsController.js";
@@ -77,7 +77,7 @@ router.post('/', requireRole(['ADMIN', 'FACULTY']), createCourse);
 router.get('/:id', getCourse);
 router.get('/',requireRole(['ADMIN']), getCourses);
 router.patch('/:id', requireRole(['ADMIN', 'FACULTY']), updateCourse);
-router.delete('/:id', requireRole(['ADMIN']), deleteCourse);
+router.patch('/:id/archive', requireRole(['ADMIN']), archiveCourse);
 router.patch('/:id/publish', requireRole(['ADMIN', 'FACULTY']), publishCourse);
 
 export default router;

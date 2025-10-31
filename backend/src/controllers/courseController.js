@@ -74,7 +74,7 @@ export const getCourses = async (req, res) => {
 
         // Status filter
         if (status !== 'all') {
-            whereClause.isPublished = status === 'published';
+            whereClause.status = status.toUpperCase();
         }
 
         // Category filter
@@ -96,8 +96,9 @@ export const getCourses = async (req, res) => {
                 title: true,
                 thumbnail: true,
                 category: true,
-                isPublished: true,
+                status: true,
                 code: true,
+                createdAt: true,
                 updatedAt: true,
                 createdBy: {
                     select: {
@@ -155,7 +156,7 @@ export const getCourse = async (req, res) => {
                 description: true,
                 thumbnail: true,
                 category: true,
-                isPublished: true,
+                status: true,
                 code: true,
                 updatedAt: true,
                 createdBy: {
@@ -208,17 +209,13 @@ export const getCourse = async (req, res) => {
 }
 
 
-export const deleteCourse = async (req, res) => {
+export const archiveCourse = async (req, res) => {
     try {
         const {id} = req.params;
 
         const course = await prisma.course.findUnique({
             where: {
                 id
-            },
-            select: {
-                id: true,
-                thumbnail: true
             }
         });
 
@@ -226,35 +223,27 @@ export const deleteCourse = async (req, res) => {
             return res.status(404).json({message: "Course not found"});
         }
 
-        if(course.thumbnail) {
-            try {
-                const extractPublicId = (url) => {
-                    const parts = url.split('/');
-                    const filename = parts[parts.length - 1];
-                    const publicId = filename.split('.')[0];
-                    return `course-thumbnails/${publicId}`;
-                };
-
-                const publicId = extractPublicId(course.thumbnail);
-
-                await cloudinary.uploader.destroy(publicId);
-                console.log(`Deleted image: ${publicId}`);
-
-            } catch (deleteError) {
-                console.log("Error deleting image from Cloudinary:", deleteError);
-            }
-        }
-
-        await prisma.course.delete({
+        // Update course status to ARCHIVED
+        await prisma.course.update({
             where: {
                 id
+            },
+            data: {
+                status: 'ARCHIVED'
             }
         })
 
-        res.status(200).json({message: "Course deleted successfully"});
+        res.status(200).json({
+            message: "Course archived successfully",
+            data: {
+                id: course.id,
+                title: course.title,
+                status: 'ARCHIVED'
+            }
+        });
     } catch (error) {
-        console.log("Error in deleteCourse controller");
-        res.status(500).json({message: "Internal Server Error"});
+        console.error("Error in archiveCourse controller:", error);
+        res.status(500).json({message: "Failed to archive course"});
     }
 }
 
@@ -333,22 +322,44 @@ export const publishCourse = async (req, res) => {
     try {
         
         const {id} = req.params;
-        const {isPublished} = req.body;
+        const {status} = req.body;
 
-        if(!id || typeof isPublished !== "boolean") return res.status(400).json({message: "Invalid request"});
+        // Validate status is one of the allowed values
+        const validStatuses = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
+        if(!id || !validStatuses.includes(status)) {
+            return res.status(400).json({message: "Invalid request. Status must be DRAFT, PUBLISHED, or ARCHIVED"});
+        }
 
-        const course = await prisma.course.update({
+        // Check if course is archived
+        const course = await prisma.course.findUnique({
             where: {id},
-            data: {isPublished},
+            select: {
+                id: true,
+                status: true
+            }
+        });
+
+        if(!course) {
+            return res.status(404).json({message: "Course not found"});
+        }
+
+        // Prevent publishing archived courses
+        if(course.status === 'ARCHIVED' && status === 'PUBLISHED') {
+            return res.status(403).json({message: "Archived courses cannot be published. Please restore the course first."});
+        }
+
+        const updatedCourse = await prisma.course.update({
+            where: {id},
+            data: {status},
             select: {
                 id: true,
                 title: true,
-                isPublished: true,
+                status: true,
                 updatedAt: true
             }
         });
 
-        res.status(200).json({message: "Course publish status updated", course});
+        res.status(200).json({message: "Course status updated", course: updatedCourse});
 
     } catch (error) {
         console.log("Error in publishCourse controller", error);

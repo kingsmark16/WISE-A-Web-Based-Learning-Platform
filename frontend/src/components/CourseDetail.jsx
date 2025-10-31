@@ -1,20 +1,30 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useGetCourse, usePublishCourse } from "../hooks/courses/useCourses";
+import { useGetCourse, usePublishCourse, useArchiveCourse } from "../hooks/courses/useCourses";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, CheckCircle2, Calendar, User, BookOpen } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Calendar, User, BookOpen, Archive } from "lucide-react";
 import { useState } from "react";
 import CourseContentNav from "./CourseContentNav";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetCourse(id);
   const [copied, setCopied] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const publishMutation = usePublishCourse();
+  const archiveMutation = useArchiveCourse();
 
   if (isLoading) {
     return (
@@ -130,7 +140,28 @@ const CourseDetail = () => {
   const handlePublishToggle = () => {
     publishMutation.mutate({
       id: course.id,
-      isPublished: !course.isPublished,
+      status: course.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED',
+    });
+  };
+
+  const handleArchiveToggle = () => {
+    if (course.status === 'ARCHIVED') {
+      // Unarchive: move back to DRAFT
+      publishMutation.mutate({
+        id: course.id,
+        status: 'DRAFT',
+      });
+    } else {
+      // Archive: show confirmation dialog
+      setShowArchiveDialog(true);
+    }
+  };
+
+  const confirmArchive = () => {
+    archiveMutation.mutate(course.id, {
+      onSuccess: () => {
+        setShowArchiveDialog(false);
+      }
     });
   };
 
@@ -207,18 +238,22 @@ const CourseDetail = () => {
                     </Badge>
                     <Badge
                       className={`rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium ${
-                        course.isPublished
+                        course.status === 'PUBLISHED'
                           ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none"
-                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-none"
+                          : course.status === 'DRAFT'
+                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-none"
+                          : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-none"
                       }`}
                     >
-                      {course.isPublished ? (
+                      {course.status === 'PUBLISHED' ? (
                         <span className="flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Published
                         </span>
-                      ) : (
+                      ) : course.status === 'DRAFT' ? (
                         "Draft"
+                      ) : (
+                        "Archived"
                       )}
                     </Badge>
                   </div>
@@ -313,7 +348,7 @@ const CourseDetail = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="secondary" 
                 onClick={handleEdit}
@@ -321,18 +356,39 @@ const CourseDetail = () => {
                 Edit
               </Button>
               <Button
-                variant={course.isPublished ? "outline" : "default"}
+                variant={course.status === 'PUBLISHED' ? "outline" : "default"}
                 onClick={handlePublishToggle}
-                disabled={publishMutation.isPending}
+                disabled={publishMutation.isPending || course.status === 'ARCHIVED'}
                 className={`transition-all duration-200 ${
                   publishMutation.isPending
                     ? "opacity-70 cursor-not-allowed"
-                    : course.isPublished
+                    : course.status === 'PUBLISHED'
                     ? "text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                    : course.status === 'ARCHIVED'
+                    ? "opacity-50 cursor-not-allowed"
                     : "bg-primary text-primary-foreground hover:bg-primary/90"
                 }`}
               >
-                {publishMutation.isPending ? "Processing..." : course.isPublished ? "Unpublish" : "Publish"}
+                {publishMutation.isPending 
+                  ? "Processing..." 
+                  : course.status === 'PUBLISHED' 
+                  ? "Unpublish" 
+                  : course.status === 'ARCHIVED'
+                  ? "Archived"
+                  : "Publish"}
+              </Button>
+              <Button
+                variant={course.status === 'ARCHIVED' ? "secondary" : "destructive"}
+                onClick={handleArchiveToggle}
+                disabled={archiveMutation.isPending || publishMutation.isPending}
+                className={`gap-2 transition-all duration-200 ${
+                  archiveMutation.isPending || publishMutation.isPending
+                    ? "opacity-70 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                <Archive className="h-4 w-4" />
+                {course.status === 'ARCHIVED' ? "Unarchive" : "Archive"}
               </Button>
             </div>
 
@@ -353,6 +409,37 @@ const CourseDetail = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Archive className="h-5 w-5" />
+              Archive Course
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to archive this course? Archived courses cannot be published and will not be visible to students.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowArchiveDialog(false)}
+              disabled={archiveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmArchive}
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? "Archiving..." : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
