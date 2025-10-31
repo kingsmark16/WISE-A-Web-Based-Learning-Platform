@@ -21,19 +21,19 @@ export const getTotalCoursesAndUsers = async (req, res) => {
             }
         });
 
-        const coursesPerCategory = await prisma.course.groupBy({
-            by: ['category'],
+        const coursesPerCollege = await prisma.course.groupBy({
+            by: ['college'],
             _count: {
-                category: true
+                college: true
             }
         })
 
-        const formattedCategories = coursesPerCategory.map(item => ({
-            category: item.category,
-            count: item._count.category
+        const formattedColleges = coursesPerCollege.map(item => ({
+            college: item.college,
+            count: item._count.college
         }))
 
-        res.status(200).json({totalCourses, coursesPerCategory: formattedCategories, totalUsers, totalStudents, totalFaculty, totalAdmins});
+        res.status(200).json({totalCourses, coursesPerCollege: formattedColleges, totalUsers, totalStudents, totalFaculty, totalAdmins});
     } catch (error) {
         console.log("Error in getTotalCourses controller", error);
         res.status(500).json({message: "Internal sever error"});

@@ -11,7 +11,7 @@ export const intro = (req, res) => {
 
 export const getRandomCoursesByCategories = async (_, res) => {
     try {
-        const categories = [
+        const colleges = [
             "Technology",
             "Business", 
             "Education",
@@ -19,8 +19,8 @@ export const getRandomCoursesByCategories = async (_, res) => {
             "Mathematics"
         ];
 
-        // Define colors for each category
-        const categoryColors = {
+        // Define colors for each college
+        const collegeColors = {
             "Technology": { borderColor: "#4F46E5", gradient: "linear-gradient(145deg,#4F46E5,#000)" },
             "Business": { borderColor: "#10B981", gradient: "linear-gradient(210deg,#10B981,#000)" },
             "Education": { borderColor: "#F59E0B", gradient: "linear-gradient(165deg,#F59E0B,#000)" },
@@ -29,10 +29,10 @@ export const getRandomCoursesByCategories = async (_, res) => {
         };
 
         const results = await Promise.all(
-            categories.map(category =>
+            colleges.map(college =>
                 prisma.$queryRaw`
                     SELECT * FROM "Course"
-                    WHERE category = ${category}
+                    WHERE college = ${college}
                     ORDER BY RANDOM()
                     LIMIT 4
                 `
@@ -40,7 +40,7 @@ export const getRandomCoursesByCategories = async (_, res) => {
         );
 
         const response = {};
-        for (let i = 0; i < categories.length; i++) {
+        for (let i = 0; i < colleges.length; i++) {
             const coursesWithManager = await Promise.all(
                 results[i].map(async (course) => {
                     let instructor = null;
@@ -51,8 +51,8 @@ export const getRandomCoursesByCategories = async (_, res) => {
                         });
                     }
                     
-                    // Add borderColor and gradient based on category
-                    const colors = categoryColors[course.category] || { borderColor: "#6B7280", gradient: "linear-gradient(145deg,#6B7280,#000)" };
+                    // Add borderColor and gradient based on college
+                    const colors = collegeColors[course.college] || { borderColor: "#6B7280", gradient: "linear-gradient(145deg,#6B7280,#000)" };
                     
                     return { 
                         ...course, 
@@ -62,7 +62,7 @@ export const getRandomCoursesByCategories = async (_, res) => {
                     };
                 })
             );
-            response[categories[i]] = coursesWithManager;
+            response[colleges[i]] = coursesWithManager;
         }
 
         res.status(200).json({response});

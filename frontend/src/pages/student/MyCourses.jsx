@@ -28,10 +28,10 @@ export const MyCourses = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
 
-  // Get unique categories from courses
+  // Get unique colleges from courses
   const categories = useMemo(() => {
-    const cats = new Set(courses.map(course => course.category).filter(Boolean));
-    return Array.from(cats).sort();
+    const colleges = new Set(courses.map(course => course.college).filter(Boolean));
+    return Array.from(colleges).sort();
   }, [courses]);
 
   // Filter and sort courses
@@ -47,9 +47,9 @@ export const MyCourses = () => {
       );
     }
 
-    // Apply category filter
+    // Apply college filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(course => course.category === selectedCategory);
+      filtered = filtered.filter(course => course.college === selectedCategory);
     }
 
     // Apply sorting

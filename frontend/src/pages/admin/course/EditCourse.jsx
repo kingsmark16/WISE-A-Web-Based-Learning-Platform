@@ -58,7 +58,7 @@ const EditCourse = () => {
     const [formData, setFormData] = useState({
         title: "",
         description: "",
-        category: "",
+        college: "",
         thumbnail: "",
         facultyId: "",
         assignSelfAsInstructor: false
@@ -77,7 +77,7 @@ const EditCourse = () => {
             setFormData({
                 title: data.course.title || "",
                 description: data.course.description || "",
-                category: data.course.category || "",
+                college: data.course.college || "",
                 thumbnail: data.course.thumbnail || "",
                 facultyId: data.course.managedBy?.id || "",
                 assignSelfAsInstructor: false
@@ -183,7 +183,7 @@ const EditCourse = () => {
         const updateData = {
             title: formData.title,
             description: formData.description,
-            category: formData.category,
+            college: formData.college,
             thumbnail: formData.thumbnail,
         };
 
@@ -308,18 +308,18 @@ const EditCourse = () => {
                                 />
                             </div>
 
-                            {/* Category */}
+                            {/* College */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-semibold text-foreground">
-                                    Category *
+                                    College *
                                 </label>
                                 <Select
-                                    key={formData.category} // Add key to force re-render
-                                    value={formData.category}
-                                    onValueChange={(value) => setFormData({...formData, category: value})}
+                                    key={formData.college} // Add key to force re-render
+                                    value={formData.college}
+                                    onValueChange={(value) => setFormData({...formData, college: value})}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select a category" />
+                                        <SelectValue placeholder="Select a college" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {categories.map((cat) => (

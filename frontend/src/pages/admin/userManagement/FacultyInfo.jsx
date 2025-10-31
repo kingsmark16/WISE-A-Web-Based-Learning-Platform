@@ -153,19 +153,19 @@ const FacultyInfo = () => {
                               {course.title}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {course.category && (
+                              {course.college && (
                                 <Badge variant="secondary" className="text-xs">
-                                  {course.category}
+                                  {course.college}
                                 </Badge>
                               )}
                               <Badge
                                 className={`text-xs ${
-                                  course.isPublished
+                                  course.status === 'PUBLISHED'
                                     ? "bg-green-500 hover:bg-green-600 text-white"
                                     : "bg-yellow-500 hover:bg-yellow-600 text-white"
                                 }`}
                               >
-                                {course.isPublished ? "Published" : "Draft"}
+                                {course.status === 'PUBLISHED' ? "Published" : "Draft"}
                               </Badge>
                             </div>
                           </div>
@@ -225,19 +225,19 @@ const FacultyInfo = () => {
                               {course.title}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {course.category && (
+                              {course.college && (
                                 <Badge variant="secondary" className="text-xs">
-                                  {course.category}
+                                  {course.college}
                                 </Badge>
                               )}
                               <Badge
                                 className={`text-xs ${
-                                  course.isPublished
+                                  course.status === 'PUBLISHED'
                                     ? "bg-green-500 hover:bg-green-600 text-white"
                                     : "bg-yellow-500 hover:bg-yellow-600 text-white"
                                 }`}
                               >
-                                {course.isPublished ? "Published" : "Draft"}
+                                {course.status === 'PUBLISHED' ? "Published" : "Draft"}
                               </Badge>
                             </div>
                           </div>

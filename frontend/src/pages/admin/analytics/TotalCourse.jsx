@@ -15,9 +15,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 
-export function TotalCoursesChart({ totalCourses, coursesPerCategory }) {
-  // Define colors for categories (add more as needed)
-  const categoryColors = [
+export function TotalCoursesChart({ totalCourses, coursesPerCollege }) {
+  // Define colors for colleges (add more as needed)
+  const collegeColors = [
     "#4F46E5", // Indigo
     "#22D3EE", // Cyan
     "#F59E42", // Orange
@@ -28,19 +28,19 @@ export function TotalCoursesChart({ totalCourses, coursesPerCategory }) {
     "#A78BFA", // Purple
   ];
 
-  // Map coursesPerCategory to chartData with colors
-  const chartData = (coursesPerCategory ?? []).map((cat, idx) => ({
-    category: cat.category,
-    count: cat.count,
-    fill: categoryColors[idx % categoryColors.length],
+  // Map coursesPerCollege to chartData with colors
+  const chartData = (coursesPerCollege ?? []).map((col, idx) => ({
+    college: col.college,
+    count: col.count,
+    fill: collegeColors[idx % collegeColors.length],
   }));
 
   // Chart config for legend/tooltip (optional)
   const chartConfig = {};
-  chartData.forEach((cat) => {
-    chartConfig[cat.category] = {
-      label: cat.category,
-      color: cat.fill,
+  chartData.forEach((col) => {
+    chartConfig[col.college] = {
+      label: col.college,
+      color: col.fill,
     };
   });
 
@@ -66,7 +66,7 @@ export function TotalCoursesChart({ totalCourses, coursesPerCategory }) {
             <Pie
               data={chartData}
               dataKey="count"
-              nameKey="category"
+              nameKey="college"
               innerRadius={60}
               strokeWidth={5}
               isAnimationActive={true}

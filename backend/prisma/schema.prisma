@@ -60,7 +60,7 @@ model Course {
   title       String
   description String?
   thumbnail   String?
-  category    String
+  college    String
   status      CourseStatus @default(DRAFT)
   code        String?   @unique
   createdAt   DateTime  @default(now())
@@ -88,7 +88,7 @@ model Course {
 
   @@index([createdById])
   @@index([facultyId])
-  @@index([category])
+  @@index([college])
 }
 
 model Module {

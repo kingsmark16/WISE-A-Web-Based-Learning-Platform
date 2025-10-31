@@ -12,7 +12,7 @@ import { User } from 'lucide-react';
  * @param {string} course.title - Course title
  * @param {string} course.description - Course description
  * @param {string} course.thumbnail - Course thumbnail image URL
- * @param {string} course.category - Course category
+ * @param {string} course.college - Course college
  * @param {Object} course.managedBy - Faculty information
  * @param {string} course.managedBy.fullName - Faculty name
  * @param {string} course.managedBy.imageUrl - Faculty image URL
@@ -51,10 +51,10 @@ export const CourseCard = ({ course }) => {
               {course.title}
             </h3>
             
-            {/* Category */}
+            {/* College */}
             <div className="flex justify-start">
               <Badge variant="secondary" className="bg-blue-500 text-white dark:bg-blue-600">
-                {course.category}
+                {course.college}
               </Badge>
             </div>
           </CardHeader>

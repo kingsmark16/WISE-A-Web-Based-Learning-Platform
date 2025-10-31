@@ -6,15 +6,15 @@ export const getCourseCategories = async (req, res) => {
 
         const categories = await prisma.course.findMany({
             select: {
-                category: true
+                college: true
             },
-            distinct: ['category'],
+            distinct: ['college'],
             where: {
                 status: 'PUBLISHED'
             }
         });
 
-        const categoryList = categories.map(course => course.category).filter(Boolean);
+        const categoryList = categories.map(course => course.college).filter(Boolean);
         
         res.status(200).json({data: categoryList});
 
@@ -37,7 +37,7 @@ export const getFeaturedCourses = async (req, res) => {
                 c.id, 
                 c.title, 
                 c.thumbnail, 
-                c.category, 
+                c.college, 
                 u."fullName" AS managedBy
             FROM "Course" c
             LEFT JOIN "User" u ON c."facultyId" = u.id
@@ -71,7 +71,7 @@ export const getSelectedCourse = async (req, res) => {
                 title: true,
                 description: true,
                 thumbnail: true,
-                category: true,
+                college: true,
                 updatedAt: true,
                 managedBy: {
                     select: {
@@ -1320,7 +1320,7 @@ export const getEnrolledCourses = async (req, res) => {
                         title: true,
                         description: true,
                         thumbnail: true,
-                        category: true,
+                        college: true,
                         updatedAt: true,
                         status: true,
                         managedBy: {
@@ -1382,7 +1382,7 @@ export const getEnrolledCourses = async (req, res) => {
                 title: course.title,
                 description: course.description,
                 thumbnail: course.thumbnail,
-                category: course.category,
+                college: course.college,
                 updatedAt: course.updatedAt,
                 status: course.status,
                 managedBy: course.managedBy,

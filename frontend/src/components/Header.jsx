@@ -171,12 +171,12 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                           {course.title}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
-                          {course.category && (
+                          {course.college && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-                              {course.category}
+                              {course.college}
                             </Badge>
                           )}
-                          {course.isPublished && (
+                          {course.status === 'PUBLISHED' && (
                             <Badge className="text-[10px] px-1.5 py-0 h-4">Published</Badge>
                           )}
                         </div>

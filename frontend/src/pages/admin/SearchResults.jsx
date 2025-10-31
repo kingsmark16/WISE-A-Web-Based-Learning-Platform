@@ -138,13 +138,13 @@ const SearchResults = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 md:gap-2 mb-0.5 md:mb-1">
                       <h3 className="font-semibold text-xs md:text-base truncate">{course.title}</h3>
-                      <Badge variant={course.isPublished ? "default" : "secondary"} className="text-[9px] md:text-xs px-1 py-0 h-4 md:h-5 flex-shrink-0">
-                        {course.isPublished ? "Published" : "Draft"}
+                      <Badge variant={course.status === 'PUBLISHED' ? "default" : "secondary"} className="text-[9px] md:text-xs px-1 py-0 h-4 md:h-5 flex-shrink-0">
+                        {course.status === 'PUBLISHED' ? "Published" : "Draft"}
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[10px] md:text-sm text-muted-foreground">
-                      {course.category && (
-                        <Badge variant="outline" className="text-[9px] md:text-xs px-1 py-0 h-3.5 md:h-4">{course.category}</Badge>
+                      {course.college && (
+                        <Badge variant="outline" className="text-[9px] md:text-xs px-1 py-0 h-3.5 md:h-4">{course.college}</Badge>
                       )}
                       {course.managedBy && (
                         <span className="truncate">by {course.managedBy.fullName}</span>

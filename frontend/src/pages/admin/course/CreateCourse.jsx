@@ -29,21 +29,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/clerk-react";
 
 const categories = [
-  "Technology",
-  "Business",
-  "Design",
-  "Health",
-  "Education",
-  "Science",
-  "Engineering",
-  "Mathematics",
-  "Humanities",
-  "Management",
-  "Environment",
-  "Law",
-  "Research",
-  "Communication",
-  "Culture"
+  "College of Education",
+  "College of Business and Management",
+  "College of Engineering and Computational Sciences",
+  "College of Arts and Humanities",
+  "College of Science",
+  "College of Sustainable Communities and Ecosystems",
+  "College of Public Safety and Community Health",
+  "College of Fisheries and Marine Science",
+  "College of Agribusiness and Community Development",
+  "College of Hospitality and Tourism Management",
+  "College of Environmental Science and Design"
 ];
 
 const CreateCourse = () => {
@@ -51,7 +47,7 @@ const CreateCourse = () => {
   const { user } = useUser();
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
+  const [college, setCollege] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [faculty, setFaculty] = useState("");
@@ -62,7 +58,7 @@ const CreateCourse = () => {
   const [facultySearch, setFacultySearch] = useState("");
   const [showInstructorList, setShowInstructorList] = useState(false);
 
-  const [errors, setErrors] = useState({ title: "", category: "" });
+  const [errors, setErrors] = useState({ title: "", college: "" });
   const [assignSelfAsInstructor, setAssignSelfAsInstructor] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -128,21 +124,21 @@ const CreateCourse = () => {
     e.preventDefault();
 
     // Clear previous errors
-    setErrors({ title: "", category: "" });
+    setErrors({ title: "", college: "" });
 
-    // Validation based on backend: title and category are required
+    // Validation based on backend: title and college are required
     if (!title.trim()) {
       setErrors(prev => ({ ...prev, title: "Please provide a title" }));
       return;
     }
-    if (!category) {
-      setErrors(prev => ({ ...prev, category: "Please provide a category" }));
+    if (!college) {
+      setErrors(prev => ({ ...prev, college: "Please provide a college" }));
       return;
     }
 
     createCourse({
       title,
-      category,
+      college,
       description,
       thumbnail: thumbnailUrl,
       ...(faculty && { facultyId: faculty }),
@@ -198,25 +194,25 @@ const CreateCourse = () => {
                 />
               </div>
 
-              {/* Category */}
+              {/* College */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-foreground">
-                  Category *
+                  College *
                 </label>
-                {errors.category && <p className="text-destructive text-sm">{errors.category}</p>}
+                {errors.college && <p className="text-destructive text-sm">{errors.college}</p>}
                 <Select 
-                  value={category} 
+                  value={college} 
                   onValueChange={(value) => {
-                    setCategory(value);
-                    setErrors(prev => ({ ...prev, category: "" }));
+                    setCollege(value);
+                    setErrors(prev => ({ ...prev, college: "" }));
                   }}
                 >
                   <SelectTrigger className="w-full px-4 py-3 text-foreground bg-accent rounded-lg border focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none">
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder="Select a college" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {categories.map(col => (
+                      <SelectItem key={col} value={col}>{col}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

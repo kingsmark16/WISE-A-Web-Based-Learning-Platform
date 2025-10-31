@@ -4,11 +4,11 @@ import cloudinary from "../lib/cloudinary.js";
 
 export const createCourse = async (req, res) => {
    try {
-      const {title, description, category, facultyId, thumbnail, assignSelfAsInstructor} = req.body;
+      const {title, description, college, facultyId, thumbnail, assignSelfAsInstructor} = req.body;
       const code = generateCourseCode();
 
-      if(!title || !category){
-         return res.status(400).json({message: "Please provide title and category"});
+      if(!title || !college){
+         return res.status(400).json({message: "Please provide title and college"});
       }
 
       const auth = req.auth();
@@ -37,7 +37,7 @@ export const createCourse = async (req, res) => {
             title,
             description,
             thumbnail,
-            category,
+            college,
             code,
             createdById,
             facultyId: assignedFacultyId
@@ -59,7 +59,7 @@ export const getCourses = async (req, res) => {
         const skip = (page - 1) * limit;
         const search = req.query.search || '';
         const status = req.query.status || 'all';
-        const category = req.query.category || 'all';
+        const college = req.query.college || 'all';
 
         // Build where clause for filtering
         const whereClause = {};
@@ -77,9 +77,9 @@ export const getCourses = async (req, res) => {
             whereClause.status = status.toUpperCase();
         }
 
-        // Category filter
-        if (category !== 'all') {
-            whereClause.category = category;
+        // College filter
+        if (college !== 'all') {
+            whereClause.college = college;
         }
 
         // Get total count for pagination
@@ -95,7 +95,7 @@ export const getCourses = async (req, res) => {
                 id: true,
                 title: true,
                 thumbnail: true,
-                category: true,
+                college: true,
                 status: true,
                 code: true,
                 createdAt: true,
@@ -111,6 +111,11 @@ export const getCourses = async (req, res) => {
                     select: {
                         fullName: true,
                         imageUrl: true, // Added imageUrl
+                    }
+                },
+                _count: {
+                    select: {
+                        enrollments: true
                     }
                 }
             },
@@ -155,7 +160,7 @@ export const getCourse = async (req, res) => {
                 title: true,
                 description: true,
                 thumbnail: true,
-                category: true,
+                college: true,
                 status: true,
                 code: true,
                 updatedAt: true,
@@ -252,7 +257,7 @@ export const archiveCourse = async (req, res) => {
 export const updateCourse = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, category, thumbnail, facultyId, assignSelfAsInstructor } = req.body;
+        const { title, description, college, thumbnail, facultyId, assignSelfAsInstructor } = req.body;
 
         const auth = req.auth();
         const userId = auth.userId;
@@ -271,7 +276,7 @@ export const updateCourse = async (req, res) => {
         const updateData = {
             title,
             description,
-            category,
+            college,
             thumbnail
         };
 
@@ -303,7 +308,7 @@ export const updateCourse = async (req, res) => {
                 id: true,
                 title: true,
                 description: true,
-                category: true,
+                college: true,
                 thumbnail: true,
                 facultyId: true,
                 updatedAt: true

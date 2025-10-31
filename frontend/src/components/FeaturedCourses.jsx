@@ -80,7 +80,7 @@ const FeaturedCourses = ({featCourses, featuredCoursesLoading, featuredCoursesEr
                               {course.title}
                             </h3>
                             <p className="text-muted-foreground text-xs mb-3 truncate">
-                              {course.category}
+                              {course.college}
                             </p>
                             <p className="text-muted-foreground text-xs truncate">
                               {course.managedby || "Unknown"}

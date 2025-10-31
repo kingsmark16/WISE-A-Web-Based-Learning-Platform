@@ -3,16 +3,16 @@ import { axiosInstance } from "../../lib/axios";
 import { toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
 
-export const useGetCourses = ({ page = 1, limit = 12, search = '', status = 'all', category = 'all' } = {}) => {
+export const useGetCourses = ({ page = 1, limit = 12, search = '', status = 'all', college = 'all' } = {}) => {
     return useQuery({
-        queryKey: ['courses', page, limit, search, status, category],
+        queryKey: ['courses', page, limit, search, status, college],
         queryFn: async () => {
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: limit.toString(),
                 search,
                 status,
-                category
+                college
             });
             
             const response = await axiosInstance.get(`/course?${params.toString()}`);

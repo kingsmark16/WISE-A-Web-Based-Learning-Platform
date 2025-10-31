@@ -153,9 +153,9 @@ const StudentInfo = () => {
                               {enrollment.course.title}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {enrollment.course.category && (
+                              {enrollment.course.college && (
                                 <Badge variant="secondary" className="text-xs">
-                                  {enrollment.course.category}
+                                  {enrollment.course.college}
                                 </Badge>
                               )}
                               <span className="text-xs text-muted-foreground">

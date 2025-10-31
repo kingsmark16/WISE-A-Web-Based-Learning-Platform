@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGetCourses } from "../../../hooks/courses/useCourses";
-import { useUser } from "@clerk/clerk-react";
 import { 
   Eye, 
   Edit, 
@@ -58,7 +57,6 @@ import {
 } from "@/components/ui/dialog";
 
 const Courses = () => {
-  const { user } = useUser();
   const navigate = useNavigate();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,15 +80,15 @@ const Courses = () => {
     limit,
     search: "",
     status: statusFilter,
-    category: categoryFilter
+    college: categoryFilter
   });
 
-  // Get all unique categories for filter dropdown
+  // Get all unique colleges for filter dropdown
   const { data: allCoursesData } = useGetCourses({ limit: 1000 });
   const categories = useMemo(() => {
     const allCourses = allCoursesData?.courses || [];
-    const cats = allCourses.map(c => c.category).filter(Boolean);
-    return [...Array.from(new Set(cats))];
+    const colleges = allCourses.map(c => c.college).filter(Boolean);
+    return [...Array.from(new Set(colleges))];
   }, [allCoursesData]);
 
   // Filter suggestions based on search input
@@ -114,15 +112,6 @@ const Courses = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const getCreatorDisplayName = (course) => {
-    if (user && course.createdBy?.clerkId === user.id) return "You";
-    return course.createdBy?.fullName || "Unknown";
-  };
-
-  const handleView = (courseId) => {
-    navigate(`/admin/courses/view/${courseId}`);
-  };
 
   const handleCreateCourse = () => {
     navigate('/admin/courses/create');
@@ -291,9 +280,9 @@ const Courses = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-xs truncate">{course.title}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          {course.category && (
+                          {course.college && (
                             <Badge variant="secondary" className="text-xs">
-                              {course.category}
+                              {course.college}
                             </Badge>
                           )}
                           <Badge
@@ -384,18 +373,21 @@ const Courses = () => {
           <TableHeader>
             <TableRow className="bg-primary/5 hover:bg-primary/10">
               <TableHead className="font-semibold min-w-[200px]">Course Title</TableHead>
-              <TableHead className="font-semibold min-w-[120px]">Category</TableHead>
+              <TableHead className="font-semibold min-w-[120px]">College</TableHead>
               <TableHead className="font-semibold min-w-[100px]">Status</TableHead>
-              <TableHead className="font-semibold min-w-[150px]">Created By</TableHead>
               <TableHead className="font-semibold min-w-[150px]">Instructor</TableHead>
+              <TableHead className="font-semibold min-w-[120px]">Total Enrolled</TableHead>
               <TableHead className="font-semibold min-w-[120px]">Last Updated</TableHead>
-              <TableHead className="font-semibold text-right min-w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {displayedCourses.length > 0 ? (
               displayedCourses.map((course) => (
-                <TableRow key={course.id} className="hover:bg-muted/50 transition-colors">
+                <TableRow 
+                  key={course.id} 
+                  className="hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/admin/courses/view/${course.id}`)}
+                >
                   <TableCell className="min-w-[200px]">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -405,12 +397,12 @@ const Courses = () => {
                     </div>
                   </TableCell>
                   <TableCell className="min-w-[120px]">
-                    {course.category ? (
+                    {course.college ? (
                       <Badge variant="secondary" className="text-xs font-medium">
-                        {course.category}
+                        {course.college}
                       </Badge>
                     ) : (
-                      <span className="text-muted-foreground text-sm">No category</span>
+                      <span className="text-muted-foreground text-sm">No college</span>
                     )}
                   </TableCell>
                   <TableCell className="min-w-[100px]">
@@ -425,22 +417,6 @@ const Courses = () => {
                     >
                       {course.status === 'PUBLISHED' ? "Published" : course.status === 'DRAFT' ? "Draft" : "Archived"}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="min-w-[150px]">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      {course.createdBy.imageUrl ? (
-                        <img
-                          src={course.createdBy.imageUrl}
-                          alt={getCreatorDisplayName(course)}
-                          className="h-8 w-8 rounded-full object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                          {getCreatorDisplayName(course).charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="text-sm font-medium truncate">{getCreatorDisplayName(course)}</span>
-                    </div>
                   </TableCell>
                   <TableCell className="min-w-[120px] sm:min-w-[150px]">
                     {course.managedBy ? (
@@ -463,6 +439,13 @@ const Courses = () => {
                     )}
                   </TableCell>
                   <TableCell className="min-w-[120px]">
+                    <div className="flex items-center justify-center">
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {course._count?.enrollments || 0} students
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4" />
                       <span>
@@ -474,35 +457,11 @@ const Courses = () => {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right min-w-[100px]">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          className="h-8 w-8 p-0 hover:bg-primary/10"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-                          Actions
-                        </DropdownMenuLabel>
-                        <DropdownMenuItem 
-                          onClick={() => handleView(course.id)}
-                          className="cursor-pointer"
-                        >
-                          <Eye className="mr-2 h-4 w-4 text-blue-500" />
-                          <span className="font-medium">View</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
+                <TableCell colSpan={6} className="h-32 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <BookOpen className="h-12 w-12 opacity-50 mb-2" />
                     <p className="font-medium">No courses found</p>

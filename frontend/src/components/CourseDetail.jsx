@@ -234,7 +234,7 @@ const CourseDetail = () => {
                       variant="secondary"
                       className="rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium bg-primary/10 text-primary border-none"
                     >
-                      {course.category}
+                      {course.college}
                     </Badge>
                     <Badge
                       className={`rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium ${

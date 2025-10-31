@@ -151,9 +151,9 @@ export const getSingleFaculty = async (req, res) => {
                   id: true,
                   title: true,
                   thumbnail: true,
-                  category: true,
+                  college: true,
                   updatedAt: true,
-                  isPublished: true
+                  status: true
                }
             },
             managedCourses: {
@@ -161,9 +161,9 @@ export const getSingleFaculty = async (req, res) => {
                   id: true,
                   title: true,
                   thumbnail: true,
-                  category: true,
+                  college: true,
                   updatedAt: true,
-                  isPublished: true
+                  status: true
                }
             }
          }
@@ -288,8 +288,8 @@ export const getSingleStudent = async (req, res) => {
                                 id: true,
                                 title: true,
                                 thumbnail: true,
-                                category: true,
-                                isPublished: true
+                                college: true,
+                                status: true
                             }
                         }
                     }
@@ -360,7 +360,7 @@ export const adminSearch = async (req, res) => {
                         }
                     },
                     {
-                        category: {
+                        college: {
                             contains: query,
                             mode: "insensitive"
                         }
@@ -377,8 +377,8 @@ export const adminSearch = async (req, res) => {
                 id: true,
                 title: true,
                 thumbnail: true,
-                category: true,
-                isPublished: true,
+                college: true,
+                status: true,
                 code: true,
                 createdBy: {
                     select: {
