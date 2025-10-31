@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, BookOpen, Users, GraduationCap, ChevronDown, ChevronRight, UserCog, FolderOpen } from 'lucide-react';
+import { BarChart3, BookOpen, Users, GraduationCap, ChevronDown, ChevronRight, UserCog, FolderOpen, Plus, Library } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -32,8 +32,18 @@ const menuConfig = {
     { name: 'Analytics', path: '/student/analytics' },
   ],
   FACULTY: [
-    { name: 'Courses', path: '/faculty/faculty-homepage' },
-    { name: 'Analytics', path: '/faculty/analytics' },
+    { name: 'Dashboard', path: '/faculty/dashboard', icon: BarChart3 },
+    { name: 'Create Course', path: '/faculty/create-course', icon: Plus },
+    { 
+      name: 'My Courses', 
+      icon: Library,
+      submenu: [
+        { name: 'Active Courses', path: '/faculty/faculty-homepage' },
+        { name: 'Draft Courses', path: '/faculty/draft-courses'},
+        { name: 'Archived Courses', path: '/faculty/archived-courses'}
+      ]
+    },
+    { name: 'Student Management', path: '/faculty/student-management', icon: Users },
   ],
 };
 
