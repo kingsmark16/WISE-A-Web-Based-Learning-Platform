@@ -40,7 +40,7 @@ export const useCourseCompletion = (courseId) => {
     queryKey: COURSE_COMPLETION_QUERY_KEY(courseId),
     queryFn: () => fetchCourseCompletion(courseId),
     enabled: !!courseId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000, // 1 second - allows quick re-fetches during polling but still caches briefly
     gcTime: 1000 * 60 * 30, // 30 minutes
     refetchOnWindowFocus: true,
     retry: 1,
