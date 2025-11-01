@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useGetCourse, useUpdateCourse } from "../../../hooks/courses/useCourses"
+import { useGetCourse, useUpdateCourse } from "../../hooks/courses/useCourses"
 import { useNavigate, useParams } from "react-router-dom";
-import { useUploadImage } from "../../../hooks/courseThumbnails/useUploadImage";
-import { useDeleteImage } from "../../../hooks/courseThumbnails/useDeleteImage";
-import { useGetFacultyId } from "../../../hooks/analytics/adminAnalytics/useGetFaculty";
+import { useUploadImage } from "../../hooks/courseThumbnails/useUploadImage";
+import { useDeleteImage } from "../../hooks/courseThumbnails/useDeleteImage";
+import { useGetFacultyId } from "../../hooks/analytics/adminAnalytics/useGetFaculty";
 import { ArrowLeft, Upload, X, Check, Search, User, Image as ImageIcon, Edit } from "lucide-react";
 import { 
   Dialog, 

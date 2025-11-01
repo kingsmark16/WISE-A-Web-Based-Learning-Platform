@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGetFacultyId } from "../../../hooks/analytics/adminAnalytics/useGetFaculty";
-import { useCreateCourse } from "../../../hooks/courses/useCourses";
-import { useUploadImage } from "../../../hooks/courseThumbnails/useUploadImage";
-import { useDeleteImage } from "../../../hooks/courseThumbnails/useDeleteImage";
+import { useGetFacultyId } from "../../hooks/analytics/adminAnalytics/useGetFaculty";
+import { useCreateCourse } from "../../hooks/courses/useCourses";
+import { useUploadImage } from "../../hooks/courseThumbnails/useUploadImage";
+import { useDeleteImage } from "../../hooks/courseThumbnails/useDeleteImage";
 import { X, Check, Search, User, Image as ImageIcon } from "lucide-react";
 import { 
   Dialog, 

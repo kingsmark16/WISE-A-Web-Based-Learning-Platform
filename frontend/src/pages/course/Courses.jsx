@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { useGetCourses } from "../../../hooks/courses/useCourses";
+import { useGetCourses } from "../../hooks/courses/useCourses";
 import { 
   Eye, 
   Edit, 
