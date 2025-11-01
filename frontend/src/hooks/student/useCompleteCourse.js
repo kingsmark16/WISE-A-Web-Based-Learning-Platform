@@ -39,12 +39,11 @@ export const useCompleteCourse = () => {
 
   return useMutation({
     mutationFn: completeCourse,
-    onSuccess: (data, variables) => {
-      // Invalidate and refetch course completion to show the new certificate
-      queryClient.invalidateQueries({ queryKey: ['course-completion', variables] });
-      queryClient.refetchQueries({ queryKey: ['course-completion', variables] });
-
-      // Also invalidate enrolled courses in case progress changed
+    onSuccess: () => {
+      // Don't invalidate immediately - let polling handle the updates
+      // This allows the request to return quickly (certificate generates in background)
+      
+      // Invalidate enrolled courses in case progress changed
       queryClient.invalidateQueries({ queryKey: ['enrolled-courses'] });
     },
     onError: (error) => {

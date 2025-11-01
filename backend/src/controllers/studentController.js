@@ -1477,10 +1477,32 @@ export const getCourseCompletion = async (req, res) => {
             });
         }
 
+        // Calculate time spent with proper formatting using the enrollment data we already have
+        let timeSpent = {};
+        if (enrollment && completion.completedAt) {
+            const timeSpentMs = new Date(completion.completedAt) - new Date(enrollment.enrolledAt);
+            const totalSeconds = Math.floor(timeSpentMs / 1000);
+            
+            if (totalSeconds < 60) {
+                timeSpent = { value: totalSeconds, unit: 'second', display: `${totalSeconds}s` };
+            } else if (totalSeconds < 3600) {
+                const minutes = Math.floor(totalSeconds / 60);
+                timeSpent = { value: minutes, unit: 'minute', display: `${minutes}m` };
+            } else if (totalSeconds < 86400) {
+                const hours = Math.round((totalSeconds / 3600) * 10) / 10;
+                timeSpent = { value: hours, unit: 'hour', display: `${hours}h` };
+            } else {
+                const days = Math.round((totalSeconds / 86400) * 10) / 10;
+                timeSpent = { value: days, unit: 'day', display: `${days}d` };
+            }
+        }
+
         // Return completion with certificate
         res.status(200).json({
             data: {
                 completedAt: completion.completedAt,
+                timeSpent: timeSpent,
+                enrolledAt: enrollment?.enrolledAt || null,
                 certificate: completion.certificate
             }
         });

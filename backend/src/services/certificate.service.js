@@ -18,47 +18,66 @@ export async function issueCertificateForCompletion(completionId) {
   if (!completion) throw new Error("Completion not found");
   if (completion.certificate) return completion.certificate;
 
-  // 1) data for the template
+  // 1) Create certificate record FIRST with pending status
   const certificateNumber = generateCertificateNumber("WISE");
-  const verifyUrl = `${process.env.VERIFY_BASE_URL}?code=${encodeURIComponent(certificateNumber)}`;
-  const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, scale: 6 });
-
-  // 2) inline background to avoid file:// issues
-  const bgPath = path.resolve(process.cwd(), "src/lib/assets/certificate-bg.png");
-  let bgDataUrl = "";
-  try {
-    const buf = await fs.readFile(bgPath);
-    bgDataUrl = `data:image/png;base64,${buf.toString("base64")}`;
-  } catch (e) {
-    console.warn("[cert] background not found:", bgPath, e?.message);
-  }
-
-  // 3) build HTML (only name, course, date, code, qr)
-  const html = buildCertificateHTML({
-    studentName: completion.user.fullName || completion.user.emailAddress,
-    courseTitle: completion.course.title,
-    certificateNumber,
-    qrDataUrl,
-    bgDataUrl,
-  });
-
-  // 4) render PDF (A4 landscape, no margins)
-  const pdfBuffer = await renderPdf(html);
-
-  // 5) upload to your existing Supabase provider (via adapter)
-  const publicId = `${completion.courseId}-${certificateNumber}`;
-  const { directUrl } = await uploadBufferToSupabase(pdfBuffer, publicId);
-
-  // 6) persist
-  return prisma.certificate.create({
+  
+  const certificate = await prisma.certificate.create({
     data: {
       certificateNumber,
-      certificateUrl: directUrl,
+      certificateUrl: "", // Placeholder - will update asynchronously
       userId: completion.userId,
       courseId: completion.courseId,
       completionId: completion.id,
     },
   });
+
+  // 2) Generate PDF asynchronously in background (non-blocking)
+  setImmediate(async () => {
+    try {
+      const verifyUrl = `${process.env.VERIFY_BASE_URL}?code=${encodeURIComponent(certificateNumber)}`;
+      const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, scale: 6 });
+
+      // Load background image (can be cached)
+      const bgPath = path.resolve(process.cwd(), "src/lib/assets/certificate-bg.png");
+      let bgDataUrl = "";
+      try {
+        const buf = await fs.readFile(bgPath);
+        bgDataUrl = `data:image/png;base64,${buf.toString("base64")}`;
+      } catch (e) {
+        console.warn("[cert] background not found:", bgPath, e?.message);
+      }
+
+      // Build HTML
+      const html = buildCertificateHTML({
+        studentName: completion.user.fullName || completion.user.emailAddress,
+        courseTitle: completion.course.title,
+        certificateNumber,
+        qrDataUrl,
+        bgDataUrl,
+      });
+
+      // Render PDF
+      const pdfBuffer = await renderPdf(html);
+
+      // Upload to storage
+      const publicId = `${completion.courseId}-${certificateNumber}`;
+      const { directUrl } = await uploadBufferToSupabase(pdfBuffer, publicId);
+
+      // Update certificate with actual URL
+      await prisma.certificate.update({
+        where: { id: certificate.id },
+        data: { certificateUrl: directUrl },
+      });
+
+      console.log(`[cert] Certificate ${certificateNumber} generated successfully`);
+    } catch (error) {
+      console.error(`[cert] Failed to generate certificate ${certificateNumber}:`, error);
+      // Certificate record exists but URL is empty - can retry later
+    }
+  });
+
+  // Return immediately with empty URL (frontend will handle gracefully)
+  return certificate;
 }
 
 async function renderPdf(html) {
