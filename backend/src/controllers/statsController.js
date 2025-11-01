@@ -241,3 +241,89 @@ export const getActiveUsers = async (req, res) => {
         });
     }
 };
+
+export const getTotalModules = async (req, res) => {
+  try {
+    const totalModules = await prisma.module.count();
+    res.status(200).json({ totalModules });
+  } catch (error) {
+    console.error('Error in getTotalModules:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// 2) Total lessons across all modules
+export const getTotalLessons = async (req, res) => {
+  try {
+    const totalLessons = await prisma.lesson.count();
+    res.status(200).json({ totalLessons });
+  } catch (error) {
+    console.error('Error in getTotalLessons:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getTopStudentsByFinished = async (req, res) => {
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: 'STUDENT' },
+      select: {
+        fullName: true,
+        imageUrl: true,
+        _count: {
+          select: {
+            completions: true,   // used for sorting (courses finished)
+            enrollments: true,   // returned as totalCoursesEnrolled
+          },
+        },
+      },
+      orderBy: {
+        completions: { _count: 'desc' },
+      },
+      take: 10,
+    });
+
+    const formatted = students.map(s => ({
+      imageUrl: s.imageUrl || null,
+      name: s.fullName || 'Unknown',
+      totalCoursesEnrolled: s._count.enrollments || 0,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error('Error in getTopStudentsByFinished:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getTopFacultyByCoursesCreated = async (req, res) => {
+  try {
+    const faculty = await prisma.user.findMany({
+      where: { role: 'FACULTY' },
+      select: {
+        fullName: true,
+        imageUrl: true,
+        _count: {
+          select: {
+            createdCourses: true, // courses created by this user
+          },
+        },
+      },
+      orderBy: {
+        createdCourses: { _count: 'desc' },
+      },
+      take: 10,
+    });
+
+    const formatted = faculty.map(f => ({
+      imageUrl: f.imageUrl || null,
+      name: f.fullName || 'Unknown',
+      totalCoursesCreated: f._count.createdCourses || 0,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error('Error in getTopFacultyByCoursesCreated:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
