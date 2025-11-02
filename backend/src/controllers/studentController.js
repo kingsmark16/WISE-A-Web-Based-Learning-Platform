@@ -1650,3 +1650,94 @@ export const getCourseEnrolledStudents = async (req, res) => {
         });
     }
 };
+
+export const getStudentCertificates = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+        // Get current user from database
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!currentUser) return res.status(404).json({ message: "User not found in database" });
+
+        // Get all certificates for the student
+        const certificates = await prisma.courseCompletion.findMany({
+            where: {
+                userId: currentUser.id,
+                certificate: {
+                    isNot: null
+                }
+            },
+            select: {
+                id: true,
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        thumbnail: true,
+                        college: true,
+                        facultyId: true,
+                    }
+                },
+                certificate: {
+                    select: {
+                        certificateNumber: true,
+                        certificateUrl: true,
+                        issueDate: true
+                    }
+                },
+                completedAt: true
+            },
+            orderBy: {
+                completedAt: 'desc'
+            }
+        });
+
+        // Fetch faculty info for each certificate
+        const facultyIds = [...new Set(certificates.map(cert => cert.course.facultyId).filter(Boolean))];
+        const faculty = await prisma.user.findMany({
+            where: { id: { in: facultyIds } },
+            select: { id: true, fullName: true, imageUrl: true }
+        });
+
+        const facultyMap = {};
+        faculty.forEach(f => {
+            facultyMap[f.id] = f;
+        });
+
+        // Format the response
+        const formattedCertificates = certificates.map(cert => {
+            const instructor = facultyMap[cert.course.facultyId];
+            return {
+                id: cert.id,
+                courseId: cert.course.id,
+                courseTitle: cert.course.title,
+                courseThumbnail: cert.course.thumbnail,
+                college: cert.course.college,
+                instructor: instructor?.fullName || 'Unknown Faculty',
+                instructorImage: instructor?.imageUrl,
+                certificateNumber: cert.certificate.certificateNumber,
+                certificateUrl: cert.certificate.certificateUrl,
+                issuedAt: cert.certificate.issueDate,
+                completedAt: cert.completedAt
+            };
+        });
+
+        res.status(200).json({
+            data: formattedCertificates,
+            total: formattedCertificates.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching student certificates:', error);
+        res.status(500).json({
+            message: 'Failed to fetch student certificates',
+            error: error.message
+        });
+    }
+};

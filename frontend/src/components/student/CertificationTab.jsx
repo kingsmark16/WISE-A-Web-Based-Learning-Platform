@@ -331,8 +331,8 @@ const CertificationTab = ({ courseId, courseTitle }) => {
                         </div>
                       </div>
                     )}
-                    <embed 
-                      src={certificate.certificateUrl}
+                    <object 
+                      data={`${certificate.certificateUrl}#toolbar=0&navpanes=0&scrollbar=0`}
                       type="application/pdf"
                       className="w-full"
                       style={{ height: '600px' }}
