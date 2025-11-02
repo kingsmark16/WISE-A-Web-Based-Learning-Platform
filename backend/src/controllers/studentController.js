@@ -1310,7 +1310,10 @@ export const getEnrolledCourses = async (req, res) => {
         // Optimized query: Get enrollments with course data and progress in a single query
         const enrollments = await prisma.enrollment.findMany({
             where: {
-                studentId: user.id
+                studentId: user.id,
+                course: {
+                    status: 'PUBLISHED'
+                }
             },
             select: {
                 enrolledAt: true,
@@ -1737,6 +1740,133 @@ export const getStudentCertificates = async (req, res) => {
         console.error('Error fetching student certificates:', error);
         res.status(500).json({
             message: 'Failed to fetch student certificates',
+            error: error.message
+        });
+    }
+};
+
+export const getArchivedCourses = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found in database" });
+        }
+
+        // Get enrollments for archived courses
+        const archivedEnrollments = await prisma.enrollment.findMany({
+            where: {
+                studentId: user.id,
+                course: {
+                    status: 'ARCHIVED'
+                }
+            },
+            select: {
+                enrolledAt: true,
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        thumbnail: true,
+                        college: true,
+                        updatedAt: true,
+                        status: true,
+                        managedBy: {
+                            select: {
+                                fullName: true,
+                                imageUrl: true
+                            }
+                        },
+                        _count: {
+                            select: {
+                                enrollments: true,
+                                modules: true
+                            }
+                        },
+                        modules: {
+                            select: {
+                                _count: {
+                                    select: {
+                                        lessons: true
+                                    }
+                                }
+                            }
+                        },
+                        courseProgress: {
+                            where: { studentId: user.id },
+                            select: {
+                                progressPercentage: true,
+                                lessonsCompleted: true,
+                                quizzesCompleted: true,
+                                lastAccessedAt: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                enrolledAt: 'desc'
+            }
+        });
+
+        // Format the response data
+        const archivedCourses = archivedEnrollments.map(enrollment => {
+            const course = enrollment.course;
+
+            // Calculate total lessons from all modules
+            const totalLessons = course.modules?.reduce((total, module) =>
+                total + (module._count?.lessons || 0), 0) || 0;
+
+            // Get progress data (default to 0 if not exists)
+            const progress = course.courseProgress?.[0] || {
+                progressPercentage: 0,
+                lessonsCompleted: 0,
+                quizzesCompleted: 0,
+                lastAccessedAt: null
+            };
+
+            return {
+                id: course.id,
+                title: course.title,
+                description: course.description,
+                thumbnail: course.thumbnail,
+                college: course.college,
+                updatedAt: course.updatedAt,
+                status: course.status,
+                managedBy: course.managedBy,
+                totalEnrollments: course._count.enrollments,
+                totalModules: course._count.modules,
+                totalLessons,
+                enrolledAt: enrollment.enrolledAt,
+                progress: {
+                    percentage: progress.progressPercentage,
+                    lessonsCompleted: progress.lessonsCompleted,
+                    quizzesCompleted: progress.quizzesCompleted,
+                    lastAccessedAt: progress.lastAccessedAt
+                }
+            };
+        });
+
+        res.status(200).json({
+            data: archivedCourses,
+            total: archivedCourses.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching archived courses:', error);
+        res.status(500).json({
+            message: 'Failed to fetch archived courses',
             error: error.message
         });
     }
