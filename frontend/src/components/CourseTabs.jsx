@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BookOpen, MessageSquare, Users, Award } from "lucide-react";
 import ModuleAccordion from "./ModuleAccordion";
 import Forum from "./courseNav/Forum";
 import CertificationTab from "./student/CertificationTab";
@@ -7,23 +8,47 @@ import CertificationTab from "./student/CertificationTab";
 const CourseTabs = ({ courseId, courseTitle }) => {
   const [tab, setTab] = useState("module");
 
+  const tabConfig = [
+    { value: "module", label: "Modules", icon: BookOpen, mobileLabel: "Module" },
+    { value: "forum", label: "Forum", icon: MessageSquare, mobileLabel: "Forum" },
+    { value: "students", label: "Students", icon: Users, mobileLabel: "Students" },
+    { value: "certification", label: "Certification", icon: Award, mobileLabel: "Certification" },
+  ];
+
   return (
     <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <div className="flex items-center">
-        <div className="overflow-x-auto scrollbar-hide md:overflow-visible px-8 md:px-10 lg:px-0 w-full">
-          <TabsList className="flex bg-muted mb-4 md:mb-6 min-w-max md:w-full h-9 md:h-10 gap-1 md:gap-2 p-1">
-            <TabsTrigger value="module" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-              Module
-            </TabsTrigger>
-            <TabsTrigger value="forum" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-              Forum
-            </TabsTrigger>
-            <TabsTrigger value="students" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-              Students
-            </TabsTrigger>
-            <TabsTrigger value="certification" className="text-xs sm:text-sm md:text-sm whitespace-nowrap px-3 md:px-4 py-1.5 md:py-2">
-              Certification
-            </TabsTrigger>
+      <div className="relative border-t border-b border-l border-r border-border -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+        <div className="w-full overflow-x-auto scrollbar-hide">
+          <TabsList className="flex bg-transparent mb-0 w-full h-auto gap-1 p-0 justify-stretch">
+            {tabConfig.map((tabItem) => {
+              const IconComponent = tabItem.icon;
+              const isActive = tab === tabItem.value;
+              
+              return (
+                <TabsTrigger
+                  key={tabItem.value}
+                  value={tabItem.value}
+                  className={`relative flex-1 group text-sm sm:text-sm md:text-base whitespace-nowrap px-2 sm:px-4 md:px-6 py-3 md:py-4 font-medium transition-all duration-300 rounded-lg
+                    ${isActive 
+                      ? 'bg-primary/10 text-primary shadow-sm' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                    }
+                  `}
+                >
+                  {/* Background glow effect on active */}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg blur-lg -z-10" />
+                  )}
+                  
+                  {/* Icon */}
+                  <IconComponent className="hidden sm:inline-block w-4 h-4 sm:w-4 sm:h-4 mr-1 sm:mr-2 transition-transform group-hover:scale-110" />
+                  
+                  {/* Label */}
+                  <span className="hidden sm:inline">{tabItem.label}</span>
+                  <span className="sm:hidden">{tabItem.mobileLabel}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
         </div>
       </div>

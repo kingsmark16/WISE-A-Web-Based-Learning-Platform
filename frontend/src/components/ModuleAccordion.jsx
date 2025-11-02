@@ -24,7 +24,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 
 // Loading skeleton component
 const ModulesSkeleton = () => (
-  <div className="space-y-3 p-4 md:p-6">
+  <div className="space-y-3 px-3 sm:px-4 md:px-6 py-4 md:py-6">
     {[1, 2, 3].map((i) => (
       <Skeleton key={i} className="h-16 w-full rounded-lg" />
     ))}
@@ -33,7 +33,7 @@ const ModulesSkeleton = () => (
 
 // Empty state component
 const EmptyState = () => (
-  <div className="p-4 md:p-6 text-center text-muted-foreground">
+  <div className="px-3 sm:px-4 md:px-6 py-4 md:py-6 text-center text-muted-foreground">
     <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
     <p>No modules available yet.</p>
   </div>
@@ -184,7 +184,7 @@ const ModuleContentDisplay = ({ courseId, moduleId }) => {
       {moduleDetails.description && (
         <div className="space-y-3">
           <h3 className="text-base font-semibold text-foreground">Description</h3>
-          <div className="p-3 md:p-4 rounded-lg bg-muted/40 border border-input">
+          <div className="p-3 md:p-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
               {moduleDetails.description}
             </p>
@@ -295,12 +295,12 @@ const ModuleItem = ({ module, courseId, index }) => {
         disabled={isLocked}
       >
       <AccordionTrigger
-        className={`group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden hover:no-underline ${
+        className={`group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-visible hover:no-underline relative [&>svg]:absolute [&>svg]:right-3 [&>svg]:top-3 sm:[&>svg]:right-4 sm:[&>svg]:top-1/2 sm:[&>svg]:-translate-y-1/2 [&>svg]:h-5 [&>svg]:w-5 ${
           isLocked ? 'cursor-not-allowed opacity-60' : ''
         }`}
         disabled={isLocked}
       >
-        <div className="flex items-center gap-3 text-left flex-1">
+        <div className="flex items-center gap-3 text-left flex-1 w-full pr-8 sm:pr-0">
           <div className={`flex-shrink-0 rounded-lg p-2 ${
             isLocked
               ? 'bg-muted'
@@ -318,27 +318,16 @@ const ModuleItem = ({ module, courseId, index }) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`font-semibold text-sm md:text-base truncate ${
+              <span className={`font-semibold text-sm md:text-base truncate max-w-[200px] sm:max-w-none ${
                 isLocked ? '' : ''
               }`}>
                 Module {index + 1}: {module.title}
               </span>
               {isCompleted && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap font-medium">
-                  ✓ Completed
-                </span>
+                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
               )}
             </div>
 
-            <p className="text-xs text-muted-foreground mt-1">
-              Updated: {new Date(module.updatedAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
             {isLocked && (
               <p className="text-xs text-orange-600 mt-1 font-medium">
                 Complete the previous module to unlock
@@ -347,8 +336,8 @@ const ModuleItem = ({ module, courseId, index }) => {
           </div>
         </div>
 
-        {/* Progress Bar - Positioned to the right */}
-        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+        {/* Progress Bar - Below on mobile, right on sm+ */}
+        <div className="w-full sm:w-auto flex-shrink-0 flex flex-col items-start sm:items-end gap-1 sm:pr-8">
           <div className="flex items-center gap-2 text-xs">
             <span className={`font-medium ${
               isLocked
@@ -362,7 +351,7 @@ const ModuleItem = ({ module, courseId, index }) => {
           </div>
           <Progress
             value={progressPercentage}
-            className={`h-2 w-20 sm:w-24 md:w-32 lg:w-40 ${
+            className={`h-2 w-full sm:w-20 md:w-32 lg:w-40 ${
               isLocked
                 ? '[&>div]:bg-muted-foreground/30'
                 : isCompleted
@@ -403,7 +392,7 @@ const ModuleAccordion = ({ courseId }) => {
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="-mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 py-4 md:py-6">
       <Accordion type="single" collapsible className="w-full space-y-2">
         {modules.map((module, index) => (
           <ModuleItem
