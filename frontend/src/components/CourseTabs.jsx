@@ -4,6 +4,7 @@ import { BookOpen, MessageSquare, Users, Award } from "lucide-react";
 import ModuleAccordion from "./ModuleAccordion";
 import Forum from "./courseNav/Forum";
 import CertificationTab from "./student/CertificationTab";
+import StudentsList from "./student/StudentsList";
 
 const CourseTabs = ({ courseId, courseTitle }) => {
   const [tab, setTab] = useState("module");
@@ -62,9 +63,7 @@ const CourseTabs = ({ courseId, courseTitle }) => {
       </TabsContent>
 
       <TabsContent value="students" className="w-full">
-        <div className="p-4 md:p-6 text-center text-muted-foreground text-sm md:text-base">
-          Students will be shown here.
-        </div>
+        <StudentsList courseId={courseId} />
       </TabsContent>
 
       <TabsContent value="certification" className="w-full">

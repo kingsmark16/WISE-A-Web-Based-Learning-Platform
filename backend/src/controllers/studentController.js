@@ -1515,3 +1515,138 @@ export const getCourseCompletion = async (req, res) => {
         });
     }
 };
+
+/**
+ * Get all enrolled students in a course with their progress and active status
+ * Returns: student name, course progress percentage, lessons completed, quizzes completed, last active time
+ */
+export const getCourseEnrolledStudents = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const userId = req.auth().userId;
+
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+        // Get current user from database
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!currentUser) return res.status(404).json({ message: "User not found in database" });
+
+        // Check if current user is enrolled in the course (to allow access)
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                studentId_courseId: {
+                    studentId: currentUser.id,
+                    courseId
+                }
+            }
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
+        }
+
+        // Get all enrolled students with their progress
+        const enrolledStudents = await prisma.enrollment.findMany({
+            where: { courseId },
+            select: {
+                student: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        imageUrl: true,
+                        emailAddress: true,
+                        lastActiveAt: true
+                    }
+                },
+                enrolledAt: true,
+                course: {
+                    select: {
+                        courseProgress: {
+                            where: { courseId },
+                            select: {
+                                studentId: true,
+                                progressPercentage: true,
+                                lessonsCompleted: true,
+                                quizzesCompleted: true,
+                                lastAccessedAt: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                student: {
+                    fullName: 'asc'
+                }
+            }
+        });
+
+        // Format the response data
+        const students = enrolledStudents.map(enrollment => {
+            const student = enrollment.student;
+            const progress = enrollment.course.courseProgress.find(p => p.studentId === student.id) || {
+                progressPercentage: 0,
+                lessonsCompleted: 0,
+                quizzesCompleted: 0,
+                lastAccessedAt: null
+            };
+
+            // Determine active status based on last access time
+            let activeStatus = 'inactive';
+            let lastActiveTime = null;
+
+            if (student.lastActiveAt) {
+                const lastAccess = new Date(student.lastActiveAt);
+                const now = new Date();
+                const hoursAgo = (now - lastAccess) / (1000 * 60 * 60);
+
+                if (hoursAgo < 1) {
+                    activeStatus = 'active';
+                    lastActiveTime = 'just now';
+                } else if (hoursAgo < 24) {
+                    activeStatus = 'active';
+                    lastActiveTime = `${Math.floor(hoursAgo)}h ago`;
+                } else if (hoursAgo < 168) { // 7 days
+                    activeStatus = 'inactive';
+                    lastActiveTime = `${Math.floor(hoursAgo / 24)}d ago`;
+                } else {
+                    activeStatus = 'inactive';
+                    lastActiveTime = `${Math.floor(hoursAgo / 168)}w ago`;
+                }
+            }
+
+            return {
+                id: student.id,
+                fullName: student.fullName,
+                imageUrl: student.imageUrl,
+                emailAddress: student.emailAddress,
+                enrolledAt: enrollment.enrolledAt,
+                progress: {
+                    percentage: progress.progressPercentage,
+                    lessonsCompleted: progress.lessonsCompleted,
+                    quizzesCompleted: progress.quizzesCompleted
+                },
+                activeStatus,
+                lastActiveTime,
+                lastAccessedAt: student.lastActiveAt
+            };
+        });
+
+        res.status(200).json({
+            data: students,
+            total: students.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching enrolled students:', error);
+        res.status(500).json({
+            message: 'Failed to fetch enrolled students',
+            error: error.message
+        });
+    }
+};
