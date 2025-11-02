@@ -389,16 +389,16 @@ const Forum = ({ courseId }) => {
       {/* Tabs for filtering */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto">
-          <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3 py-2">
+          <TabsTrigger value="all" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">
             <span className="hidden sm:inline">All Posts ({getFilteredPosts().length})</span>
             <span className="sm:hidden">All ({getFilteredPosts().length})</span>
           </TabsTrigger>
-          <TabsTrigger value="pinned" className="text-xs sm:text-sm px-2 sm:px-3 py-2">
+          <TabsTrigger value="pinned" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">
             <span className="hidden sm:inline">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
             <span className="sm:hidden">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
           </TabsTrigger>
-          <TabsTrigger value="recent" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Recent</TabsTrigger>
-          <TabsTrigger value="popular" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Popular</TabsTrigger>
+          <TabsTrigger value="recent" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">Recent</TabsTrigger>
+          <TabsTrigger value="popular" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">Popular</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-3 mt-3 sm:mt-4">

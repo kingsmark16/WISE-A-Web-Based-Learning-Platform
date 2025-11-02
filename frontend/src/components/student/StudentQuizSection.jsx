@@ -1,8 +1,14 @@
 import React, { memo, useState } from 'react';
-import { HelpCircle, Loader2, CheckCircle2, Clock, Zap, AlertCircle } from 'lucide-react';
+import { HelpCircle, Loader2, CheckCircle2, Clock, Zap, AlertCircle, ArrowRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useStartStudentQuiz } from '@/hooks/student/useStudentQuiz';
 import StudentQuizComponent from '@/components/student/StudentQuizComponent';
 import StudentQuizHistory from '@/components/student/StudentQuizHistory';
@@ -33,7 +39,7 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
           <HelpCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
           <h3 className="text-sm font-semibold text-foreground">Quiz</h3>
         </div>
-        <div className="p-4 text-center text-sm text-muted-foreground rounded-lg border border-dashed border-input">
+        <div className="text-center text-sm text-muted-foreground rounded-lg">
           <HelpCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>No quiz available for this module yet.</p>
         </div>
@@ -82,81 +88,108 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
   const isPublished = quiz.isPublished;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-3">
-        <HelpCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-        <h3 className="text-sm font-semibold text-foreground">Quiz</h3>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2.5">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <HelpCircle className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Quiz</h3>
+          <p className="text-xs text-muted-foreground">Test your knowledge</p>
+        </div>
       </div>
 
+      {/* Not Published Alert */}
       {!isPublished && (
-        <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-          <p className="text-xs text-yellow-800 dark:text-yellow-200">
-            This quiz is not yet published and will be available soon.
-          </p>
-        </div>
+        <Alert className="bg-muted/50 border-muted py-3">
+          <Lock className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="text-sm text-muted-foreground">
+            This quiz will be available soon
+          </AlertDescription>
+        </Alert>
       )}
 
-      <Card className={`border-2 transition-all ${isPublished ? 'hover:shadow-md' : 'opacity-75'}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-base text-foreground truncate">
-                {quiz.title || 'Module Quiz'}
-              </CardTitle>
-              {quiz.description && (
-                <CardDescription className="text-xs mt-1 line-clamp-2">
-                  {quiz.description}
-                </CardDescription>
-              )}
-            </div>
-          </div>
+      {/* Quiz Card */}
+      <Card className={`transition-all duration-200 ${
+        isPublished 
+          ? 'hover:shadow-lg border-primary/20 hover:border-primary/40' 
+          : 'opacity-60 border-muted'
+      }`}>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg text-foreground line-clamp-1">
+            {quiz.title || 'Module Quiz'}
+          </CardTitle>
+          {quiz.description && (
+            <CardDescription className="text-sm line-clamp-2 mt-1">
+              {quiz.description}
+            </CardDescription>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Quiz Details Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-2.5">
             {/* Questions */}
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-              <HelpCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Questions</p>
-                <p className="text-sm font-semibold">{questionCount}</p>
-              </div>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="p-3 rounded-lg bg-secondary/50 border border-secondary hover:bg-secondary transition-colors cursor-help">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Questions</p>
+                    <p className="text-xl font-bold text-foreground">{questionCount}</p>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  Total questions in this quiz
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* Time Limit */}
             {timeLimit && (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Time Limit</p>
-                  <p className="text-sm font-semibold">{timeLimit}</p>
-                </div>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-3 rounded-lg bg-secondary/50 border border-secondary hover:bg-secondary transition-colors cursor-help">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Time</p>
+                      <p className="text-xl font-bold text-foreground">{timeLimit}</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">
+                    Maximum time allowed
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
 
             {/* Attempts */}
             {quiz.attemptLimit && (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                <Zap className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Max Attempts</p>
-                  <p className="text-sm font-semibold">{quiz.attemptLimit}</p>
-                </div>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-3 rounded-lg bg-secondary/50 border border-secondary hover:bg-secondary transition-colors cursor-help">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Attempts</p>
+                      <p className="text-xl font-bold text-foreground">{quiz.attemptLimit}</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">
+                    Max retake attempts
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
 
-          {/* Start Quiz Button */}
+          {/* Start Button */}
           <Button
-            className="w-full"
+            className="w-full h-10 text-base"
             disabled={!isPublished || isLoading || startQuizMutation.isPending}
             onClick={handleStartQuiz}
           >
             {startQuizMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Starting Quiz...
+                Starting...
               </>
             ) : (
               <>
@@ -165,20 +198,14 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
               </>
             )}
           </Button>
-
-          {!isPublished && (
-            <p className="text-xs text-center text-muted-foreground">
-              This quiz will be available once the instructor publishes it.
-            </p>
-          )}
         </CardContent>
       </Card>
 
       {/* Error Alert */}
       {startQuizMutation.error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="py-3">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+          <AlertDescription className="text-sm">
             {startQuizMutation.error?.response?.data?.message ||
              startQuizMutation.error?.message ||
              'Failed to start quiz'}
@@ -186,7 +213,7 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
               variant="ghost"
               size="sm"
               onClick={() => startQuizMutation.reset()}
-              className="ml-2 h-auto p-1"
+              className="ml-2 h-auto p-1 text-sm"
             >
               ×
             </Button>
@@ -196,7 +223,7 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
 
       {/* Active Quiz Component */}
       {isQuizActive && quizData && (
-        <div className="mt-6">
+        <div className="mt-4">
           <StudentQuizComponent
             quiz={quizData}
             courseId={courseId}
@@ -209,7 +236,7 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
 
       {/* Quiz History */}
       {!isQuizActive && quiz && (
-        <div className="mt-6">
+        <div className="mt-4">
           <StudentQuizHistory quizId={quiz.id} />
         </div>
       )}

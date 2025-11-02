@@ -92,12 +92,12 @@ const CoursePage = () => {
                     </h1>
                     {/* Thumbnail below title on small and medium screens */}
                     {selectedCourse.thumbnail && (
-                      <div className="relative group flex-shrink-0 block lg:hidden mb-4">
+                      <div className="relative group flex-shrink-0 block lg:hidden mb-4 w-full">
                         <div className="relative">
                           <img
                             src={selectedCourse.thumbnail}
                             alt={selectedCourse.title}
-                            className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                            className="h-auto w-full sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
                           />
                         </div>
                       </div>
@@ -197,48 +197,6 @@ const CoursePage = () => {
                   </p>
                 </div>
               )}
-
-              {/* Course Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Students Enrolled */}
-                <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
-                  <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Students</p>
-                    <p className="text-xl sm:text-2xl font-bold">
-                      {selectedCourse._count?.enrollments || 0}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Modules */}
-                <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
-                  <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Modules</p>
-                    <p className="text-xl sm:text-2xl font-bold">
-                      {selectedCourse._count?.modules || 0}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Total Lessons */}
-                <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
-                  <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Lessons</p>
-                    <p className="text-xl sm:text-2xl font-bold">
-                      {selectedCourse.totalLessons || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
               {/* Course Content - Only show if enrolled */}
               {!isEnrollmentStatusLoading && enrollmentStatus?.isEnrolled && (

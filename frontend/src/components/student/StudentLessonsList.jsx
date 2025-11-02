@@ -98,11 +98,6 @@ const LessonItem = memo(({ lesson, onPlay, index, isCompleted = false }) => {
               <Badge variant="secondary" className="text-xs">
                 {getLessonTypeLabel()}
               </Badge>
-              {isCompleted && (
-                <Badge variant="outline" className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap font-medium">
-                  Completed
-                </Badge>
-              )}
             </div>
           </div>
         </div>

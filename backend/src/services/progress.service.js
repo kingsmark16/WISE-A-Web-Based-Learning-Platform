@@ -209,7 +209,8 @@ class ProgressService {
             }
         });
 
-        const completedQuizzes = await prisma.quizSubmission.count({
+        // Count unique quizzes completed (not total submissions)
+        const completedQuizSubmissions = await prisma.quizSubmission.findMany({
             where: {
                 studentId,
                 quiz: {
@@ -218,8 +219,14 @@ class ProgressService {
                     }
                 },
                 score: { not: null }
-            }
+            },
+            select: {
+                quizId: true
+            },
+            distinct: ['quizId']
         });
+
+        const completedQuizzes = completedQuizSubmissions.length;
 
         // Calculate average quiz score
         const quizSubmissions = await prisma.quizSubmission.findMany({
@@ -373,15 +380,20 @@ class ProgressService {
         console.log(`[progress] DEBUG: Total quiz submissions in DB for student: ${allQuizSubmissionsForStudent.length}`);
         console.log(`[progress] DEBUG: Quiz submission details: ${JSON.stringify(allQuizSubmissionsForStudent)}`);
         
-        const completedQuizzes = existingQuizIds.length > 0
-            ? await prisma.quizSubmission.count({
+        // Count unique quizzes completed (not total submissions)
+        const completedQuizSubmissions = existingQuizIds.length > 0
+            ? await prisma.quizSubmission.findMany({
                 where: {
                     studentId,
                     quizId: { in: existingQuizIds },
                     score: { not: null }
-                }
+                },
+                select: { quizId: true },
+                distinct: ['quizId']
             })
-            : 0;
+            : [];
+
+        const completedQuizzes = completedQuizSubmissions.length;
 
         console.log(`[progress] Completed: ${completedLessons}/${totalLessons} lessons, ${completedQuizzes}/${totalQuizzes} quizzes`);
 
@@ -718,7 +730,8 @@ class ProgressService {
             }
         });
 
-        const completedQuizzes = await prisma.quizSubmission.count({
+        // Count unique quizzes completed (not total submissions)
+        const completedQuizSubmissions = await prisma.quizSubmission.findMany({
             where: {
                 studentId,
                 quiz: {
@@ -727,8 +740,14 @@ class ProgressService {
                     }
                 },
                 score: { not: null }
-            }
+            },
+            select: {
+                quizId: true
+            },
+            distinct: ['quizId']
         });
+
+        const completedQuizzes = completedQuizSubmissions.length;
 
         // Calculate average quiz score
         const quizSubmissions = await prisma.quizSubmission.findMany({
