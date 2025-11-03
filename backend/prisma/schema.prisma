@@ -364,7 +364,6 @@ model CourseProgress {
   progressPercentage  Int      @default(0)  // 0-100
   lessonsCompleted    Int      @default(0)
   quizzesCompleted    Int      @default(0)
-  averageQuizScore    Float?   // calculated from quiz submissions
   currentModuleId     String?  // track which module student is currently on
   lastAccessedAt      DateTime @default(now())
   updatedAt           DateTime @updatedAt
