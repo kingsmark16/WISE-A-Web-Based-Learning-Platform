@@ -86,17 +86,17 @@ app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
 
 
 
-app.use('/api/youtube-lessons', youtubeVideoRoutes);
-app.use('/api/upload-dropbox', dropboxUploadRoutes);
-app.use('/api/upload-pdf', uploadPdfRoutes);
-app.use('/api/link', linkRoutes);
+app.use('/api/youtube-lessons', updateLastActive, youtubeVideoRoutes);
+app.use('/api/upload-dropbox', updateLastActive, dropboxUploadRoutes);
+app.use('/api/upload-pdf', updateLastActive, uploadPdfRoutes);
+app.use('/api/link', updateLastActive, linkRoutes);
 
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);
 
 app.use('/api/certificate', certificatesRoutes);
-app.use('/api/completions', completionsRoutes);
-app.use('/api/quiz', quizRoutes);
+app.use('/api/completions', updateLastActive, completionsRoutes);
+app.use('/api/quiz', updateLastActive, quizRoutes);
 
 // ===== Public APIs =====
 app.use('/api', strictRateLimit("5m", 10), guestRoutes);

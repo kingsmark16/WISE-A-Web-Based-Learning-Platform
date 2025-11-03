@@ -27,9 +27,9 @@ const menuConfig = {
   ],
   STUDENT: [
     { name: 'Home', path: '/student/student-homepage' },
-    { name: 'Dashboard', path: '/student/analytics' },
     { name: 'My Courses', path: '/student/my-courses' },
-    { name: 'Achivements', path: '/student/certification' },
+    { name: 'Archived Courses', path: '/student/archived-courses' },
+    { name: 'Achievements', path: '/student/achievements' },
   ],
   FACULTY: [
     { name: 'Dashboard', path: '/faculty/dashboard', icon: BarChart3 },

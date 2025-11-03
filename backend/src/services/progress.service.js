@@ -242,10 +242,6 @@ class ProgressService {
             select: { score: true }
         });
 
-        const averageQuizScore = quizSubmissions.length > 0
-            ? quizSubmissions.reduce((sum, sub) => sum + sub.score, 0) / quizSubmissions.length
-            : null;
-
         // Calculate overall progress percentage
         const lessonProgressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
         const quizProgressPercent = totalQuizzes > 0 ? (completedQuizzes / totalQuizzes) * 100 : 0;
@@ -283,7 +279,6 @@ class ProgressService {
                 progressPercentage: Math.round(overallProgress),
                 lessonsCompleted: completedLessons,
                 quizzesCompleted: completedQuizzes,
-                averageQuizScore,
                 currentModuleId: currentModule?.moduleId,
                 lastAccessedAt: new Date(),
                 updatedAt: new Date()
@@ -294,7 +289,6 @@ class ProgressService {
                 progressPercentage: Math.round(overallProgress),
                 lessonsCompleted: completedLessons,
                 quizzesCompleted: completedQuizzes,
-                averageQuizScore,
                 currentModuleId: currentModule?.moduleId,
                 lastAccessedAt: new Date()
             }
@@ -397,23 +391,6 @@ class ProgressService {
 
         console.log(`[progress] Completed: ${completedLessons}/${totalLessons} lessons, ${completedQuizzes}/${totalQuizzes} quizzes`);
 
-        // Calculate average quiz score - only for existing quizzes
-        let averageQuizScore = null;
-        if (existingQuizIds.length > 0) {
-            const quizSubmissions = await prisma.quizSubmission.findMany({
-                where: {
-                    studentId,
-                    quizId: { in: existingQuizIds },
-                    score: { not: null }
-                },
-                select: { score: true }
-            });
-
-            if (quizSubmissions.length > 0) {
-                averageQuizScore = quizSubmissions.reduce((sum, sub) => sum + sub.score, 0) / quizSubmissions.length;
-            }
-        }
-
         // Calculate overall progress percentage
         const lessonProgressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
         const quizProgressPercent = totalQuizzes > 0 ? (completedQuizzes / totalQuizzes) * 100 : 0;
@@ -448,7 +425,6 @@ class ProgressService {
                 progressPercentage: Math.round(overallProgress),
                 lessonsCompleted: completedLessons,
                 quizzesCompleted: completedQuizzes,
-                averageQuizScore,
                 lastAccessedAt: new Date(),
                 updatedAt: new Date()
             },
@@ -458,7 +434,6 @@ class ProgressService {
                 progressPercentage: Math.round(overallProgress),
                 lessonsCompleted: completedLessons,
                 quizzesCompleted: completedQuizzes,
-                averageQuizScore,
                 lastAccessedAt: new Date()
             }
         });
@@ -763,10 +738,6 @@ class ProgressService {
             select: { score: true }
         });
 
-        const averageQuizScore = quizSubmissions.length > 0
-            ? quizSubmissions.reduce((sum, sub) => sum + sub.score, 0) / quizSubmissions.length
-            : null;
-
         // Calculate overall progress percentage
         const lessonProgressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
         const quizProgressPercent = totalQuizzes > 0 ? (completedQuizzes / totalQuizzes) * 100 : 0;
@@ -802,7 +773,6 @@ class ProgressService {
                 progressPercentage: Math.round(overallProgress),
                 lessonsCompleted: completedLessons,
                 quizzesCompleted: completedQuizzes,
-                averageQuizScore,
                 currentModuleId: currentModule?.moduleId,
                 lastAccessedAt: new Date(),
                 updatedAt: new Date()
@@ -813,7 +783,6 @@ class ProgressService {
                 progressPercentage: Math.round(overallProgress),
                 lessonsCompleted: completedLessons,
                 quizzesCompleted: completedQuizzes,
-                averageQuizScore,
                 currentModuleId: currentModule?.moduleId,
                 lastAccessedAt: new Date()
             }

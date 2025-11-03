@@ -24,8 +24,6 @@ model User {
   createdCourses Course[] @relation("CourseCreator")
   managedCourses Course[] @relation("CourseFaculty")
 
-  uploadedLessons Lesson[] @relation("UserUploadedVideos")
-
   dailyActivities     DailyUserActivity[]
   enrollments      Enrollment[]
   completions      CourseCompletion[]
@@ -122,9 +120,7 @@ model Lesson {
   type        LessonType
   url         String
   position    Int
-  duration    Int?     // in seconds
-  uploadedBy User? @relation("UserUploadedVideos", fields: [uploadedById], references: [id], onDelete: SetNull)
-  uploadedById String?
+  duration    Int?
 
   moduleId    String
   module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -254,7 +250,7 @@ model ForumReply {
   content     String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  isAnswer    Boolean     @default(false)
+
   
   postId      String
   post        ForumPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -368,7 +364,6 @@ model CourseProgress {
   progressPercentage  Int      @default(0)  // 0-100
   lessonsCompleted    Int      @default(0)
   quizzesCompleted    Int      @default(0)
-  averageQuizScore    Float?   // calculated from quiz submissions
   currentModuleId     String?  // track which module student is currently on
   lastAccessedAt      DateTime @default(now())
   updatedAt           DateTime @updatedAt

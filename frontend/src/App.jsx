@@ -22,6 +22,8 @@ import FacultyHomePage from "./pages/faculty/FacultyHomePage"
 import StudentInfo from "./pages/admin/userManagement/StudentInfo"
 import StudentManagement from "./pages/admin/userManagement/StudentManagement"
 import MyCourses from "./pages/student/MyCourses"
+import AchievementsPage from "./pages/student/AchievementsPage"
+import ArchivedCoursesPage from "./pages/student/ArchivedCoursesPage"
 import VerifyCertificate from "./pages/VerifyCertificate"
 
 const App = () => {
@@ -93,6 +95,8 @@ const App = () => {
           <Route path="student-homepage" element={<HomePage/>}/>
           <Route path="homepage/:id/selected-course" element={<CoursePage/>}/>
           <Route path="my-courses" element={<MyCourses/>}/>
+          <Route path="achievements" element={<AchievementsPage/>}/>
+          <Route path="archived-courses" element={<ArchivedCoursesPage/>}/>
         </Route>
 
         {/* Faculty Routes - Only accessible by FACULTY and ADMIN */}

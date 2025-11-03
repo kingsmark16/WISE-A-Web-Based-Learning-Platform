@@ -30,7 +30,7 @@ export const CourseCard = ({ course }) => {
     <Link to={`/student/homepage/${course.id}/selected-course`}>
       <Card className="h-96 flex flex-col hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer p-0">
         {/* Course Thumbnail */}
-        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300">
+        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10">
           {course.thumbnail ? (
             <img
               src={course.thumbnail}
@@ -39,7 +39,7 @@ export const CourseCard = ({ course }) => {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-4xl text-slate-400">📚</span>
+              <span className="text-4xl text-slate-400">🎓</span>
             </div>
           )}
         </div>
@@ -47,13 +47,15 @@ export const CourseCard = ({ course }) => {
         <div className="flex flex-col flex-1">
           <CardHeader className="pb-2 flex-shrink-0">
             {/* Title */}
-            <h3 className="text-md font-semibold line-clamp-1 hover:text-primary transition-colors">
-              {course.title}
-            </h3>
+            <div className="text-center">
+              <h3 className="text-md font-semibold line-clamp-1 text-primary hover:text-primary/80 transition-colors">
+                {course.title}
+              </h3>
+            </div>
             
             {/* College */}
-            <div className="flex justify-start">
-              <Badge variant="secondary" className="bg-blue-500 text-white dark:bg-blue-600">
+            <div className="flex justify-center">
+              <Badge variant="outline">
                 {course.college}
               </Badge>
             </div>

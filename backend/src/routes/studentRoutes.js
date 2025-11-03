@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireRole } from "../middlewares/authMiddleware.js";
-import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions, trackLessonAccess, getStudentModuleProgress, getStudentProgressSummary, getEnrolledCourses, getCourseCompletion } from "../controllers/studentController.js";
+import { checkEnrollmentStatus, enrollInCourse, getCourseCategories, getCourseModules, getModuleDetailsForStudent, getFeaturedCourses, getSelectedCourse, unenrollInCourse, markLessonComplete, getStudentCourseProgress, getStudentLessonProgress, startStudentQuiz, submitStudentQuiz, getStudentQuizSubmissions, trackLessonAccess, getStudentModuleProgress, getStudentProgressSummary, getEnrolledCourses, getCourseCompletion, getCourseEnrolledStudents, getStudentCertificates, getArchivedCourses } from "../controllers/studentController.js";
 
 const router = Router();
 
@@ -8,6 +8,7 @@ router.get('/categories', requireRole(['STUDENT']), getCourseCategories);
 router.get('/selected-course/:id', requireRole(['STUDENT']), getSelectedCourse);
 router.get('/featured-courses', requireRole(['STUDENT']), getFeaturedCourses);
 router.get('/enrolled-courses', requireRole(['STUDENT']), getEnrolledCourses);
+router.get('/archived-courses', requireRole(['STUDENT']), getArchivedCourses);
 router.get('/modules/:courseId', requireRole(['STUDENT']), getCourseModules);
 router.get('/module-details/:courseId/:moduleId', requireRole(['STUDENT']), getModuleDetailsForStudent);
 
@@ -25,6 +26,10 @@ router.get('/enrollment-status/:courseId', requireRole(['STUDENT']), checkEnroll
 
 // Course completion and certification
 router.get('/course-completion/:courseId', requireRole(['STUDENT']), getCourseCompletion);
+router.get('/certificates', requireRole(['STUDENT']), getStudentCertificates);
+
+// Get enrolled students in a course
+router.get('/:courseId/enrolled-students', requireRole(['STUDENT']), getCourseEnrolledStudents);
 
 // Quiz routes
 router.post('/quiz/start/:courseId/:moduleId', requireRole(['STUDENT']), startStudentQuiz);

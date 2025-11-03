@@ -77,9 +77,9 @@ const CertificationTab = ({ courseId, courseTitle }) => {
     if ((!isGenerating && !isAttemptingGeneration) || !isFullyCompleted) return;
 
     let attemptCount = 0;
-    const maxAttempts = 60; // Max 60 seconds of polling
+    const maxAttempts = 120; // Max 120 seconds of polling
 
-    // Start with aggressive polling (1 second), then back off to 2 seconds after 5 seconds
+    // Start with very aggressive polling (500ms for first 10 attempts, then 1 second for next 20, then 2 seconds)
     const poll = () => {
       attemptCount++;
       refetchCompletion();
@@ -93,8 +93,13 @@ const CertificationTab = ({ courseId, courseTitle }) => {
         return;
       }
 
-      // After first 5 attempts (5 seconds), back off to 2 second intervals
-      const nextInterval = attemptCount >= 5 ? 2000 : 1000;
+      // Aggressive polling: 500ms for first 10, 1s for next 20, then 2s
+      let nextInterval = 2000;
+      if (attemptCount < 10) {
+        nextInterval = 500;
+      } else if (attemptCount < 30) {
+        nextInterval = 1000;
+      }
       pollingRef.current = setTimeout(poll, nextInterval);
     };
 
@@ -109,18 +114,6 @@ const CertificationTab = ({ courseId, courseTitle }) => {
       }
     };
   }, [isGenerating, isFullyCompleted, refetchCompletion]);
-
-  // Stop showing generating state if certificate is found
-  useEffect(() => {
-    if (completion?.certificate) {
-      generationAttemptRef.current = null;
-      setIsPdfLoading(true); // Reset PDF loading state for new certificate
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    }
-  }, [completion?.certificate]);
 
   // Clear generation ref if progress goes below 100% (new content added)
   useEffect(() => {
@@ -322,24 +315,11 @@ const CertificationTab = ({ courseId, courseTitle }) => {
 
                 {/* Certificate PDF Preview - Hidden on Mobile */}
                 {certificate.certificateUrl && (
-                  <div className="hidden md:block w-full bg-gray-100 dark:bg-slate-800 rounded-lg border-2 border-muted overflow-hidden relative">
-                    {isPdfLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-slate-800 z-10">
-                        <div className="flex flex-col items-center gap-3">
-                          <Loader className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm text-muted-foreground">Loading certificate preview...</p>
-                        </div>
-                      </div>
-                    )}
-                    <embed 
-                      src={certificate.certificateUrl}
-                      type="application/pdf"
-                      className="w-full"
-                      style={{ height: '600px' }}
-                      onLoad={() => setIsPdfLoading(false)}
-                      onError={() => setIsPdfLoading(false)}
-                    />
-                  </div>
+                  <PDFViewer 
+                    url={certificate.certificateUrl}
+                    isLoading={isPdfLoading}
+                    onLoadComplete={() => setIsPdfLoading(false)}
+                  />
                 )}
 
                 {/* Certificate Details */}
@@ -519,3 +499,50 @@ const CertificationTab = ({ courseId, courseTitle }) => {
 };
 
 export default CertificationTab;
+
+// Separate PDFViewer component with timeout fallback
+const PDFViewer = ({ url, isLoading, onLoadComplete }) => {
+  const [localLoading, setLocalLoading] = useState(isLoading);
+
+  useEffect(() => {
+    setLocalLoading(isLoading);
+    
+    if (isLoading) {
+      // Auto-dismiss loading state after 5 seconds as fallback
+      const timer = setTimeout(() => {
+        setLocalLoading(false);
+        onLoadComplete();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, onLoadComplete]);
+
+  return (
+    <div className="hidden md:block w-full bg-gray-100 dark:bg-slate-800 rounded-lg border-2 border-muted overflow-hidden relative">
+      {localLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-slate-800 z-10">
+          <div className="flex flex-col items-center gap-3">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading certificate preview...</p>
+          </div>
+        </div>
+      )}
+      <object 
+        data={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
+        type="application/pdf"
+        className="w-full"
+        style={{ height: '600px' }}
+        onLoad={() => {
+          setLocalLoading(false);
+          onLoadComplete();
+        }}
+        onError={() => {
+          setLocalLoading(false);
+          onLoadComplete();
+          toast.error('Failed to load certificate preview');
+        }}
+      />
+    </div>
+  );
+};

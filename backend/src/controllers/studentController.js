@@ -1310,7 +1310,10 @@ export const getEnrolledCourses = async (req, res) => {
         // Optimized query: Get enrollments with course data and progress in a single query
         const enrollments = await prisma.enrollment.findMany({
             where: {
-                studentId: user.id
+                studentId: user.id,
+                course: {
+                    status: 'PUBLISHED'
+                }
             },
             select: {
                 enrolledAt: true,
@@ -1511,6 +1514,359 @@ export const getCourseCompletion = async (req, res) => {
         console.error('Error fetching course completion:', error);
         res.status(500).json({
             message: 'Failed to fetch course completion',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Get all enrolled students in a course with their progress and active status
+ * Returns: student name, course progress percentage, lessons completed, quizzes completed, last active time
+ */
+export const getCourseEnrolledStudents = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const userId = req.auth().userId;
+
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+        // Get current user from database
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!currentUser) return res.status(404).json({ message: "User not found in database" });
+
+        // Check if current user is enrolled in the course (to allow access)
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                studentId_courseId: {
+                    studentId: currentUser.id,
+                    courseId
+                }
+            }
+        });
+
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
+        }
+
+        // Get all enrolled students with their progress
+        const enrolledStudents = await prisma.enrollment.findMany({
+            where: { courseId },
+            select: {
+                student: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        imageUrl: true,
+                        emailAddress: true,
+                        lastActiveAt: true
+                    }
+                },
+                enrolledAt: true,
+                course: {
+                    select: {
+                        courseProgress: {
+                            where: { courseId },
+                            select: {
+                                studentId: true,
+                                progressPercentage: true,
+                                lessonsCompleted: true,
+                                quizzesCompleted: true,
+                                lastAccessedAt: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                student: {
+                    fullName: 'asc'
+                }
+            }
+        });
+
+        // Format the response data
+        const students = enrolledStudents.map(enrollment => {
+            const student = enrollment.student;
+            const progress = enrollment.course.courseProgress.find(p => p.studentId === student.id) || {
+                progressPercentage: 0,
+                lessonsCompleted: 0,
+                quizzesCompleted: 0,
+                lastAccessedAt: null
+            };
+
+            // Determine active status based on last access time
+            let activeStatus = 'inactive';
+            let lastActiveTime = null;
+
+            if (student.lastActiveAt) {
+                const lastAccess = new Date(student.lastActiveAt);
+                const now = new Date();
+                const hoursAgo = (now - lastAccess) / (1000 * 60 * 60);
+
+                if (hoursAgo < 1) {
+                    activeStatus = 'active';
+                    lastActiveTime = 'just now';
+                } else if (hoursAgo < 24) {
+                    activeStatus = 'active';
+                    lastActiveTime = `${Math.floor(hoursAgo)}h ago`;
+                } else if (hoursAgo < 168) { // 7 days
+                    activeStatus = 'inactive';
+                    lastActiveTime = `${Math.floor(hoursAgo / 24)}d ago`;
+                } else {
+                    activeStatus = 'inactive';
+                    lastActiveTime = `${Math.floor(hoursAgo / 168)}w ago`;
+                }
+            }
+
+            return {
+                id: student.id,
+                fullName: student.fullName,
+                imageUrl: student.imageUrl,
+                emailAddress: student.emailAddress,
+                enrolledAt: enrollment.enrolledAt,
+                progress: {
+                    percentage: progress.progressPercentage,
+                    lessonsCompleted: progress.lessonsCompleted,
+                    quizzesCompleted: progress.quizzesCompleted
+                },
+                activeStatus,
+                lastActiveTime,
+                lastAccessedAt: student.lastActiveAt
+            };
+        });
+
+        res.status(200).json({
+            data: students,
+            total: students.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching enrolled students:', error);
+        res.status(500).json({
+            message: 'Failed to fetch enrolled students',
+            error: error.message
+        });
+    }
+};
+
+export const getStudentCertificates = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+        // Get current user from database
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!currentUser) return res.status(404).json({ message: "User not found in database" });
+
+        // Get all certificates for the student
+        const certificates = await prisma.courseCompletion.findMany({
+            where: {
+                userId: currentUser.id,
+                certificate: {
+                    isNot: null
+                }
+            },
+            select: {
+                id: true,
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        thumbnail: true,
+                        college: true,
+                        facultyId: true,
+                    }
+                },
+                certificate: {
+                    select: {
+                        certificateNumber: true,
+                        certificateUrl: true,
+                        issueDate: true
+                    }
+                },
+                completedAt: true
+            },
+            orderBy: {
+                completedAt: 'desc'
+            }
+        });
+
+        // Fetch faculty info for each certificate
+        const facultyIds = [...new Set(certificates.map(cert => cert.course.facultyId).filter(Boolean))];
+        const faculty = await prisma.user.findMany({
+            where: { id: { in: facultyIds } },
+            select: { id: true, fullName: true, imageUrl: true }
+        });
+
+        const facultyMap = {};
+        faculty.forEach(f => {
+            facultyMap[f.id] = f;
+        });
+
+        // Format the response
+        const formattedCertificates = certificates.map(cert => {
+            const instructor = facultyMap[cert.course.facultyId];
+            return {
+                id: cert.id,
+                courseId: cert.course.id,
+                courseTitle: cert.course.title,
+                courseThumbnail: cert.course.thumbnail,
+                college: cert.course.college,
+                instructor: instructor?.fullName || 'Unknown Faculty',
+                instructorImage: instructor?.imageUrl,
+                certificateNumber: cert.certificate.certificateNumber,
+                certificateUrl: cert.certificate.certificateUrl,
+                issuedAt: cert.certificate.issueDate,
+                completedAt: cert.completedAt
+            };
+        });
+
+        res.status(200).json({
+            data: formattedCertificates,
+            total: formattedCertificates.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching student certificates:', error);
+        res.status(500).json({
+            message: 'Failed to fetch student certificates',
+            error: error.message
+        });
+    }
+};
+
+export const getArchivedCourses = async (req, res) => {
+    try {
+        const userId = req.auth().userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found in database" });
+        }
+
+        // Get enrollments for archived courses
+        const archivedEnrollments = await prisma.enrollment.findMany({
+            where: {
+                studentId: user.id,
+                course: {
+                    status: 'ARCHIVED'
+                }
+            },
+            select: {
+                enrolledAt: true,
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        thumbnail: true,
+                        college: true,
+                        updatedAt: true,
+                        status: true,
+                        managedBy: {
+                            select: {
+                                fullName: true,
+                                imageUrl: true
+                            }
+                        },
+                        _count: {
+                            select: {
+                                enrollments: true,
+                                modules: true
+                            }
+                        },
+                        modules: {
+                            select: {
+                                _count: {
+                                    select: {
+                                        lessons: true
+                                    }
+                                }
+                            }
+                        },
+                        courseProgress: {
+                            where: { studentId: user.id },
+                            select: {
+                                progressPercentage: true,
+                                lessonsCompleted: true,
+                                quizzesCompleted: true,
+                                lastAccessedAt: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                enrolledAt: 'desc'
+            }
+        });
+
+        // Format the response data
+        const archivedCourses = archivedEnrollments.map(enrollment => {
+            const course = enrollment.course;
+
+            // Calculate total lessons from all modules
+            const totalLessons = course.modules?.reduce((total, module) =>
+                total + (module._count?.lessons || 0), 0) || 0;
+
+            // Get progress data (default to 0 if not exists)
+            const progress = course.courseProgress?.[0] || {
+                progressPercentage: 0,
+                lessonsCompleted: 0,
+                quizzesCompleted: 0,
+                lastAccessedAt: null
+            };
+
+            return {
+                id: course.id,
+                title: course.title,
+                description: course.description,
+                thumbnail: course.thumbnail,
+                college: course.college,
+                updatedAt: course.updatedAt,
+                status: course.status,
+                managedBy: course.managedBy,
+                totalEnrollments: course._count.enrollments,
+                totalModules: course._count.modules,
+                totalLessons,
+                enrolledAt: enrollment.enrolledAt,
+                progress: {
+                    percentage: progress.progressPercentage,
+                    lessonsCompleted: progress.lessonsCompleted,
+                    quizzesCompleted: progress.quizzesCompleted,
+                    lastAccessedAt: progress.lastAccessedAt
+                }
+            };
+        });
+
+        res.status(200).json({
+            data: archivedCourses,
+            total: archivedCourses.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching archived courses:', error);
+        res.status(500).json({
+            message: 'Failed to fetch archived courses',
             error: error.message
         });
     }
