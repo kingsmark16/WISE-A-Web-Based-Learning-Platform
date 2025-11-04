@@ -18,7 +18,8 @@ import SearchResults from "./pages/admin/SearchResults"
 import MainLayout from "./pages/MainLayout"
 import HomePage from "./pages/student/home/HomePage"
 import CoursePage from "./pages/student/home/CoursePage"
-import FacultyHomePage from "./pages/faculty/FacultyHomePage"
+import FacultyDashboard from "./pages/faculty/FacultyDashboard"
+import CourseAnalytics from "./pages/faculty/CourseAnalytics"
 import StudentInfo from "./pages/admin/userManagement/StudentInfo"
 import StudentManagement from "./pages/admin/userManagement/StudentManagement"
 import MyCourses from "./pages/student/MyCourses"
@@ -110,8 +111,9 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          <Route index element={<FacultyHomePage/>}/>
-          <Route path="faculty-homepage" element={<FacultyHomePage/>}/>
+          <Route index element={<FacultyDashboard/>}/>
+          <Route path="faculty-dashboard" element={<FacultyDashboard/>}/>
+          <Route path="courses/:courseId/analytics" element={<CourseAnalytics/>}/>
         </Route>
       </Routes>
       

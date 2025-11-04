@@ -41,7 +41,7 @@ const AuthCallbackPage = () => {
             navigate('/admin/analytics', {replace: true});
             break;
           case 'FACULTY':
-            navigate('/faculty/faculty-homepage', {replace: true});
+            navigate('/faculty/faculty-dashboard', {replace: true});
             break;
           case 'STUDENT':
             navigate('/student/student-homepage', {replace: true});

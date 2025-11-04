@@ -32,7 +32,7 @@ const RedirectIfSignedIn = ({ children }) => {
 
         setTimeout(() => {
           if (role === "FACULTY") {
-            navigate("/faculty/faculty-homepage", { replace: true })
+            navigate("/faculty/faculty-dashboard", { replace: true })
           } else if (role === "STUDENT") {
             navigate("/student/student-homepage", { replace: true })
           } else if (role === "ADMIN") {

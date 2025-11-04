@@ -32,7 +32,7 @@ const menuConfig = {
     { name: 'Achievements', path: '/student/achievements' },
   ],
   FACULTY: [
-    { name: 'Dashboard', path: '/faculty/dashboard', icon: BarChart3 },
+    { name: 'Dashboard', path: '/faculty/faculty-dashboard', icon: BarChart3 },
     { name: 'Create Course', path: '/faculty/create-course', icon: Plus },
     { 
       name: 'My Courses', 
