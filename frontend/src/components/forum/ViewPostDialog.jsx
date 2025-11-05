@@ -59,10 +59,9 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
   // Fetch post with initial replies when dialog opens
   const { data: postData, isLoading } = useGetPostWithReplies(post?.id, {
     enabled: open && !!post?.id,
-    refetchOnMount: false,
+    refetchOnMount: 'stale',
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    staleTime: Infinity,
   });
 
   // Reset state when dialog opens/closes
@@ -210,7 +209,6 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
   if (!post) return null;
 
   const category = categories.find((c) => c.name === post.category);
-  console.log('ViewPostDialog - Category:', post.category, 'Found:', category);
 
   // Check if current user is the author or admin/faculty
   const isAuthor = user?.id && post?.author?.clerkId && user.id === post.author.clerkId;
@@ -560,7 +558,14 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
                     const isReplyAuthor = user?.id === reply.author?.clerkId;
                     
                     return (
-                      <div key={reply.id} className="flex gap-3 p-4 rounded-lg border bg-card">
+                      <div 
+                        key={reply.id} 
+                        className={`flex gap-3 p-4 rounded-lg border ${
+                          isReplyAuthor 
+                            ? 'bg-primary/5 border-primary/20' 
+                            : 'bg-card'
+                        }`}
+                      >
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={reply.author?.imageUrl} />
                           <AvatarFallback>
@@ -570,7 +575,12 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-sm">{reply.author?.fullName || 'Unknown'}</p>
+                              <p className="font-medium text-sm">
+                                {reply.author?.fullName || 'Unknown'}
+                                {isReplyAuthor && (
+                                  <span className="ml-2 text-xs text-primary">(You)</span>
+                                )}
+                              </p>
                               <p className="text-xs text-muted-foreground">
                                 {new Date(reply.createdAt).toLocaleString('en-US', {
                                   month: 'short',
@@ -643,7 +653,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
                 <Button 
                   type="submit" 
                   disabled={createReplyMutation.isPending || isSubmittingReply || !replyContent.trim()}
-                  className="gap-1.5 sm:gap-2 h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm"
+                  className="gap-1.5 sm:gap-2 h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm text-white"
                 >
                   {createReplyMutation.isPending || isSubmittingReply ? (
                     <>
@@ -654,7 +664,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
                   ) : (
                     <>
                       <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                      <span className="hidden sm:inline">Post Reply</span>
+                      <span className="hidden sm:inline">Reply</span>
                       <span className="sm:hidden">Reply</span>
                     </>
                   )}

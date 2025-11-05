@@ -1,12 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom"
 
 const Categories = ({categoryList, loadingCategories, errorCategories}) => {
+  const navigate = useNavigate();
+
+  const handleCollegeClick = (college) => {
+    navigate(`/student/search?college=${encodeURIComponent(college)}`);
+  };
+
   return (
     <Card className="mb-8">
         <CardHeader>
-            <CardTitle className="text-md font-semibold text-primary">Categories</CardTitle>
+            <CardTitle className="text-md font-semibold text-primary">Colleges</CardTitle>
         </CardHeader>
         <CardContent>
             <div className="flex flex-wrap gap-4 justify-baseline">
@@ -15,15 +22,16 @@ const Categories = ({categoryList, loadingCategories, errorCategories}) => {
                     <Skeleton key={idx} className="h-10 w-32 rounded-full" />
                 ))
                 ) : errorCategories ? (
-                    <span className="text-destructive">Error loading categories.</span>
+                    <span className="text-destructive">Error loading colleges.</span>
                 ) : categoryList.length === 0 ? (
-                    <span className="text-muted-foreground">No categories found.</span>
+                    <span className="text-muted-foreground">No colleges found.</span>
                 ) : (
                     categoryList.map((category) => (
                         <Button
                             key={category}
                             variant="outline"
-                            className="rounded-full px-6 py-2 font-medium text-muted-foreground hover:text-primary transition-colors"
+                            onClick={() => handleCollegeClick(category)}
+                            className="rounded-full px-6 py-2 font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                         >
                             {category}
                         </Button>

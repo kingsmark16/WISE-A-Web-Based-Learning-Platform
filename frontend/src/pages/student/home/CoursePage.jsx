@@ -59,18 +59,68 @@ const CoursePage = () => {
     <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
       <Card className="shadow-lg overflow-hidden border-none bg-transparent">
         {isLoading ? (
-          <div>
-            <div className="flex flex-col md:flex-row gap-6 md:gap-8 p-0 w-full">
-              <Skeleton className="h-48 md:h-80 w-full md:w-1/2 rounded-lg flex-shrink-0" />
-              <div className="flex-1 space-y-4 md:space-y-6 p-4 md:p-0">
-                <Skeleton className="h-8 md:h-9 w-2/3" />
-                <Skeleton className="h-4 md:h-5 w-1/3" />
-                <Skeleton className="h-4 md:h-5 w-full" />
-                <Skeleton className="h-4 md:h-5 w-5/6" />
-                <Skeleton className="h-4 md:h-5 w-4/6" />
+          <CardContent className="px-0 w-full overflow-hidden">
+            <div className="flex flex-col gap-6">
+              {/* Thumbnail and Course Info Row */}
+              <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
+                {/* Course Information */}
+                <div className="flex-1 space-y-6">
+                  {/* Title and Badges */}
+                  <div>
+                    <Skeleton className="h-8 sm:h-9 w-2/3 mb-3 sm:mb-4" />
+                    
+                    {/* Thumbnail skeleton below title on small and medium screens */}
+                    <div className="block lg:hidden mb-4 w-full">
+                      <Skeleton className="h-48 w-full sm:max-w-64 md:max-w-80 rounded-lg" />
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Skeleton className="h-7 w-32 rounded-full" />
+                    </div>
+                    
+                    {/* Enroll Button Skeleton */}
+                    <Skeleton className="h-10 w-32 rounded-md" />
+                  </div>
+
+                  {/* Instructor and Last Updated */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {/* Instructor Skeleton */}
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </div>
+
+                    {/* Last Updated Skeleton */}
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-4 w-28" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thumbnail Skeleton - hidden on small/medium, visible on large */}
+                <div className="hidden lg:block flex-shrink-0">
+                  <Skeleton className="h-80 max-w-96 rounded-lg" />
+                </div>
+              </div>
+
+              {/* Description Skeleton */}
+              <div className="space-y-3">
+                <Skeleton className="h-6 w-32" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
               </div>
             </div>
-          </div>
+          </CardContent>
         ) : error ? (
           <div className="flex items-center justify-center min-h-[60vh] p-4">
             <div className="text-center">

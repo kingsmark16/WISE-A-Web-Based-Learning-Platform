@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MyCourseGridSkeleton } from '@/components/skeletons';
 import { BookOpen, Search, AlertCircle } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -79,7 +80,6 @@ export const MyCourses = () => {
         {/* Header skeleton */}
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-32 mb-2" />
-          <Skeleton className="h-4 w-48" />
         </div>
         
         {/* Filters skeleton */}
@@ -89,12 +89,8 @@ export const MyCourses = () => {
           <Skeleton className="h-10 w-32" />
         </div>
 
-        {/* Grid skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-64" />
-          ))}
-        </div>
+        {/* Grid skeleton - using new MyCourseGridSkeleton */}
+        <MyCourseGridSkeleton count={6} />
       </div>
     );
   }

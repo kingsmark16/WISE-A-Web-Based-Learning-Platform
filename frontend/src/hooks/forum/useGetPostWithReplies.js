@@ -11,6 +11,6 @@ export const useGetPostWithReplies = (postId, options = {}) => {
       return response.data;
     },
     enabled: !!postId && (options.enabled ?? true),
-    staleTime: 10000, // 10 seconds
+    staleTime: 10000,
   });
 };
