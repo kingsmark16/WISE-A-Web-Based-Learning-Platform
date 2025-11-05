@@ -15,10 +15,17 @@ import Analytics from "./pages/admin/analytics/Analytics"
 import FacultyManagement from "./pages/admin/userManagement/FacultyManagement"
 import FacultyInfo from "./pages/admin/userManagement/FacultyInfo"
 import SearchResults from "./pages/admin/SearchResults"
+import FacultySearchResults from "./pages/faculty/SearchResults"
 import MainLayout from "./pages/MainLayout"
 import HomePage from "./pages/student/home/HomePage"
 import CoursePage from "./pages/student/home/CoursePage"
-import FacultyHomePage from "./pages/faculty/FacultyHomePage"
+import FacultyDashboard from "./pages/faculty/FacultyDashboard"
+import CourseAnalytics from "./pages/faculty/CourseAnalytics"
+import FacultyCreateCourse from "./pages/faculty/CreateCourse"
+import ManageCourse from "./pages/faculty/ManageCourse"
+import ActiveCourses from "./pages/faculty/ActiveCourses"
+import DraftCourses from "./pages/faculty/DraftCourses"
+import ArchivedCourses from "./pages/faculty/ArchivedCourses"
 import StudentInfo from "./pages/admin/userManagement/StudentInfo"
 import StudentManagement from "./pages/admin/userManagement/StudentManagement"
 import MyCourses from "./pages/student/MyCourses"
@@ -110,8 +117,17 @@ const App = () => {
             </ProtectedRoute>
           }
         >
-          <Route index element={<FacultyHomePage/>}/>
-          <Route path="faculty-homepage" element={<FacultyHomePage/>}/>
+          <Route index element={<FacultyDashboard/>}/>
+          <Route path="faculty-dashboard" element={<FacultyDashboard/>}/>
+          <Route path="search" element={<FacultySearchResults/>}/>
+          <Route path="courses/active" element={<ActiveCourses/>}/>
+          <Route path="courses/draft" element={<DraftCourses/>}/>
+          <Route path="courses/archived" element={<ArchivedCourses/>}/>
+          <Route path="courses/view/:id" element={<CourseDetail/>}/>
+          <Route path="courses/edit/:id" element={<EditCourse/>}/>
+          <Route path="create-course" element={<FacultyCreateCourse/>}/>
+          <Route path="courses/:courseId/manage" element={<ManageCourse/>}/>
+          <Route path="courses/:courseId/analytics" element={<CourseAnalytics/>}/>
         </Route>
       </Routes>
       

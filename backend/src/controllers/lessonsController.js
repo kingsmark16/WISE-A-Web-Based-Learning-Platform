@@ -57,7 +57,11 @@ export const reorderLessons = async (req, res) => {
     });
     if (!user) return res.status(403).json({ message: "Not authorized" });
 
-    if (user.role !== 'ADMIN' && course.facultyId !== user.id) {
+    // Check if user is course creator, assigned faculty, or admin
+    const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                        (!course.facultyId && user.id === course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized to reorder lessons for this module" });
     }
 

@@ -28,8 +28,12 @@ export const createModule = async (req, res) => {
             select: { id: true, role: true }
         });
 
-        // Check if user is course creator or faculty
-        if (user.id !== course.facultyId && user.role !== 'ADMIN' ) {
+        // Authorization: If faculty is assigned, only they can manage
+        // If no faculty is assigned, only creator can manage
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to create modules for this course" });
         }
 
@@ -232,8 +236,12 @@ export const updateModule = async (req, res) => {
             select: { id: true, role: true }
         });
 
-        if (user.role !== 'ADMIN' && 
-            existingModule.course.facultyId !== user.id) {
+        // Authorization: If faculty is assigned, only they can manage
+        // If no faculty is assigned, only creator can manage
+        const isAuthorized = (existingModule.course.facultyId && user.id === existingModule.course.facultyId) || 
+                            (!existingModule.course.facultyId && user.id === existingModule.course.createdById);
+        
+        if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to update this module" });
         }
 
@@ -295,8 +303,12 @@ export const deleteModule = async (req, res) => {
             select: { id: true, role: true }
         });
 
-        if (user.role !== 'ADMIN' && 
-            existingModule.course.facultyId !== user.id) {
+        // Authorization: If faculty is assigned, only they can manage
+        // If no faculty is assigned, only creator can manage
+        const isAuthorized = (existingModule.course.facultyId && user.id === existingModule.course.facultyId) || 
+                            (!existingModule.course.facultyId && user.id === existingModule.course.createdById);
+        
+        if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to delete this module" });
         }
 
@@ -397,7 +409,11 @@ export const reorderModules = async (req, res) => {
       select: { id: true, role: true }
     });
 
-    if (user.role !== 'ADMIN' && course.facultyId !== user.id) {
+    // Check if user is course creator, assigned faculty, or admin
+    const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                        (!course.facultyId && user.id === course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized to reorder modules for this course" });
     }
 

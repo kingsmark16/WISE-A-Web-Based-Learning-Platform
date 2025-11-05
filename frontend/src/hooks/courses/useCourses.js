@@ -44,7 +44,18 @@ export const useCreateCourse = () => {
                 exact: false
             });
             
-            // Pre-fetch the first page with default filters
+            // Clear draft courses cache completely so fresh data is fetched
+            queryClient.removeQueries({
+                queryKey: ['draftCourses']
+            });
+            
+            // Clear faculty courses cache (all faculty courses)
+            queryClient.removeQueries({
+                queryKey: ['facultyCourses'],
+                exact: false
+            });
+            
+            // Pre-fetch the first page with default filters for admin courses
             await queryClient.prefetchQuery({
                 queryKey: ['courses', 1, 12, '', 'all', 'all'],
                 queryFn: async () => {

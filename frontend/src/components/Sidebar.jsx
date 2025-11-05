@@ -32,18 +32,17 @@ const menuConfig = {
     { name: 'Achievements', path: '/student/achievements' },
   ],
   FACULTY: [
-    { name: 'Dashboard', path: '/faculty/dashboard', icon: BarChart3 },
+    { name: 'Dashboard', path: '/faculty/faculty-dashboard', icon: BarChart3 },
     { name: 'Create Course', path: '/faculty/create-course', icon: Plus },
     { 
       name: 'My Courses', 
       icon: Library,
       submenu: [
-        { name: 'Active Courses', path: '/faculty/faculty-homepage' },
-        { name: 'Draft Courses', path: '/faculty/draft-courses'},
-        { name: 'Archived Courses', path: '/faculty/archived-courses'}
+        { name: 'Active Courses', path: '/faculty/courses/active'},
+        { name: 'Draft Courses', path: '/faculty/courses/draft'},
+        { name: 'Archived Courses', path: '/faculty/courses/archived'}
       ]
     },
-    { name: 'Student Management', path: '/faculty/student-management', icon: Users },
   ],
 };
 
