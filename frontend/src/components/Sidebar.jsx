@@ -38,12 +38,11 @@ const menuConfig = {
       name: 'My Courses', 
       icon: Library,
       submenu: [
-        { name: 'Active Courses', path: '/faculty/faculty-homepage' },
-        { name: 'Draft Courses', path: '/faculty/draft-courses'},
-        { name: 'Archived Courses', path: '/faculty/archived-courses'}
+        { name: 'Active Courses', path: '/faculty/courses/active'},
+        { name: 'Draft Courses', path: '/faculty/courses/draft'},
+        { name: 'Archived Courses', path: '/faculty/courses/archived'}
       ]
     },
-    { name: 'Student Management', path: '/faculty/student-management', icon: Users },
   ],
 };
 

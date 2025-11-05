@@ -7,7 +7,6 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 // Components
 import SortableModule from "../modules/SortableModule";
 import { AddModuleDialog, EditModuleDialog, DeleteModuleDialog } from "../modules/ModuleDialogs";
-import ModuleStats from "../modules/ModuleStats";
 
 // Hooks
 import { useModuleManagement } from "../../hooks/useModuleManagement";
@@ -68,9 +67,6 @@ const ModuleContent = () => {
           disabled={isCreating}
         />
       </div>
-
-      {/* Module Statistics */}
-      <ModuleStats modules={localModules} />
 
       {/* Edit Module Dialog */}
       <EditModuleDialog

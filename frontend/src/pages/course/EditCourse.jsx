@@ -28,21 +28,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useUser } from "@clerk/clerk-react";
 
 const categories = [
-  "Technology",
-  "Business",
-  "Design",
-  "Health",
-  "Education",
-  "Science",
-  "Engineering",
-  "Mathematics",
-  "Humanities",
-  "Management",
-  "Environment",
-  "Law",
-  "Research",
-  "Communication",
-  "Culture"
+  "College of Education",
+  "College of Business and Management",
+  "College of Engineering and Computational Sciences",
+  "College of Arts and Humanities",
+  "College of Science",
+  "College of Sustainable Communities and Ecosystems",
+  "College of Public Safety and Community Health",
+  "College of Fisheries and Marine Science",
+  "College of Agribusiness and Community Development",
+  "College of Hospitality and Tourism Management",
+  "College of Environmental Science and Design"
 ];
 
 const EditCourse = () => {
@@ -54,6 +50,10 @@ const EditCourse = () => {
     const {mutate: deleteImage, isPending: isDeleting} = useDeleteImage();
     const { data: facultyList = [], isLoading: facultyLoading, error: facultyError } = useGetFacultyId();
     const { user } = useUser();
+    
+    // Get user role from Clerk metadata or localStorage
+    const userRole = user?.publicMetadata?.role || localStorage.getItem('userRole') || 'STUDENT';
+    const isFaculty = userRole === 'FACULTY';
 
     const [formData, setFormData] = useState({
         title: "",
@@ -198,7 +198,11 @@ const EditCourse = () => {
 
         updateCourse({id, courseData: updateData}, {
             onSuccess: () => {
-                navigate('/admin/courses');
+                // Navigate to course details page based on user role
+                const detailsRoute = isFaculty 
+                    ? `/faculty/courses/${id}/manage` 
+                    : `/admin/courses/view/${id}`;
+                navigate(detailsRoute);
             }
         });
     };
@@ -278,23 +282,23 @@ const EditCourse = () => {
     return (
         <div className="space-y-4 sm:space-y-6 px-0">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-2">
-                <button 
-                    onClick={() => navigate('/admin/courses')}
-                    className="p-2 text-foreground/60 hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                >
-                    <ArrowLeft className="h-5 w-5" />
-                </button>
-                <h1 className="text-xl font-bold text-foreground">Edit Course</h1>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        Edit Course
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        Update course information and settings
+                    </p>
+                </div>
             </div>
-            <p className="text-foreground/80">Update course information and settings</p>
 
             {/* Form Container */}
-            <div className="space-y-4 sm:space-y-6 px-0 sm:px-6">
-                <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="p-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Left Column */}
-                        <div className="space-y-6">
+                        <div className="space-y-6 lg:col-span-2">
                             {/* Course Title */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-semibold text-foreground">
@@ -343,16 +347,15 @@ const EditCourse = () => {
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        {/* Right Column */}
-                        <div className="space-y-6">
-                            {/* Thumbnail Upload */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    Course Thumbnail
-                                </label>
-                                <div className="relative">
-                                    {!thumbnailPreview ? (
+                    {/* Thumbnail Upload - Full Width */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground">
+                            Course Thumbnail <span className="italic font-light">(Optional)</span>
+                        </label>
+                        <div className="w-64">
+                            {!thumbnailPreview ? (
                                         <label 
                                             className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer bg-accent hover:bg-accent/70 transition-colors ${
                                                 isDragOver ? "border-primary bg-primary/5" : "border-border"
@@ -425,179 +428,179 @@ const EditCourse = () => {
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                                {isUploading && (
-                                    <div className="flex items-center gap-2 text-primary">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                        <span className="text-sm">Uploading image...</span>
-                                    </div>
-                                )}
-                                {isDeleting && (
-                                    <div className="flex items-center gap-2 text-destructive">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive"></div>
-                                        <span className="text-sm">Removing image...</span>
-                                    </div>
-                                )}
-                                {uploadError && (
-                                    <p className="text-destructive text-sm">Upload failed: {uploadError.message}</p>
-                                )}
+                            )}
+                        </div>
+                        {isUploading && (
+                            <div className="flex items-center gap-2 text-primary">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                <span className="text-sm">Uploading image...</span>
+                            </div>
+                        )}
+                        {isDeleting && (
+                            <div className="flex items-center gap-2 text-destructive">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive"></div>
+                                <span className="text-sm">Removing image...</span>
+                            </div>
+                        )}
+                        {uploadError && (
+                            <p className="text-destructive text-sm">Upload failed: {uploadError.message}</p>
+                        )}
+                    </div>
+                    {/* Instructor Selection - Only for Admins */}
+                    {!isFaculty && (
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-foreground">
+                                Course Instructor
+                            </label>
+                            
+                            {/* Self-Assign Checkbox */}
+                            <div className="flex items-center space-x-2 mb-3">
+                                <Checkbox
+                                    id="assignSelf"
+                                    checked={formData.assignSelfAsInstructor}
+                                    onCheckedChange={(checked) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            assignSelfAsInstructor: checked,
+                                            facultyId: checked ? "" : prev.facultyId
+                                        }));
+                                    }}
+                                    className="border-2"
+                                />
+                                <label htmlFor="assignSelf" className="text-sm text-foreground cursor-pointer">
+                                    Assign myself as instructor
+                                </label>
                             </div>
 
-                            {/* Instructor Selection */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    Course Instructor
-                                </label>
-                                
-                                {/* Self-Assign Checkbox */}
-                                <div className="flex items-center space-x-2 mb-3">
-                                    <Checkbox
-                                        id="assignSelf"
-                                        checked={formData.assignSelfAsInstructor}
-                                        onCheckedChange={(checked) => {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                assignSelfAsInstructor: checked,
-                                                facultyId: checked ? "" : prev.facultyId
-                                            }));
-                                        }}
-                                        className="border-2"
-                                    />
-                                    <label htmlFor="assignSelf" className="text-sm text-foreground cursor-pointer">
-                                        Assign myself as instructor
-                                    </label>
-                                </div>
-
-                                <div className="relative">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1 relative">
-                                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/60" />
-                                            <Input
-                                                className="pl-10 pr-4 py-3 border border-border rounded-lg bg-accent text-foreground focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200"
-                                                value={
-                                                    formData.assignSelfAsInstructor 
-                                                        ? user?.fullName || "You (Admin)" 
-                                                        : (filteredFaculty.find(f => f.id === formData.facultyId)?.fullName || data?.course?.managedBy?.fullName || "")
-                                                }
-                                                readOnly
-                                                placeholder="No instructor assigned"
-                                                disabled={formData.assignSelfAsInstructor}
-                                            />
-                                        </div>
-                                        
-                                        <Dialog open={showInstructorList} onOpenChange={setShowInstructorList}>
-                                            <DialogTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    className="flex items-center gap-2"
-                                                    disabled={formData.assignSelfAsInstructor}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                    {formData.facultyId ? "Change" : "Assign"}
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent className="max-w-md">
-                                                <DialogHeader>
-                                                    <DialogTitle>
-                                                        {formData.facultyId ? "Change Instructor" : "Assign Instructor"}
-                                                    </DialogTitle>
-                                                    <DialogDescription>
-                                                        Select an instructor to assign to this course
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                
-
-                                                <div className="space-y-4">
-                                                    <div className="relative">
-                                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search instructors..."
-                                                            value={facultySearch}
-                                                            onChange={e => setFacultySearch(e.target.value)}
-                                                            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none bg-background text-foreground"
-                                                        />
-                                                    </div>
-
-                                                    <div className="max-h-64 overflow-y-auto space-y-1">
-                                                        {facultyLoading ? (
-                                                            <div className="space-y-2 py-2">
-                                                                {[...Array(5)].map((_, index) => (
-                                                                    <div key={index} className="flex items-center gap-3 px-3 py-3">
-                                                                        <Skeleton className="h-10 w-10 rounded-full" />
-                                                                        <div className="flex-1 space-y-2">
-                                                                            <Skeleton className="h-4 w-[60%]" />
-                                                                            <Skeleton className="h-3 w-[40%]" />
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-
-                                                            </div>
-                                                        ) : facultyError ? (
-                                                            <div className="text-destructive text-center py-8">
-                                                                <p>Error loading faculty</p>
-                                                            </div>
-                                                        ) : filteredFaculty.length === 0 ? (
-                                                            <div className="text-muted-foreground text-center py-8">
-                                                                <p>No matching instructors found</p>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                {formData.facultyId && (
-                                                                    <div
-                                                                        className="cursor-pointer px-3 py-3 rounded-lg hover:bg-accent transition-colors border"
-                                                                        onClick={() => handleInstructorSelect("")}
-                                                                    >
-                                                                        <div className="font-medium text-red-600">Remove current instructor</div>
-                                                                    </div>
-                                                                )}
-                                                                {filteredFaculty.map(fac => (
-                                                                    <div
-                                                                        key={fac.id}
-                                                                        className={`cursor-pointer px-3 py-3 rounded-lg hover:bg-accent transition-colors ${
-                                                                            formData.facultyId === fac.id ? "bg-accent border border-primary" : ""
-                                                                        }`}
-                                                                        onClick={() => handleInstructorSelect(fac.id)}
-                                                                    >
-                                                                        <div className="font-medium text-foreground">{fac.fullName}</div>
-                                                                        {formData.facultyId === fac.id && (
-                                                                            <div className="text-xs text-primary mt-1">Currently assigned</div>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
+                            <div className="relative">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 relative">
+                                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                                        <Input
+                                            className="pl-10 pr-4 py-3 border border-border rounded-lg bg-accent text-foreground focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200"
+                                            value={
+                                                formData.assignSelfAsInstructor 
+                                                    ? user?.fullName || "You (Admin)" 
+                                                    : (filteredFaculty.find(f => f.id === formData.facultyId)?.fullName || data?.course?.managedBy?.fullName || "")
+                                            }
+                                            readOnly
+                                            placeholder="No instructor assigned"
+                                            disabled={formData.assignSelfAsInstructor}
+                                        />
                                     </div>
+                                    
+                                    <Dialog open={showInstructorList} onOpenChange={setShowInstructorList}>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                className="flex items-center gap-2"
+                                                disabled={formData.assignSelfAsInstructor}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                                {formData.facultyId ? "Change" : "Assign"}
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>
+                                                    {formData.facultyId ? "Change Instructor" : "Assign Instructor"}
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    Select an instructor to assign to this course
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            
+
+                                            <div className="space-y-4">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search instructors..."
+                                                        value={facultySearch}
+                                                        onChange={e => setFacultySearch(e.target.value)}
+                                                        className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none bg-background text-foreground"
+                                                    />
+                                                </div>
+
+                                                <div className="max-h-64 overflow-y-auto space-y-1">
+                                                    {facultyLoading ? (
+                                                        <div className="space-y-2 py-2">
+                                                            {[...Array(5)].map((_, index) => (
+                                                                <div key={index} className="flex items-center gap-3 px-3 py-3">
+                                                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                                                    <div className="flex-1 space-y-2">
+                                                                        <Skeleton className="h-4 w-[60%]" />
+                                                                        <Skeleton className="h-3 w-[40%]" />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+
+                                                        </div>
+                                                    ) : facultyError ? (
+                                                        <div className="text-destructive text-center py-8">
+                                                            <p>Error loading faculty</p>
+                                                        </div>
+                                                    ) : filteredFaculty.length === 0 ? (
+                                                        <div className="text-muted-foreground text-center py-8">
+                                                            <p>No matching instructors found</p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            {formData.facultyId && (
+                                                                <div
+                                                                    className="cursor-pointer px-3 py-3 rounded-lg hover:bg-accent transition-colors border"
+                                                                    onClick={() => handleInstructorSelect("")}
+                                                                >
+                                                                    <div className="font-medium text-red-600">Remove current instructor</div>
+                                                                </div>
+                                                            )}
+                                                            {filteredFaculty.map(fac => (
+                                                                <div
+                                                                    key={fac.id}
+                                                                    className={`cursor-pointer px-3 py-3 rounded-lg hover:bg-accent transition-colors ${
+                                                                        formData.facultyId === fac.id ? "bg-accent border border-primary" : ""
+                                                                    }`}
+                                                                    onClick={() => handleInstructorSelect(fac.id)}
+                                                                >
+                                                                    <div className="font-medium text-foreground">{fac.fullName}</div>
+                                                                    {formData.facultyId === fac.id && (
+                                                                        <div className="text-xs text-primary mt-1">Currently assigned</div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Form Actions */}
-                    <div className="flex items-center justify-end gap-4 border-t border-border mt-8">
+                    <div className="mt-8 flex gap-4 justify-end">
                         <Button
-                            type="button"
                             variant="outline"
-                            onClick={() => navigate('/admin/courses')}
+                            onClick={() => navigate(-1)}
+                            type="button"
                         >
                             Cancel
                         </Button>
                         <Button
-                            type="submit"
                             disabled={isUpdating || isUploading || isDeleting}
+                            className="gap-2"
                         >
                             {isUpdating ? (
                                 <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background"></div>
                                     Updating...
                                 </>
                             ) : (
                                 <>
+                                    <Check className="w-4 h-4" />
                                     Update Course
                                 </>
                             )}

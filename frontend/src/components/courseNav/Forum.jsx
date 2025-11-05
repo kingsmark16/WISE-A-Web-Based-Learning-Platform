@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { MessageSquare, Plus, Search, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'react-toastify';
 import { Card } from '@/components/ui/card';
@@ -264,10 +265,86 @@ const Forum = ({ courseId }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading forum...</p>
+      <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+        {/* Header Skeleton */}
+        <div className="flex items-start sm:items-center justify-between gap-2">
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1">
+            <Skeleton className="h-5 w-5 sm:h-6 sm:w-6 rounded flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 sm:h-7 w-32 sm:w-40" />
+              <Skeleton className="h-4 w-48 sm:w-64 hidden sm:block" />
+            </div>
+          </div>
+        </div>
+
+        {/* Analytics Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="p-3 sm:p-4 border rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-4 sm:h-5 sm:w-5 rounded" />
+                <Skeleton className="h-3 w-20 sm:w-24" />
+              </div>
+              <Skeleton className="h-6 sm:h-8 w-12" />
+            </div>
+          ))}
+        </div>
+
+        {/* Search and Create Button Skeleton */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <Skeleton className="flex-1 h-9 sm:h-10" />
+          <Skeleton className="h-9 sm:h-10 w-full sm:w-32" />
+        </div>
+
+        {/* Categories Skeleton */}
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-8 w-20 sm:w-24 rounded-full" />
+          ))}
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="border-b">
+          <div className="flex gap-4 sm:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-10 w-16 sm:w-20" />
+            ))}
+          </div>
+        </div>
+
+        {/* Posts List Skeleton */}
+        <div className="space-y-3 sm:space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="p-3 sm:p-4 border rounded-lg space-y-3">
+              {/* Post Header */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <Skeleton className="h-4 w-32 sm:w-40" />
+                    <Skeleton className="h-3 w-20 sm:w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+
+              {/* Post Title */}
+              <Skeleton className="h-5 sm:h-6 w-3/4" />
+
+              {/* Post Content */}
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-5/6" />
+              </div>
+
+              {/* Post Footer */}
+              <div className="flex items-center gap-3 sm:gap-4 pt-2 border-t">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

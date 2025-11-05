@@ -81,12 +81,32 @@ export const getFacultyStats = async (req, res) => {
 export const getFacultyCourses = async (req, res) => {
   try {
     const { facultyId } = req.params;
+    
+    let targetFacultyId = facultyId;
+    
+    // If no facultyId parameter, use authenticated user's ID
+    if (!targetFacultyId) {
+      const auth = req.auth();
+      const userId = auth.userId;
+
+      const user = await prisma.user.findUnique({
+        where: { clerkId: userId },
+        select: { id: true }
+      });
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      targetFacultyId = user.id;
+    }
 
     const courses = await prisma.course.findMany({
-      where: { facultyId },
+      where: { facultyId: targetFacultyId },
       select: {
         id: true,
         title: true,
+        description: true,
         thumbnail: true,
         updatedAt: true,
         college: true,
@@ -104,20 +124,172 @@ export const getFacultyCourses = async (req, res) => {
     const data = courses.map(c => ({
       id: c.id,
       title: c.title,
+      description: c.description,
       thumbnail: c.thumbnail,
       updatedAt: c.updatedAt,
-      category: c.college,
+      college: c.college,
       status: c.status,
       moduleCount: c._count.modules,
       enrollmentCount: c._count.enrollments
     }));
 
-    return res.json({ facultyId, count: data.length, courses: data });
+    return res.json({ facultyId: targetFacultyId, count: data.length, courses: data });
   } catch (err) {
     console.error('getFacultyCourses error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const getDraftCourses = async (req, res) => {
+  try {
+    const auth = req.auth();
+    const userId = auth.userId;
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const draftCourses = await prisma.course.findMany({
+      where: { 
+        facultyId: user.id,
+        status: 'DRAFT'
+      },
+      select: {
+        id: true,
+        title: true,
+        thumbnail: true,
+        updatedAt: true,
+        createdAt: true,
+        college: true,
+        description: true,
+        _count: {
+          select: {
+            modules: true,
+            enrollments: true
+          }
+        }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const data = draftCourses.map(c => ({
+      id: c.id,
+      title: c.title,
+      thumbnail: c.thumbnail,
+      updatedAt: c.updatedAt,
+      createdAt: c.createdAt,
+      college: c.college,
+      description: c.description,
+      moduleCount: c._count.modules,
+      enrollmentCount: c._count.enrollments
+    }));
+
+    return res.json({ count: data.length, courses: data });
+  } catch (err) {
+    console.error('getDraftCourses error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const searchFacultyCourses = async (req, res) => {
+  try {
+    const auth = req.auth();
+    const userId = auth.userId;
+
+    // Get the authenticated faculty user
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const query = req.query.q || "";
+    const limit = parseInt(req.query.limit) || 10;
+
+    if (!query || query.trim() === "") {
+      return res.status(200).json({
+        courses: [],
+        totalResults: 0
+      });
+    }
+
+    // Search only within faculty's own courses
+    const courses = await prisma.course.findMany({
+      where: {
+        facultyId: user.id, // Only search faculty's own courses
+        OR: [
+          {
+            title: {
+              contains: query,
+              mode: "insensitive"
+            }
+          },
+          {
+            description: {
+              contains: query,
+              mode: "insensitive"
+            }
+          },
+          {
+            college: {
+              contains: query,
+              mode: "insensitive"
+            }
+          },
+          {
+            code: {
+              contains: query,
+              mode: "insensitive"
+            }
+          }
+        ]
+      },
+      select: {
+        id: true,
+        title: true,
+        thumbnail: true,
+        college: true,
+        status: true,
+        code: true,
+        _count: {
+          select: {
+            modules: true,
+            enrollments: true
+          }
+        }
+      },
+      take: limit,
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    });
+
+    const totalResults = courses.length;
+
+    res.status(200).json({
+      courses: courses.map(c => ({
+        ...c,
+        type: 'course',
+        moduleCount: c._count.modules,
+        enrollmentCount: c._count.enrollments
+      })),
+      totalResults,
+      query
+    });
+  } catch (err) {
+    console.error('searchFacultyCourses error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export const getTotalEnrolled = async (req, res) => {
   try {
     const { facultyId } = req.params;
@@ -698,6 +870,232 @@ export const getTopCoursesByEngagement = async (req, res) => {
     });
   } catch (err) {
     console.error('getTopCoursesByEngagement error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Get all enrolled students in a specific course for faculty
+ * Faculty can only view students in their own courses
+ */
+export const getFacultyCourseStudents = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.auth().userId;
+
+    if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+    if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+    // Get current user from database
+    const currentUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true }
+    });
+
+    if (!currentUser) return res.status(404).json({ message: "User not found in database" });
+
+    // Check if current user is the instructor/creator of this course
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { createdById: true, facultyId: true }
+    });
+
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    // Authorization: If faculty is assigned, only they can access
+    // If no faculty is assigned, only creator can access
+    const isAuthorized = (course.facultyId && currentUser.id === course.facultyId) || 
+                        (!course.facultyId && currentUser.id === course.createdById);
+    
+    if (!isAuthorized) {
+      return res.status(403).json({ message: "You are not the instructor of this course" });
+    }
+
+    // Get all enrolled students with their progress
+    const enrolledStudents = await prisma.enrollment.findMany({
+      where: { courseId },
+      select: {
+        student: {
+          select: {
+            id: true,
+            fullName: true,
+            imageUrl: true,
+            emailAddress: true,
+            lastActiveAt: true
+          }
+        },
+        enrolledAt: true
+      },
+      orderBy: {
+        student: {
+          fullName: 'asc'
+        }
+      }
+    });
+
+    // Get progress data separately for all students in this course
+    const progressData = await prisma.courseProgress.findMany({
+      where: { courseId },
+      select: {
+        studentId: true,
+        progressPercentage: true,
+        lessonsCompleted: true,
+        quizzesCompleted: true,
+        lastAccessedAt: true
+      }
+    });
+
+    // Create a map of progress data for quick lookup
+    const progressMap = {};
+    progressData.forEach(p => {
+      progressMap[p.studentId] = p;
+    });
+
+    // Format the response data
+    const students = enrolledStudents.map(enrollment => {
+      const student = enrollment.student;
+      const progress = progressMap[student.id] || {
+        progressPercentage: 0,
+        lessonsCompleted: 0,
+        quizzesCompleted: 0,
+        lastAccessedAt: null
+      };
+
+      return {
+        id: student.id,
+        fullName: student.fullName,
+        imageUrl: student.imageUrl,
+        emailAddress: student.emailAddress,
+        progress: {
+          percentage: progress.progressPercentage,
+          lessonsCompleted: progress.lessonsCompleted,
+          quizzesCompleted: progress.quizzesCompleted
+        },
+        enrolledAt: enrollment.enrolledAt,
+        lastAccessedAt: progress.lastAccessedAt || student.lastActiveAt
+      };
+    });
+
+    return res.json({ data: students });
+  } catch (err) {
+    console.error('getFacultyCourseStudents error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getStudentQuizAttempts = async (req, res) => {
+  try {
+    const { courseId, studentId } = req.params;
+    const userId = req.auth().userId;
+
+    if (!courseId || !studentId) {
+      return res.status(400).json({ message: "Course ID and Student ID are required" });
+    }
+
+    // Get current user from database
+    const currentUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true }
+    });
+
+    if (!currentUser) return res.status(404).json({ message: "User not found in database" });
+
+    // Check if current user is the instructor/faculty of this course
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { createdById: true, facultyId: true }
+    });
+
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    // Authorization: If faculty is assigned, only they can view
+    // If no faculty is assigned, only creator can view
+    const isAuthorized = (course.facultyId && currentUser.id === course.facultyId) || 
+                        (!course.facultyId && currentUser.id === course.createdById);
+    
+    if (!isAuthorized) {
+      return res.status(403).json({ message: "You are not authorized to view this student's quiz results" });
+    }
+
+    // Verify student is enrolled in the course
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        courseId,
+        studentId
+      },
+      select: {
+        student: {
+          select: {
+            fullName: true
+          }
+        }
+      }
+    });
+
+    if (!enrollment) {
+      return res.status(404).json({ message: "Student is not enrolled in this course" });
+    }
+
+    // Get all quiz submissions for this student in this course
+    const quizSubmissions = await prisma.quizSubmission.findMany({
+      where: {
+        studentId,
+        quiz: {
+          module: {
+            courseId
+          }
+        }
+      },
+      select: {
+        id: true,
+        score: true,
+        startedAt: true,
+        endedAt: true,
+        quiz: {
+          select: {
+            id: true,
+            title: true,
+            _count: {
+              select: { questions: true }
+            },
+            module: {
+              select: {
+                id: true,
+                title: true,
+                position: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { quiz: { module: { position: 'asc' } } },
+        { quiz: { id: 'asc' } },
+        { startedAt: 'asc' }
+      ]
+    });
+
+    // Format the response
+    const quizAttempts = quizSubmissions.map((submission, index) => ({
+      id: submission.id,
+      quizTitle: submission.quiz.title,
+      moduleName: submission.quiz.module.title,
+      modulePosition: submission.quiz.module.position,
+      moduleId: submission.quiz.module.id,
+      quizId: submission.quiz.id,
+      score: submission.score,
+      totalItems: submission.quiz._count.questions,
+      submittedAt: submission.endedAt || submission.startedAt,
+      status: submission.endedAt ? 'completed' : 'in-progress',
+      attemptNumber: index + 1
+    }));
+
+    return res.json({
+      studentName: enrollment.student.fullName,
+      quizAttempts
+    });
+  } catch (err) {
+    console.error('getStudentQuizAttempts error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

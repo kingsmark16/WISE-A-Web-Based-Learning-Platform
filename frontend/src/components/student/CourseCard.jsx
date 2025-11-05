@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User } from 'lucide-react';
+import { User, BookOpen } from 'lucide-react';
 
 /**
  * CourseCard Component - Display individual course with progress
@@ -39,7 +39,7 @@ export const CourseCard = ({ course }) => {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-4xl text-slate-400">🎓</span>
+              <BookOpen className="w-12 h-12 text-slate-400" />
             </div>
           )}
         </div>

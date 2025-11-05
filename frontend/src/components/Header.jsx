@@ -5,6 +5,7 @@ import { Search, X, Menu, BookOpen, Users, GraduationCap, Loader2 } from "lucide
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAdminSearch } from "@/hooks/useAdminSearch"
+import { useFacultySearch } from "@/hooks/faculty/useFacultySearch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "./ThemeToggle"
@@ -19,8 +20,9 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false)
   const searchRef = useRef(null)
 
-  // Check if user is admin
+  // Check if user is admin or faculty
   const isAdmin = user?.publicMetadata?.role === "ADMIN"
+  const isFaculty = user?.publicMetadata?.role === "FACULTY"
 
   // Detect if any video player modal is open
   useEffect(() => {
@@ -49,10 +51,18 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Fetch suggestions
-  const { data: suggestions, isLoading: isSuggestionsLoading } = useAdminSearch(debouncedQuery, {
+  // Fetch suggestions based on role
+  const { data: adminSuggestions, isLoading: isAdminLoading } = useAdminSearch(debouncedQuery, {
     enabled: isAdmin && debouncedQuery.length > 0
   })
+
+  const { data: facultySuggestions, isLoading: isFacultyLoading } = useFacultySearch(debouncedQuery, {
+    enabled: isFaculty && debouncedQuery.length > 0
+  })
+
+  // Select appropriate suggestions based on role
+  const suggestions = isAdmin ? adminSuggestions : facultySuggestions
+  const isSuggestionsLoading = isAdmin ? isAdminLoading : isFacultyLoading
 
   // Show suggestions when there's a query and data
   useEffect(() => {
@@ -80,12 +90,14 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     e.stopPropagation() // Prevent event bubbling
     if (!searchQuery.trim()) return
     
-    // Always navigate to search results page, never auto-select
+    // Navigate to appropriate search results page based on role
     if (isAdmin) {
       navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`)
-      setShowSuggestions(false)
-      setIsSearchOpen(false)
+    } else if (isFaculty) {
+      navigate(`/faculty/search?q=${encodeURIComponent(searchQuery)}`)
     }
+    setShowSuggestions(false)
+    setIsSearchOpen(false)
   }
 
   const handleSuggestionClick = (item) => {
@@ -95,10 +107,14 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     setDebouncedQuery("")
     
     if (item.type === "course") {
-      navigate(`/admin/courses/view/${item.id}`)
-    } else if (item.type === "faculty") {
+      if (isAdmin) {
+        navigate(`/admin/courses/view/${item.id}`)
+      } else if (isFaculty) {
+        navigate(`/faculty/courses/view/${item.id}`)
+      }
+    } else if (item.type === "faculty" && isAdmin) {
       navigate(`/admin/faculty-management/view/${item.id}`)
-    } else if (item.type === "student") {
+    } else if (item.type === "student" && isAdmin) {
       navigate(`/admin/student-management/view/${item.id}`)
     }
   }
@@ -144,7 +160,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               <div className="border-b last:border-b-0">
                 <div className="px-4 py-2 bg-muted/30 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                   <BookOpen className="h-3.5 w-3.5" />
-                  COURSES
+                  {isFaculty ? "MY COURSES" : "COURSES"}
                   <span className="ml-auto bg-background px-2 py-0.5 rounded-full text-[10px]">
                     {courses.length}
                   </span>
@@ -187,8 +203,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               </div>
             )}
 
-            {/* Faculty */}
-            {faculty.length > 0 && (
+            {/* Faculty - Only show for admins */}
+            {isAdmin && faculty.length > 0 && (
               <div className="border-b last:border-b-0">
                 <div className="px-4 py-2 bg-muted/30 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                   <Users className="h-3.5 w-3.5" />
@@ -225,8 +241,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               </div>
             )}
 
-            {/* Students */}
-            {students.length > 0 && (
+            {/* Students - Only show for admins */}
+            {isAdmin && students.length > 0 && (
               <div className="border-b last:border-b-0">
                 <div className="px-4 py-2 bg-muted/30 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                   <GraduationCap className="h-3.5 w-3.5" />
@@ -270,7 +286,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   type="button"
                   className="w-full shadow-md hover:shadow-lg transition-shadow"
                   onClick={() => {
-                    navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`)
+                    const searchPath = isAdmin ? `/admin/search?q=${encodeURIComponent(searchQuery)}` : `/faculty/search?q=${encodeURIComponent(searchQuery)}`
+                    navigate(searchPath)
                     setShowSuggestions(false)
                     setIsSearchOpen(false)
                   }}
@@ -303,8 +320,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         <h2 className={`text-lg md:text-2xl font-bold tracking-wide ${isSidebarOpen ? 'hidden lg:block' : 'block'}`}>WISE</h2>
       </div>
       
-      {/* Search Bar - Desktop (Only for Admin) */}
-      {isAdmin && (
+      {/* Search Bar - Desktop (For Admin and Faculty) */}
+      {(isAdmin || isFaculty) && (
         <div className="hidden md:flex flex-1 max-w-md mx-8" ref={searchRef}>
           <form onSubmit={handleSearchSubmit} className="relative w-full">
             <div className="relative">
@@ -314,7 +331,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => debouncedQuery && setShowSuggestions(true)}
-                placeholder="Search courses, faculty, students..."
+                placeholder={isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
                 className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
               />
               {searchQuery && (
@@ -337,8 +354,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
 
       {/* Right side - Mobile Search Toggle & User Actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Mobile Search Button (Only for Admin) */}
-        {isAdmin && (
+        {/* Mobile Search Button (For Admin and Faculty) */}
+        {(isAdmin || isFaculty) && (
           <Button
             variant="ghost"
             size="icon"
@@ -353,8 +370,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         <UserButton />
       </div>
 
-      {/* Mobile Search Bar - Overlay (Only for Admin) */}
-      {isAdmin && isSearchOpen && (
+      {/* Mobile Search Bar - Overlay (For Admin and Faculty) */}
+      {(isAdmin || isFaculty) && isSearchOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg z-40" ref={searchRef}>
           <div className="p-4">
             <form onSubmit={handleSearchSubmit} className="relative">
@@ -365,7 +382,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => debouncedQuery && setShowSuggestions(true)}
-                  placeholder="Search courses, faculty, students..."
+                  placeholder={isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
                   className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
                   autoFocus
                 />

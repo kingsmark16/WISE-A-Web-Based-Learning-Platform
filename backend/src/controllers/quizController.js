@@ -36,8 +36,12 @@ export const createQuiz = async (req, res) => {
 
     if (!user) return res.status(401).json({ message: "User not found" });
 
-    // Only ADMIN or course faculty can create
-    if (user.role !== 'ADMIN' && module.course.facultyId !== user.id) {
+    // Authorization: If faculty is assigned, only they can manage
+    // If no faculty is assigned, only creator can manage
+    const isAuthorized = (module.course.facultyId && user.id === module.course.facultyId) || 
+                        (!module.course.facultyId && user.id === module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized to create quiz for this module" });
     }
 
@@ -96,7 +100,11 @@ export const updateQuiz = async (req, res) => {
 
     if (!user) return res.status(401).json({ message: 'User not found' });
 
-    if (user.role !== 'ADMIN' && existing.module.course.facultyId !== user.id) {
+    // Check if user is course creator, assigned faculty, or admin
+    const isAuthorized = (existing.module.course.facultyId && user.id === existing.module.course.facultyId) || 
+                        (!existing.module.course.facultyId && user.id === existing.module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Not authorized to update this quiz' });
     }
 
@@ -184,7 +192,11 @@ export const deleteQuiz = async (req, res) => {
 
     if (!user) return res.status(401).json({ message: 'User not found' });
 
-    if (user.role !== 'ADMIN' && existing.module.course.facultyId !== user.id) {
+    // Check if user is course creator, assigned faculty, or admin
+    const isAuthorized = (existing.module.course.facultyId && user.id === existing.module.course.facultyId) || 
+                        (!existing.module.course.facultyId && user.id === existing.module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Not authorized to delete this quiz' });
     }
 
@@ -235,7 +247,7 @@ export const publishQuiz = async (req, res) => {
         isPublished: true,
         module: { 
           select: { 
-            course: { select: { facultyId: true } }
+            course: { select: { createdById: true, facultyId: true } }
           }
         }
       }
@@ -243,8 +255,12 @@ export const publishQuiz = async (req, res) => {
 
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
-    // Authorization: only ADMIN or course faculty can publish
-    if (user.role !== 'ADMIN' && quiz.module.course.facultyId !== user.id) {
+    // Authorization: If faculty is assigned, only they can publish
+    // If no faculty is assigned, only creator can publish
+    const isAuthorized = (quiz.module.course.facultyId && user.id === quiz.module.course.facultyId) || 
+                        (!quiz.module.course.facultyId && user.id === quiz.module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Not authorized to publish this quiz' });
     }
 
@@ -437,11 +453,16 @@ export const getSubmission = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true, role: true } });
     if (!user) return res.status(401).json({ message: 'User not found' });
 
-    // Only admin, faculty of the course, or the student can view
+    // Only assigned faculty, creator (if no faculty assigned), or the student can view
     const quiz = submission.quiz;
     const module = await prisma.module.findUnique({ where: { id: quiz.moduleId }, include: { course: true } });
 
-    if (user.role !== 'ADMIN' && module.course.facultyId !== user.id && submission.studentId !== user.id) {
+    const isFacultyOrCreator = (module.course.facultyId && user.id === module.course.facultyId) || 
+                              (!module.course.facultyId && user.id === module.course.createdById);
+    
+    const isAuthorized = isFacultyOrCreator || user.id === submission.studentId;
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Not authorized to view this submission' });
     }
 

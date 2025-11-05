@@ -1,21 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '@/lib/axios';
 
-export const useFacultyCourseList = (facultyId) => {
+export const useDraftCourses = () => {
   return useQuery({
-    queryKey: ['facultyCourses', facultyId],
+    queryKey: ['draftCourses'],
     queryFn: async () => {
       try {
-        // Use authenticated endpoint without facultyId parameter
-        const response = await axiosInstance.get('/faculty/courses');
-        console.log('Faculty courses response:', response.data);
+        const response = await axiosInstance.get('/faculty/draft-courses');
+        console.log('Draft courses response:', response.data);
         return response.data.courses || [];
       } catch (error) {
-        console.error('Error fetching faculty courses:', error);
+        console.error('Error fetching draft courses:', error);
         throw error;
       }
     },
-    enabled: !!facultyId,
     staleTime: 0, // Data is immediately stale, forcing refetch
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,

@@ -23,8 +23,26 @@ import {
 const TopCoursesByEngagement = ({ facultyId }) => {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('1m');
+  const [sortBy, setSortBy] = useState('engagement'); // 'engagement', 'name', 'popularity'
   
   const { data: topCoursesData, isLoading, error } = useTopCoursesByEngagement(facultyId, timeRange);
+
+  // Sort courses based on selected option
+  const getSortedCourses = () => {
+    if (!topCoursesData?.topCourses) return [];
+    
+    const courses = [...topCoursesData.topCourses];
+    
+    switch(sortBy) {
+      case 'name':
+        return courses.sort((a, b) => a.title.localeCompare(b.title));
+      case 'popularity':
+        return courses.sort((a, b) => b.enrollments.total - a.enrollments.total);
+      case 'engagement':
+      default:
+        return courses.sort((a, b) => b.engagement.score - a.engagement.score);
+    }
+  };
 
   const chartData = topCoursesData?.chartCourses?.map((course, index) => ({
     id: course.id,
@@ -202,14 +220,53 @@ const TopCoursesByEngagement = ({ facultyId }) => {
 
           {/* Course Details Table */}
           <div className="mt-8 space-y-4">
-            <div>
-              <h4 className="text-sm font-semibold">Engagement Details</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Summary of lesson access and quiz attempts for all courses
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold">Engagement Details</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Summary of lesson access and quiz attempts for all courses
+                </p>
+              </div>
+              
+              {/* Sort Options */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium">Sort by:</span>
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    onClick={() => setSortBy('engagement')}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      sortBy === 'engagement'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80'
+                    }`}
+                  >
+                    Engagement
+                  </button>
+                  <button
+                    onClick={() => setSortBy('name')}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      sortBy === 'name'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80'
+                    }`}
+                  >
+                    A-Z
+                  </button>
+                  <button
+                    onClick={() => setSortBy('popularity')}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      sortBy === 'popularity'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80'
+                    }`}
+                  >
+                    Popularity
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="space-y-3">
-              {topCoursesData?.topCourses?.map((course, index) => (
+              {getSortedCourses().map((course, index) => (
                 <div key={course.id} className="space-y-2">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-border">
                     <div className="flex items-center justify-center w-8 h-8 rounded font-bold text-primary bg-primary/10" style={{ backgroundColor: chartData.find(c => c.id === course.id)?.fill + '20' || '#3b82f620' }}>

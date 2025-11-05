@@ -4,7 +4,7 @@ import cloudinary from "../lib/cloudinary.js";
 
 export const createCourse = async (req, res) => {
    try {
-      const {title, description, college, facultyId, thumbnail, assignSelfAsInstructor} = req.body;
+      const {title, description, college, facultyId, thumbnail} = req.body;
       const code = generateCourseCode();
 
       if(!title || !college){
@@ -26,10 +26,21 @@ export const createCourse = async (req, res) => {
 
       const createdById = user.id;
       
-      // Determine facultyId: if assignSelfAsInstructor is true and user is ADMIN, use their ID
-      let assignedFacultyId = facultyId;
-      if (assignSelfAsInstructor && user.role === 'ADMIN') {
+      // Determine facultyId based on user role
+      let assignedFacultyId = null;
+      
+      if (user.role === 'FACULTY') {
+         // Faculty creating course: automatically assign themselves as instructor
          assignedFacultyId = user.id;
+      } else if (user.role === 'ADMIN') {
+         // Admin can either assign themselves or assign another faculty
+         if (facultyId) {
+            // Admin is explicitly assigning a specific faculty
+            assignedFacultyId = facultyId;
+         } else {
+            // Admin is assigning themselves as instructor
+            assignedFacultyId = user.id;
+         }
       }
 
       const newCourse = await prisma.course.create({
@@ -39,6 +50,7 @@ export const createCourse = async (req, res) => {
             thumbnail,
             college,
             code,
+            status: 'DRAFT',
             createdById,
             facultyId: assignedFacultyId
          }
@@ -221,11 +233,35 @@ export const archiveCourse = async (req, res) => {
         const course = await prisma.course.findUnique({
             where: {
                 id
+            },
+            select: {
+                id: true,
+                title: true,
+                createdById: true,
+                facultyId: true
             }
         });
 
         if(!course){
             return res.status(404).json({message: "Course not found"});
+        }
+
+        // Authorization: only course creator, assigned faculty, or admin can archive
+        const auth = req.auth();
+        const userId = auth.userId;
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, role: true }
+        });
+
+        // Authorization: If faculty is assigned, only they can archive
+        // If no faculty is assigned, only creator can archive
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
+            return res.status(403).json({ message: 'Not authorized to archive this course' });
         }
 
         // Update course status to ARCHIVED
@@ -271,6 +307,25 @@ export const updateCourse = async (req, res) => {
                 role: true
             }
         });
+
+        // Check course exists and get createdById for authorization
+        const course = await prisma.course.findUnique({
+            where: { id },
+            select: { createdById: true, facultyId: true }
+        });
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Authorization: If faculty is assigned, only they can update
+        // If no faculty is assigned, only creator can update
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
+            return res.status(403).json({ message: 'Not authorized to update this course' });
+        }
 
         // Prepare update data
         const updateData = {
@@ -340,12 +395,32 @@ export const publishCourse = async (req, res) => {
             where: {id},
             select: {
                 id: true,
-                status: true
+                status: true,
+                createdById: true,
+                facultyId: true
             }
         });
 
         if(!course) {
             return res.status(404).json({message: "Course not found"});
+        }
+
+        // Authorization: Check if user is course creator, assigned faculty, or admin
+        const auth = req.auth();
+        const userId = auth.userId;
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, role: true }
+        });
+
+        // Authorization: If faculty is assigned, only they can publish
+        // If no faculty is assigned, only creator can publish
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
+            return res.status(403).json({ message: "Not authorized to update course status" });
         }
 
         // Prevent publishing archived courses
