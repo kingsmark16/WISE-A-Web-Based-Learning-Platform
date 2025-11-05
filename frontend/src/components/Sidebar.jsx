@@ -227,11 +227,6 @@ const Sidebar = ({ isOpen, onClose}) => {
 
             {/* Bottom Section */}
             <div className="pt-2 space-y-2">
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground items-center justify-center">
-                <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-                <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-foreground transition-colors">Contact</a>
-              </div>
               <p className="text-xs text-muted-foreground text-center">
                 © 2025 Partido State University. All rights reserved.
               </p>

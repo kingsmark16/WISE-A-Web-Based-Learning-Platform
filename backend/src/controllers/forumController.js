@@ -252,7 +252,6 @@ export const getPost = async (req, res) => {
       select: {
         id: true,
         content: true,
-        isAnswer: true,
         createdAt: true,
         updatedAt: true,
         author: { select: { id: true, clerkId: true, fullName: true, imageUrl: true } }

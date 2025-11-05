@@ -32,7 +32,8 @@ export const getCourseCategories = async (req, res) => {
 
 export const getFeaturedCourses = async (req, res) => {
     try {
-        const featuredCourses = await prisma.course.findMany({
+        // Get all published courses
+        const allCourses = await prisma.course.findMany({
             where: {
                 status: 'PUBLISHED'
             },
@@ -49,17 +50,16 @@ export const getFeaturedCourses = async (req, res) => {
                         imageUrl: true
                     }
                 }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            },
-            take: 10
+            }
         });
+
+        // Shuffle array and take 10 random courses
+        const shuffled = allCourses.sort(() => 0.5 - Math.random());
+        const featuredCourses = shuffled.slice(0, 10);
 
         // Process the response to include only necessary fields and use createdBy as fallback
         const processedCourses = featuredCourses.map(course => {
             const instructor = course.managedBy || course.createdBy;
-            console.log(`Course: ${course.title}, managedBy: ${course.managedBy?.fullName}, createdBy: ${course.createdBy?.fullName}, using: ${instructor?.fullName}`);
             return {
                 id: course.id,
                 title: course.title,
@@ -74,6 +74,112 @@ export const getFeaturedCourses = async (req, res) => {
         console.error('Error fetching featured courses:', error);
         res.status(500).json({
             message: 'Failed to fetch featured courses',
+            error: error.message
+        });
+    }
+}
+
+export const getPopularCourses = async (req, res) => {
+    try {
+        // Get top 10 courses with highest enrollment count
+        const popularCourses = await prisma.course.findMany({
+            where: {
+                status: 'PUBLISHED'
+            },
+            include: {
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                createdBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                _count: {
+                    select: {
+                        enrollments: true
+                    }
+                }
+            },
+            orderBy: {
+                enrollments: {
+                    _count: 'desc'
+                }
+            },
+            take: 10
+        });
+
+        // Process the response
+        const processedCourses = popularCourses.map(course => {
+            const instructor = course.managedBy || course.createdBy;
+            return {
+                id: course.id,
+                title: course.title,
+                thumbnail: course.thumbnail,
+                college: course.college,
+                managedBy: instructor,
+                enrollmentCount: course._count.enrollments
+            };
+        });
+
+        res.status(200).json({ data: processedCourses });
+    } catch (error) {
+        console.error('Error fetching popular courses:', error);
+        res.status(500).json({
+            message: 'Failed to fetch popular courses',
+            error: error.message
+        });
+    }
+}
+
+export const getRecommendedCourses = async (req, res) => {
+    try {
+        // Get all published courses
+        const allCourses = await prisma.course.findMany({
+            where: {
+                status: 'PUBLISHED'
+            },
+            include: {
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                createdBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                }
+            }
+        });
+
+        // Shuffle array and take 10 random courses (different from featured)
+        const shuffled = allCourses.sort(() => 0.5 - Math.random());
+        const recommendedCourses = shuffled.slice(0, 10);
+
+        // Process the response
+        const processedCourses = recommendedCourses.map(course => {
+            const instructor = course.managedBy || course.createdBy;
+            return {
+                id: course.id,
+                title: course.title,
+                thumbnail: course.thumbnail,
+                college: course.college,
+                managedBy: instructor
+            };
+        });
+
+        res.status(200).json({ data: processedCourses });
+    } catch (error) {
+        console.error('Error fetching recommended courses:', error);
+        res.status(500).json({
+            message: 'Failed to fetch recommended courses',
             error: error.message
         });
     }
@@ -1898,8 +2004,59 @@ export const getArchivedCourses = async (req, res) => {
 export const studentSearch = async (req, res) => {
     try {
         const query = req.query.q || "";
+        const college = req.query.college || "";
         const limit = parseInt(req.query.limit) || 10;
 
+        // If college filter is provided, filter by college only
+        if (college && college.trim() !== "") {
+            const courses = await prisma.course.findMany({
+                where: {
+                    status: 'PUBLISHED',
+                    college: college
+                },
+                select: {
+                    id: true,
+                    title: true,
+                    thumbnail: true,
+                    college: true,
+                    status: true,
+                    code: true,
+                    managedBy: {
+                        select: {
+                            fullName: true,
+                            imageUrl: true
+                        }
+                    },
+                    createdBy: {
+                        select: {
+                            fullName: true,
+                            imageUrl: true
+                        }
+                    },
+                    _count: {
+                        select: {
+                            enrollments: true
+                        }
+                    }
+                },
+                take: limit
+            });
+
+            const processedCourses = courses.map(course => ({
+                ...course,
+                managedBy: course.managedBy || course.createdBy,
+                createdBy: undefined,
+                type: 'course'
+            }));
+
+            return res.status(200).json({
+                courses: processedCourses,
+                totalResults: processedCourses.length,
+                query: college
+            });
+        }
+
+        // If no query provided, return empty results
         if (!query || query.trim() === "") {
             return res.status(200).json({
                 courses: [],

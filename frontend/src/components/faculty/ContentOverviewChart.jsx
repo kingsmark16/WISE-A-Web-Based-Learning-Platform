@@ -12,7 +12,7 @@ import {
 
 const ContentOverviewChart = ({ courseStats }) => {
   // Prepare data for pie chart
-  const chartData = [
+  const allChartData = [
     {
       name: 'Modules',
       value: Math.round(courseStats?.modules || 0),
@@ -34,6 +34,9 @@ const ContentOverviewChart = ({ courseStats }) => {
       fill: '#ca9161'
     }
   ];
+
+  // Filter out items with zero values
+  const chartData = allChartData.filter(item => item.value > 0);
 
   // Chart configuration for shadcn
   const chartConfig = {

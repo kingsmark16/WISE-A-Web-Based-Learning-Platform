@@ -62,7 +62,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     enabled: isFaculty && debouncedQuery.length > 0
   })
 
-  const { data: studentSuggestions, isLoading: isStudentLoading } = useStudentSearch(debouncedQuery, {
+  const { data: studentSuggestions, isLoading: isStudentLoading } = useStudentSearch(debouncedQuery, null, {
     enabled: isStudent && debouncedQuery.length > 0
   })
 

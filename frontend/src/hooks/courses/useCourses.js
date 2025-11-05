@@ -238,7 +238,7 @@ export const useGetPopularCourses = () => {
     return useQuery({
         queryKey: ['popular-courses'],
         queryFn: async () => {
-            const response = await axiosInstance.get('/student/featured-courses');
+            const response = await axiosInstance.get('/student/popular-courses');
             return response.data;
         },
         refetchOnWindowFocus: true,
@@ -250,7 +250,7 @@ export const useGetRecommendedCourses = () => {
     return useQuery({
         queryKey: ['recommended-courses'],
         queryFn: async () => {
-            const response = await axiosInstance.get('/student/featured-courses');
+            const response = await axiosInstance.get('/student/recommended-courses');
             return response.data;
         },
         refetchOnWindowFocus: true,
