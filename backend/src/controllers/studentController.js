@@ -32,21 +32,44 @@ export const getCourseCategories = async (req, res) => {
 
 export const getFeaturedCourses = async (req, res) => {
     try {
-        const featuredCourses = await prisma.$queryRaw`
-            SELECT 
-                c.id, 
-                c.title, 
-                c.thumbnail, 
-                c.college, 
-                u."fullName" AS managedBy
-            FROM "Course" c
-            LEFT JOIN "User" u ON c."facultyId" = u.id
-            WHERE c."status" = 'PUBLISHED'
-            ORDER BY RANDOM()
-            LIMIT 10
-        `;
+        const featuredCourses = await prisma.course.findMany({
+            where: {
+                status: 'PUBLISHED'
+            },
+            include: {
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                createdBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            take: 10
+        });
 
-        res.status(200).json({ data: featuredCourses });
+        // Process the response to include only necessary fields and use createdBy as fallback
+        const processedCourses = featuredCourses.map(course => {
+            const instructor = course.managedBy || course.createdBy;
+            console.log(`Course: ${course.title}, managedBy: ${course.managedBy?.fullName}, createdBy: ${course.createdBy?.fullName}, using: ${instructor?.fullName}`);
+            return {
+                id: course.id,
+                title: course.title,
+                thumbnail: course.thumbnail,
+                college: course.college,
+                managedBy: instructor
+            };
+        });
+
+        res.status(200).json({ data: processedCourses });
     } catch (error) {
         console.error('Error fetching featured courses:', error);
         res.status(500).json({
@@ -1867,6 +1890,100 @@ export const getArchivedCourses = async (req, res) => {
         console.error('Error fetching archived courses:', error);
         res.status(500).json({
             message: 'Failed to fetch archived courses',
+            error: error.message
+        });
+    }
+};
+
+export const studentSearch = async (req, res) => {
+    try {
+        const query = req.query.q || "";
+        const limit = parseInt(req.query.limit) || 10;
+
+        if (!query || query.trim() === "") {
+            return res.status(200).json({
+                courses: [],
+                totalResults: 0
+            });
+        }
+
+        // Search for published courses only
+        const courses = await prisma.course.findMany({
+            where: {
+                status: 'PUBLISHED',
+                OR: [
+                    {
+                        title: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        description: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        college: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        code: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                title: true,
+                thumbnail: true,
+                college: true,
+                status: true,
+                code: true,
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                createdBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                _count: {
+                    select: {
+                        enrollments: true
+                    }
+                }
+            },
+            take: limit
+        });
+
+        // Process courses to use createdBy as fallback for managedBy
+        const processedCourses = courses.map(course => ({
+            ...course,
+            managedBy: course.managedBy || course.createdBy,
+            createdBy: undefined,
+            type: 'course'
+        }));
+
+        res.status(200).json({
+            courses: processedCourses,
+            totalResults: processedCourses.length,
+            query: query
+        });
+
+    } catch (error) {
+        console.error('Error in student search:', error);
+        res.status(500).json({
+            message: 'Failed to search courses',
             error: error.message
         });
     }

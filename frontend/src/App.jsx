@@ -16,6 +16,7 @@ import FacultyManagement from "./pages/admin/userManagement/FacultyManagement"
 import FacultyInfo from "./pages/admin/userManagement/FacultyInfo"
 import SearchResults from "./pages/admin/SearchResults"
 import FacultySearchResults from "./pages/faculty/SearchResults"
+import StudentSearchResults from "./pages/student/SearchResults"
 import MainLayout from "./pages/MainLayout"
 import HomePage from "./pages/student/home/HomePage"
 import CoursePage from "./pages/student/home/CoursePage"
@@ -100,6 +101,7 @@ const App = () => {
         >
           <Route index element={<HomePage/>}/>
           <Route path="student-homepage" element={<HomePage/>}/>
+          <Route path="search" element={<StudentSearchResults/>}/>
           <Route path="homepage/:id/selected-course" element={<CoursePage/>}/>
           <Route path="my-courses" element={<MyCourses/>}/>
           <Route path="achievements" element={<AchievementsPage/>}/>

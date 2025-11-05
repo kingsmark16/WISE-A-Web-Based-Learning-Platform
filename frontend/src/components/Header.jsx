@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAdminSearch } from "@/hooks/useAdminSearch"
 import { useFacultySearch } from "@/hooks/faculty/useFacultySearch"
+import { useStudentSearch } from "@/hooks/student/useStudentSearch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "./ThemeToggle"
@@ -20,9 +21,10 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false)
   const searchRef = useRef(null)
 
-  // Check if user is admin or faculty
+  // Check if user is admin, faculty, or student
   const isAdmin = user?.publicMetadata?.role === "ADMIN"
   const isFaculty = user?.publicMetadata?.role === "FACULTY"
+  const isStudent = user?.publicMetadata?.role === "STUDENT"
 
   // Detect if any video player modal is open
   useEffect(() => {
@@ -60,9 +62,13 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     enabled: isFaculty && debouncedQuery.length > 0
   })
 
+  const { data: studentSuggestions, isLoading: isStudentLoading } = useStudentSearch(debouncedQuery, {
+    enabled: isStudent && debouncedQuery.length > 0
+  })
+
   // Select appropriate suggestions based on role
-  const suggestions = isAdmin ? adminSuggestions : facultySuggestions
-  const isSuggestionsLoading = isAdmin ? isAdminLoading : isFacultyLoading
+  const suggestions = isAdmin ? adminSuggestions : isFaculty ? facultySuggestions : studentSuggestions
+  const isSuggestionsLoading = isAdmin ? isAdminLoading : isFaculty ? isFacultyLoading : isStudentLoading
 
   // Show suggestions when there's a query and data
   useEffect(() => {
@@ -95,6 +101,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
       navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`)
     } else if (isFaculty) {
       navigate(`/faculty/search?q=${encodeURIComponent(searchQuery)}`)
+    } else if (isStudent) {
+      navigate(`/student/search?q=${encodeURIComponent(searchQuery)}`)
     }
     setShowSuggestions(false)
     setIsSearchOpen(false)
@@ -111,6 +119,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         navigate(`/admin/courses/view/${item.id}`)
       } else if (isFaculty) {
         navigate(`/faculty/courses/view/${item.id}`)
+      } else if (isStudent) {
+        navigate(`/student/homepage/${item.id}/selected-course`)
       }
     } else if (item.type === "faculty" && isAdmin) {
       navigate(`/admin/faculty-management/view/${item.id}`)
@@ -286,7 +296,14 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   type="button"
                   className="w-full shadow-md hover:shadow-lg transition-shadow"
                   onClick={() => {
-                    const searchPath = isAdmin ? `/admin/search?q=${encodeURIComponent(searchQuery)}` : `/faculty/search?q=${encodeURIComponent(searchQuery)}`
+                    let searchPath = ""
+                    if (isAdmin) {
+                      searchPath = `/admin/search?q=${encodeURIComponent(searchQuery)}`
+                    } else if (isFaculty) {
+                      searchPath = `/faculty/search?q=${encodeURIComponent(searchQuery)}`
+                    } else if (isStudent) {
+                      searchPath = `/student/search?q=${encodeURIComponent(searchQuery)}`
+                    }
                     navigate(searchPath)
                     setShowSuggestions(false)
                     setIsSearchOpen(false)
@@ -320,8 +337,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         <h2 className={`text-lg md:text-2xl font-bold tracking-wide ${isSidebarOpen ? 'hidden lg:block' : 'block'}`}>WISE</h2>
       </div>
       
-      {/* Search Bar - Desktop (For Admin and Faculty) */}
-      {(isAdmin || isFaculty) && (
+      {/* Search Bar - Desktop (For Admin, Faculty, and Students) */}
+      {(isAdmin || isFaculty || isStudent) && (
         <div className="hidden md:flex flex-1 max-w-md mx-8" ref={searchRef}>
           <form onSubmit={handleSearchSubmit} className="relative w-full">
             <div className="relative">
@@ -331,7 +348,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => debouncedQuery && setShowSuggestions(true)}
-                placeholder={isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
+                placeholder={isStudent ? "Search courses..." : isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
                 className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
               />
               {searchQuery && (
@@ -354,8 +371,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
 
       {/* Right side - Mobile Search Toggle & User Actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Mobile Search Button (For Admin and Faculty) */}
-        {(isAdmin || isFaculty) && (
+        {/* Mobile Search Button (For Admin, Faculty, and Students) */}
+        {(isAdmin || isFaculty || isStudent) && (
           <Button
             variant="ghost"
             size="icon"
@@ -370,8 +387,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
         <UserButton />
       </div>
 
-      {/* Mobile Search Bar - Overlay (For Admin and Faculty) */}
-      {(isAdmin || isFaculty) && isSearchOpen && (
+      {/* Mobile Search Bar - Overlay (For Admin, Faculty, and Students) */}
+      {(isAdmin || isFaculty || isStudent) && isSearchOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg z-40" ref={searchRef}>
           <div className="p-4">
             <form onSubmit={handleSearchSubmit} className="relative">
@@ -382,7 +399,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => debouncedQuery && setShowSuggestions(true)}
-                  placeholder={isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
+                  placeholder={isStudent ? "Search courses..." : isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
                   className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
                   autoFocus
                 />

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, BookOpen, Users, GraduationCap, ChevronDown, ChevronRight, UserCog, FolderOpen, Plus, Library } from 'lucide-react';
+import { BarChart3, BookOpen, Users, GraduationCap, ChevronDown, ChevronRight, UserCog, FolderOpen, Plus, Library, Facebook, Youtube, ArrowRight } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -95,8 +95,8 @@ const Sidebar = ({ isOpen, onClose}) => {
                   : "hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              {IconComponent && <IconComponent className="h-4 w-4" />}
-              <span className="font-medium">{item.name}</span>
+              {IconComponent && <IconComponent className="h-5 w-5" />}
+              <span className="font-medium text-base">{item.name}</span>
             </Button>
           )}
         </NavLink>
@@ -111,8 +111,8 @@ const Sidebar = ({ isOpen, onClose}) => {
           className="w-full justify-start gap-3 h-10 hover:bg-accent hover:text-accent-foreground"
           onClick={() => toggleSubmenu(item.name)}
         >
-          {IconComponent && <IconComponent className="h-4 w-4" />}
-          <span className="font-medium flex-1 text-left">{item.name}</span>
+          {IconComponent && <IconComponent className="h-5 w-5" />}
+          <span className="font-medium flex-1 text-left text-base">{item.name}</span>
           {isExpanded ? (
             <ChevronDown className="h-4 w-4" />
           ) : (
@@ -133,13 +133,13 @@ const Sidebar = ({ isOpen, onClose}) => {
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start gap-3 h-9 text-sm",
+                      "w-full justify-start gap-3 h-9",
                       isActive 
                         ? "bg-accent text-accent-foreground" 
                         : "hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
-                    <span className="font-medium">{subItem.name}</span>
+                    <span className="font-medium text-sm">{subItem.name}</span>
                   </Button>
                 )}
               </NavLink>
@@ -172,18 +172,21 @@ const Sidebar = ({ isOpen, onClose}) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo Section */}
-          <div className="p-6 border-b">
-            <div className="flex justify-center mb-2">
+          <div className="p-6">
+            <div className="flex flex-col items-center gap-3">
               <img 
                 src="https://res.cloudinary.com/dnpyjolgh/image/upload/v1756286085/New_PSU_Logo_COLORED_PNG_klqhtg.png" 
                 alt="PSU Logo" 
-                className="w-20 h-20"
+                className="w-16 h-16"
               />
+              <div className="text-center">
+                <p className="text-sm font-semibold">Partido State University</p>
+              </div>
             </div>
           </div>
 
           {/* Navigation */}
-          <ScrollArea className="flex-1 p-4">
+          <ScrollArea className="flex-1 p-4 mt-6">
             {!isLoaded ? (
               <div className="flex items-center justify-center py-4">
                 <p className="text-sm text-muted-foreground">Loading menu...</p>
@@ -202,6 +205,39 @@ const Sidebar = ({ isOpen, onClose}) => {
               </nav>
             )}
           </ScrollArea>
+
+          {/* Footer Section */}
+          <div className="p-4 bg-muted/30 space-y-4 text-center">
+            {/* Social Media Section */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Follow Us</h4>
+              <div className="flex gap-2 justify-center">
+                <Button variant="outline" size="icon" asChild className="h-8 w-8 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors">
+                  <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                    <Youtube className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button variant="outline" size="icon" asChild className="h-8 w-8 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors">
+                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            {/* Bottom Section */}
+            <div className="pt-2 space-y-2">
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground items-center justify-center">
+                <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
+                <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
+                <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                © 2025 Partido State University. All rights reserved.
+              </p>
+              
+            </div>
+          </div>
         </div>
       </aside>
     </>

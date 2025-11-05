@@ -217,8 +217,8 @@ export const useGetFeaturedCourses = () => {
 
             return response.data;
         },
-        refetchOnWindowFocus: false,
-        staleTime: 1000 * 60 * 5
+        refetchOnWindowFocus: true,
+        staleTime: 1000 * 60 * 1  // 1 minute for faster updates
     })
 }
 
@@ -231,6 +231,30 @@ export const useGetSelectedCourse = (id) => {
         },
         enabled: !!id,
         staleTime: 1000 * 60 * 5
+    })
+}
+
+export const useGetPopularCourses = () => {
+    return useQuery({
+        queryKey: ['popular-courses'],
+        queryFn: async () => {
+            const response = await axiosInstance.get('/student/featured-courses');
+            return response.data;
+        },
+        refetchOnWindowFocus: true,
+        staleTime: 1000 * 60 * 1  // 1 minute for faster updates
+    })
+}
+
+export const useGetRecommendedCourses = () => {
+    return useQuery({
+        queryKey: ['recommended-courses'],
+        queryFn: async () => {
+            const response = await axiosInstance.get('/student/featured-courses');
+            return response.data;
+        },
+        refetchOnWindowFocus: true,
+        staleTime: 1000 * 60 * 1  // 1 minute for faster updates
     })
 }
 

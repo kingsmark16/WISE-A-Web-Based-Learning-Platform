@@ -4,6 +4,7 @@ import { useFacultyCourseList } from '@/hooks/faculty/useFacultyCourseList';
 import { useDraftCourses } from '@/hooks/faculty/useDraftCourses';
 import { Loader, Eye, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ArchivedCourseGridSkeleton } from '@/components/skeletons';
 
 const CourseListPage = ({ status, title, description }) => {
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
@@ -81,28 +82,8 @@ const CourseListPage = ({ status, title, description }) => {
           <Skeleton className="h-5 w-96" />
         </div>
 
-        {/* Courses Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="border rounded-lg overflow-hidden">
-              {/* Thumbnail Skeleton */}
-              <Skeleton className="w-full h-40" />
-              
-              {/* Content Skeleton */}
-              <div className="p-4 space-y-3">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
-                
-                {/* Actions Skeleton */}
-                <div className="flex gap-2 pt-2">
-                  <Skeleton className="flex-1 h-9" />
-                  <Skeleton className="flex-1 h-9" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Courses Grid Skeleton - using new ArchivedCourseGridSkeleton */}
+        <ArchivedCourseGridSkeleton count={6} />
       </div>
     );
   }

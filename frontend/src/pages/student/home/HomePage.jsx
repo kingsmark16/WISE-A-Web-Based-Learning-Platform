@@ -1,6 +1,7 @@
 import { useGetCategories } from "../../../hooks/useGetCategories"
 import FeaturedCourses from "../../../components/FeaturedCourses"
-import { useGetFeaturedCourses } from "../../../hooks/courses/useCourses"
+import CoursesCarousel from "../../../components/CoursesCarousel"
+import { useGetFeaturedCourses, useGetPopularCourses, useGetRecommendedCourses } from "../../../hooks/courses/useCourses"
 import Categories from "../../../components/Categories"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Users, Zap } from "lucide-react"
@@ -12,6 +13,12 @@ const HomePage = () => {
 
     const { data: featuredCourses, isLoading: featuredCoursesLoading, error: featuredCoursesError } = useGetFeaturedCourses();
     const featCourses = featuredCourses?.data || [];
+
+    const { data: popularCourses, isLoading: popularCoursesLoading, error: popularCoursesError } = useGetPopularCourses();
+    const popCourses = popularCourses?.data || [];
+
+    const { data: recommendedCourses, isLoading: recommendedCoursesLoading, error: recommendedCoursesError } = useGetRecommendedCourses();
+    const recCourses = recommendedCourses?.data || [];
 
     return (
         <div className="space-y-6">
@@ -71,9 +78,24 @@ const HomePage = () => {
                 </div>
             </div>
 
-            <FeaturedCourses featCourses={featCourses} featuredCoursesLoading={featuredCoursesLoading} featuredCoursesError={featuredCoursesError}/>
             {/* Categories Section */}
             <Categories categoryList={categoryList} loadingCategories={loadingCategories} errorCategories={errorCategories}/>
+
+            <FeaturedCourses featCourses={featCourses} featuredCoursesLoading={featuredCoursesLoading} featuredCoursesError={featuredCoursesError}/>
+            
+            <CoursesCarousel 
+              title="Popular Courses"
+              courses={popCourses}
+              isLoading={popularCoursesLoading}
+              error={popularCoursesError}
+            />
+            
+            <CoursesCarousel 
+              title="Recommended for You"
+              courses={recCourses}
+              isLoading={recommendedCoursesLoading}
+              error={recommendedCoursesError}
+            />
         </div>
     );
 }

@@ -30,7 +30,7 @@ export const CourseCard = ({ course }) => {
     <Link to={`/student/homepage/${course.id}/selected-course`}>
       <Card className="h-96 flex flex-col hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer p-0">
         {/* Course Thumbnail */}
-        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10">
+        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden bg-muted flex items-center justify-center">
           {course.thumbnail ? (
             <img
               src={course.thumbnail}
@@ -38,9 +38,7 @@ export const CourseCard = ({ course }) => {
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <BookOpen className="w-12 h-12 text-slate-400" />
-            </div>
+            <BookOpen className="w-12 h-12 text-slate-400" />
           )}
         </div>
 
