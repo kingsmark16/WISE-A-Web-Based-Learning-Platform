@@ -51,14 +51,28 @@ export const getAllFaculty = async (req, res) => {
         const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
 
         const where = {
-         role: 'FACULTY',
+         OR: [
+            {
+               role: 'FACULTY'
+            },
+            {
+               role: 'ADMIN',
+               managedCourses: {
+                  some: {}
+               }
+            }
+         ],
          ...(search && {
-            OR: [
+            AND: [
                {
-                  fullName: {contains: search, mode: "insensitive"}
-               },
-               {
-                  emailAddress: {contains: search, mode: "insensitive"}
+                  OR: [
+                     {
+                        fullName: {contains: search, mode: "insensitive"}
+                     },
+                     {
+                        emailAddress: {contains: search, mode: "insensitive"}
+                     }
+                  ]
                }
             ]
          })
@@ -92,6 +106,25 @@ export const getAllFaculty = async (req, res) => {
                 emailAddress: true,
                 imageUrl: true,
                 lastActiveAt:true,
+                managedCourses: {
+                    select: {
+                        id: true,
+                        title: true,
+                        createdBy: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                imageUrl: true
+                            }
+                        }
+                    }
+                },
+                createdCourses: {
+                    select: {
+                        id: true,
+                        title: true
+                    }
+                },
                 _count: {
                     select: {
                         managedCourses: true,
@@ -111,7 +144,10 @@ export const getAllFaculty = async (req, res) => {
             imageUrl: f.imageUrl,
             lastActiveAt: f.lastActiveAt,
             totalManagedCourses: f._count.managedCourses,
-            totalCreatedCourses: f._count.createdCourses
+            totalCreatedCourses: f._count.createdCourses,
+            managedCourses: f.managedCourses,
+            createdCourses: f.createdCourses,
+            adminAssignedCourses: []
         }));
 
         res.status(200).json({
@@ -151,9 +187,9 @@ export const getSingleFaculty = async (req, res) => {
                   id: true,
                   title: true,
                   thumbnail: true,
-                  category: true,
+                  college: true,
                   updatedAt: true,
-                  isPublished: true
+                  status: true
                }
             },
             managedCourses: {
@@ -161,9 +197,14 @@ export const getSingleFaculty = async (req, res) => {
                   id: true,
                   title: true,
                   thumbnail: true,
-                  category: true,
+                  college: true,
                   updatedAt: true,
-                  isPublished: true
+                  status: true,
+                  _count: {
+                     select: {
+                        enrollments: true
+                     }
+                  }
                }
             }
          }
@@ -288,8 +329,8 @@ export const getSingleStudent = async (req, res) => {
                                 id: true,
                                 title: true,
                                 thumbnail: true,
-                                category: true,
-                                isPublished: true
+                                college: true,
+                                status: true
                             }
                         }
                     }
@@ -328,3 +369,216 @@ export const getSingleStudent = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const adminSearch = async (req, res) => {
+    try {
+        const query = req.query.q || "";
+        const limit = parseInt(req.query.limit) || 10;
+
+        if (!query || query.trim() === "") {
+            return res.status(200).json({
+                courses: [],
+                faculty: [],
+                students: [],
+                totalResults: 0
+            });
+        }
+
+        // Search for courses
+        const courses = await prisma.course.findMany({
+            where: {
+                OR: [
+                    {
+                        title: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        description: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        college: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        code: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                title: true,
+                thumbnail: true,
+                college: true,
+                status: true,
+                code: true,
+                createdBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                },
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true
+                    }
+                }
+            },
+            take: limit,
+            orderBy: {
+                updatedAt: 'desc'
+            }
+        });
+
+        // Search for faculty
+        const faculty = await prisma.user.findMany({
+            where: {
+                role: 'FACULTY',
+                OR: [
+                    {
+                        fullName: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        emailAddress: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                fullName: true,
+                emailAddress: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        managedCourses: true,
+                        createdCourses: true
+                    }
+                }
+            },
+            take: limit,
+            orderBy: {
+                fullName: 'asc'
+            }
+        });
+
+        // Search for students
+        const students = await prisma.user.findMany({
+            where: {
+                role: 'STUDENT',
+                OR: [
+                    {
+                        fullName: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        emailAddress: {
+                            contains: query,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                fullName: true,
+                emailAddress: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        enrollments: true
+                    }
+                }
+            },
+            take: limit,
+            orderBy: {
+                fullName: 'asc'
+            }
+        });
+
+        const totalResults = courses.length + faculty.length + students.length;
+
+        res.status(200).json({
+            courses: courses.map(c => ({
+                ...c,
+                type: 'course'
+            })),
+            faculty: faculty.map(f => ({
+                ...f,
+                type: 'faculty',
+                totalCourses: f._count.managedCourses + f._count.createdCourses
+            })),
+            students: students.map(s => ({
+                ...s,
+                type: 'student',
+                totalEnrollments: s._count.enrollments
+            })),
+            totalResults,
+            query
+        });
+
+    } catch (error) {
+        console.error("Error in adminSearch controller", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const getTopCoursesByEnrollments = async (req, res) => {
+    try {
+        const topCourses = await prisma.course.findMany({
+            select: {
+                id: true,
+                title: true,
+                thumbnail: true,
+                _count: {
+                    select: {
+                        enrollments: true,
+                        completions: true,
+                    }
+                },
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true,
+                    }
+                }
+            },
+            orderBy: {
+                enrollments: { _count: 'desc' }
+            },
+            take: 5,
+        });
+
+        const formatted = topCourses.map(course => ({
+            id: course.id,
+            title: course.title,
+            thumbnail: course.thumbnail,
+            enrollments: course._count.enrollments || 0,
+            completions: course._count.completions || 0,
+            faculty: course.managedBy?.fullName || 'Unknown',
+        }));
+
+        res.status(200).json(formatted);
+    } catch (error) {
+        console.error('Error in getTopCoursesByEnrollments:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+

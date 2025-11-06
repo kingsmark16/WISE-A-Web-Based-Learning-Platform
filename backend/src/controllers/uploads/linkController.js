@@ -63,8 +63,11 @@ export async function createLink(req, res) {
       return res.status(403).json({ message: 'User not found' });
     }
 
-    // Check permissions (faculty or admin)
-    if (user.id !== module.course.facultyId && user.role !== 'ADMIN') {
+    // Check permissions (If faculty is assigned, only they can manage; if not, only creator can manage)
+    const isAuthorized = (module.course.facultyId && user.id === module.course.facultyId) || 
+                        (!module.course.facultyId && user.id === module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -147,8 +150,11 @@ export async function getLinks(req, res) {
       return res.status(403).json({ message: 'User not found' });
     }
 
-    // Check permissions (faculty or admin)
-    if (user.id !== module.course.facultyId && user.role !== 'ADMIN') {
+    // Check permissions (If faculty is assigned, only they can manage; if not, only creator can manage)
+    const isAuthorized = (module.course.facultyId && user.id === module.course.facultyId) || 
+                        (!module.course.facultyId && user.id === module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -230,8 +236,11 @@ export async function updateLink(req, res) {
       return res.status(403).json({ message: 'User not found' });
     }
 
-    // Check permissions (faculty or admin)
-    if (user.id !== existingLink.module.course.facultyId && user.role !== 'ADMIN') {
+    // Check permissions (If faculty is assigned, only they can manage; if not, only creator can manage)
+    const isAuthorized = (existingLink.module.course.facultyId && user.id === existingLink.module.course.facultyId) || 
+                        (!existingLink.module.course.facultyId && user.id === existingLink.module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -304,8 +313,11 @@ export async function deleteLink(req, res) {
       return res.status(403).json({ message: 'User not found' });
     }
 
-    // Check permissions (faculty or admin)
-    if (user.id !== existingLink.module.course.facultyId && user.role !== 'ADMIN') {
+    // Check permissions (If faculty is assigned, only they can manage; if not, only creator can manage)
+    const isAuthorized = (existingLink.module.course.facultyId && user.id === existingLink.module.course.facultyId) || 
+                        (!existingLink.module.course.facultyId && user.id === existingLink.module.course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -380,9 +392,12 @@ export async function reorderLinks(req, res) {
     }
 
     console.log('Checking permissions...');
-    // Check permissions (faculty or admin)
-    if (user.id !== module.course.facultyId && user.role !== 'ADMIN') {
-      console.log('Access denied for user:', user.id, 'faculty:', module.course.facultyId, 'role:', user.role);
+    // Check permissions (If faculty is assigned, only they can manage; if not, only creator can manage)
+    const isAuthorized = (module.course.facultyId && user.id === module.course.facultyId) || 
+                        (!module.course.facultyId && user.id === module.course.createdById);
+    
+    if (!isAuthorized) {
+      console.log('Access denied for user:', user.id, 'createdById:', module.course.createdById, 'facultyId:', module.course.facultyId, 'role:', user.role);
       return res.status(403).json({ message: 'Access denied' });
     }
 

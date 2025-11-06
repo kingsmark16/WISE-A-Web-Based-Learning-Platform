@@ -149,7 +149,7 @@ const ChromaGrid = ({
             <h3 className="m-0 text-[1.05rem] font-semibold w-full">{c.title}</h3>
             <div className="flex justify-between items-baseline flex-col">
               <p className="m-0 text-[0.85rem] opacity-85">{c.instructor?.fullName}</p>
-              <p className="absolute text-[0.85rem] opacity-100 bottom-2">{c.category}</p>
+              <p className="absolute text-[0.85rem] opacity-100 bottom-2">{c.college}</p>
             </div>
             
               <span className="absolute text-[0.85rem] opacity-85 bottom-2 right-2">

@@ -8,6 +8,7 @@ const LinkList = ({
   onEditLink,
   onDeleteLink,
   editPending = false,
+  isAdminView = false,
 }) => {
   return (
     <div className="w-full overflow-hidden">
@@ -47,6 +48,7 @@ const LinkList = ({
               onEditLink={onEditLink}
               onDeleteLink={onDeleteLink}
               editPending={editPending}
+              isAdminView={isAdminView}
             />
           ))
         )}

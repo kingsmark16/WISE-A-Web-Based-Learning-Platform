@@ -4,11 +4,11 @@ import cloudinary from "../lib/cloudinary.js";
 
 export const createCourse = async (req, res) => {
    try {
-      const {title, description, category, facultyId, thumbnail, assignSelfAsInstructor} = req.body;
+      const {title, description, college, facultyId, thumbnail} = req.body;
       const code = generateCourseCode();
 
-      if(!title || !category){
-         return res.status(400).json({message: "Please provide title and category"});
+      if(!title || !college){
+         return res.status(400).json({message: "Please provide title and college"});
       }
 
       const auth = req.auth();
@@ -26,10 +26,21 @@ export const createCourse = async (req, res) => {
 
       const createdById = user.id;
       
-      // Determine facultyId: if assignSelfAsInstructor is true and user is ADMIN, use their ID
-      let assignedFacultyId = facultyId;
-      if (assignSelfAsInstructor && user.role === 'ADMIN') {
+      // Determine facultyId based on user role
+      let assignedFacultyId = null;
+      
+      if (user.role === 'FACULTY') {
+         // Faculty creating course: automatically assign themselves as instructor
          assignedFacultyId = user.id;
+      } else if (user.role === 'ADMIN') {
+         // Admin can either assign themselves or assign another faculty
+         if (facultyId) {
+            // Admin is explicitly assigning a specific faculty
+            assignedFacultyId = facultyId;
+         } else {
+            // Admin is assigning themselves as instructor
+            assignedFacultyId = user.id;
+         }
       }
 
       const newCourse = await prisma.course.create({
@@ -37,8 +48,9 @@ export const createCourse = async (req, res) => {
             title,
             description,
             thumbnail,
-            category,
+            college,
             code,
+            status: 'DRAFT',
             createdById,
             facultyId: assignedFacultyId
          }
@@ -59,7 +71,7 @@ export const getCourses = async (req, res) => {
         const skip = (page - 1) * limit;
         const search = req.query.search || '';
         const status = req.query.status || 'all';
-        const category = req.query.category || 'all';
+        const college = req.query.college || 'all';
 
         // Build where clause for filtering
         const whereClause = {};
@@ -74,12 +86,12 @@ export const getCourses = async (req, res) => {
 
         // Status filter
         if (status !== 'all') {
-            whereClause.isPublished = status === 'published';
+            whereClause.status = status.toUpperCase();
         }
 
-        // Category filter
-        if (category !== 'all') {
-            whereClause.category = category;
+        // College filter
+        if (college !== 'all') {
+            whereClause.college = college;
         }
 
         // Get total count for pagination
@@ -95,9 +107,10 @@ export const getCourses = async (req, res) => {
                 id: true,
                 title: true,
                 thumbnail: true,
-                category: true,
-                isPublished: true,
+                college: true,
+                status: true,
                 code: true,
+                createdAt: true,
                 updatedAt: true,
                 createdBy: {
                     select: {
@@ -110,6 +123,11 @@ export const getCourses = async (req, res) => {
                     select: {
                         fullName: true,
                         imageUrl: true, // Added imageUrl
+                    }
+                },
+                _count: {
+                    select: {
+                        enrollments: true
                     }
                 }
             },
@@ -154,9 +172,10 @@ export const getCourse = async (req, res) => {
                 title: true,
                 description: true,
                 thumbnail: true,
-                category: true,
-                isPublished: true,
+                college: true,
+                status: true,
                 code: true,
+                facultyId: true,
                 updatedAt: true,
                 createdBy: {
                     select: {
@@ -208,7 +227,7 @@ export const getCourse = async (req, res) => {
 }
 
 
-export const deleteCourse = async (req, res) => {
+export const archiveCourse = async (req, res) => {
     try {
         const {id} = req.params;
 
@@ -218,7 +237,9 @@ export const deleteCourse = async (req, res) => {
             },
             select: {
                 id: true,
-                thumbnail: true
+                title: true,
+                createdById: true,
+                facultyId: true
             }
         });
 
@@ -226,35 +247,45 @@ export const deleteCourse = async (req, res) => {
             return res.status(404).json({message: "Course not found"});
         }
 
-        if(course.thumbnail) {
-            try {
-                const extractPublicId = (url) => {
-                    const parts = url.split('/');
-                    const filename = parts[parts.length - 1];
-                    const publicId = filename.split('.')[0];
-                    return `course-thumbnails/${publicId}`;
-                };
+        // Authorization: only course creator, assigned faculty, or admin can archive
+        const auth = req.auth();
+        const userId = auth.userId;
 
-                const publicId = extractPublicId(course.thumbnail);
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, role: true }
+        });
 
-                await cloudinary.uploader.destroy(publicId);
-                console.log(`Deleted image: ${publicId}`);
-
-            } catch (deleteError) {
-                console.log("Error deleting image from Cloudinary:", deleteError);
-            }
+        // Authorization: If faculty is assigned, only they can archive
+        // If no faculty is assigned, only creator can archive
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
+            return res.status(403).json({ message: 'Not authorized to archive this course' });
         }
 
-        await prisma.course.delete({
+        // Update course status to ARCHIVED
+        await prisma.course.update({
             where: {
                 id
+            },
+            data: {
+                status: 'ARCHIVED'
             }
         })
 
-        res.status(200).json({message: "Course deleted successfully"});
+        res.status(200).json({
+            message: "Course archived successfully",
+            data: {
+                id: course.id,
+                title: course.title,
+                status: 'ARCHIVED'
+            }
+        });
     } catch (error) {
-        console.log("Error in deleteCourse controller");
-        res.status(500).json({message: "Internal Server Error"});
+        console.error("Error in archiveCourse controller:", error);
+        res.status(500).json({message: "Failed to archive course"});
     }
 }
 
@@ -263,7 +294,7 @@ export const deleteCourse = async (req, res) => {
 export const updateCourse = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, category, thumbnail, facultyId, assignSelfAsInstructor } = req.body;
+        const { title, description, college, thumbnail, facultyId, assignSelfAsInstructor } = req.body;
 
         const auth = req.auth();
         const userId = auth.userId;
@@ -278,11 +309,30 @@ export const updateCourse = async (req, res) => {
             }
         });
 
+        // Check course exists and get createdById for authorization
+        const course = await prisma.course.findUnique({
+            where: { id },
+            select: { createdById: true, facultyId: true }
+        });
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Authorization: If faculty is assigned, only they can update
+        // If no faculty is assigned, only creator can update
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
+            return res.status(403).json({ message: 'Not authorized to update this course' });
+        }
+
         // Prepare update data
         const updateData = {
             title,
             description,
-            category,
+            college,
             thumbnail
         };
 
@@ -314,7 +364,7 @@ export const updateCourse = async (req, res) => {
                 id: true,
                 title: true,
                 description: true,
-                category: true,
+                college: true,
                 thumbnail: true,
                 facultyId: true,
                 updatedAt: true
@@ -333,22 +383,64 @@ export const publishCourse = async (req, res) => {
     try {
         
         const {id} = req.params;
-        const {isPublished} = req.body;
+        const {status} = req.body;
 
-        if(!id || typeof isPublished !== "boolean") return res.status(400).json({message: "Invalid request"});
+        // Validate status is one of the allowed values
+        const validStatuses = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
+        if(!id || !validStatuses.includes(status)) {
+            return res.status(400).json({message: "Invalid request. Status must be DRAFT, PUBLISHED, or ARCHIVED"});
+        }
 
-        const course = await prisma.course.update({
+        // Check if course is archived
+        const course = await prisma.course.findUnique({
             where: {id},
-            data: {isPublished},
+            select: {
+                id: true,
+                status: true,
+                createdById: true,
+                facultyId: true
+            }
+        });
+
+        if(!course) {
+            return res.status(404).json({message: "Course not found"});
+        }
+
+        // Authorization: Check if user is course creator, assigned faculty, or admin
+        const auth = req.auth();
+        const userId = auth.userId;
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, role: true }
+        });
+
+        // Authorization: If faculty is assigned, only they can publish
+        // If no faculty is assigned, only creator can publish
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
+            return res.status(403).json({ message: "Not authorized to update course status" });
+        }
+
+        // Prevent publishing archived courses
+        if(course.status === 'ARCHIVED' && status === 'PUBLISHED') {
+            return res.status(403).json({message: "Archived courses cannot be published. Please restore the course first."});
+        }
+
+        const updatedCourse = await prisma.course.update({
+            where: {id},
+            data: {status},
             select: {
                 id: true,
                 title: true,
-                isPublished: true,
+                status: true,
                 updatedAt: true
             }
         });
 
-        res.status(200).json({message: "Course publish status updated", course});
+        res.status(200).json({message: "Course status updated", course: updatedCourse});
 
     } catch (error) {
         console.log("Error in publishCourse controller", error);

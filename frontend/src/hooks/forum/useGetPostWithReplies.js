@@ -7,10 +7,10 @@ export const useGetPostWithReplies = (postId, options = {}) => {
     queryFn: async () => {
       if (!postId) return null;
       
-      const response = await axiosInstance.get(`/course/forum/posts/${postId}`);
+      const response = await axiosInstance.get(`/course/forum/posts/${postId}?limit=5`);
       return response.data;
     },
     enabled: !!postId && (options.enabled ?? true),
-    staleTime: 10000, // 10 seconds
+    staleTime: 10000,
   });
 };

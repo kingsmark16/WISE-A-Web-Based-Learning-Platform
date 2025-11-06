@@ -21,19 +21,19 @@ export const getTotalCoursesAndUsers = async (req, res) => {
             }
         });
 
-        const coursesPerCategory = await prisma.course.groupBy({
-            by: ['category'],
+        const coursesPerCollege = await prisma.course.groupBy({
+            by: ['college'],
             _count: {
-                category: true
+                college: true
             }
         })
 
-        const formattedCategories = coursesPerCategory.map(item => ({
-            category: item.category,
-            count: item._count.category
+        const formattedColleges = coursesPerCollege.map(item => ({
+            college: item.college,
+            count: item._count.college
         }))
 
-        res.status(200).json({totalCourses, coursesPerCategory: formattedCategories, totalUsers, totalStudents, totalFaculty, totalAdmins});
+        res.status(200).json({totalCourses, coursesPerCollege: formattedColleges, totalUsers, totalStudents, totalFaculty, totalAdmins});
     } catch (error) {
         console.log("Error in getTotalCourses controller", error);
         res.status(500).json({message: "Internal sever error"});
@@ -240,4 +240,93 @@ export const getActiveUsers = async (req, res) => {
             error: error.message
         });
     }
+};
+
+export const getTotalModules = async (req, res) => {
+  try {
+    const totalModules = await prisma.module.count();
+    res.status(200).json({ totalModules });
+  } catch (error) {
+    console.error('Error in getTotalModules:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// 2) Total lessons across all modules
+export const getTotalLessons = async (req, res) => {
+  try {
+    const totalLessons = await prisma.lesson.count();
+    res.status(200).json({ totalLessons });
+  } catch (error) {
+    console.error('Error in getTotalLessons:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getTopStudentsByFinished = async (req, res) => {
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: 'STUDENT' },
+      select: {
+        fullName: true,
+        imageUrl: true,
+        _count: {
+          select: {
+            completions: true,   // used for sorting (courses finished)
+            enrollments: true,   // returned as totalCoursesEnrolled
+            certificates: true,  // total certificates earned
+          },
+        },
+      },
+      orderBy: {
+        completions: { _count: 'desc' },
+      },
+      take: 10,
+    });
+
+    const formatted = students.map(s => ({
+      imageUrl: s.imageUrl || null,
+      name: s.fullName || 'Unknown',
+      totalCoursesEnrolled: s._count.enrollments || 0,
+      coursesCompleted: s._count.completions || 0,
+      certificatesEarned: s._count.certificates || 0,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error('Error in getTopStudentsByFinished:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getTopFacultyByCoursesCreated = async (req, res) => {
+  try {
+    const faculty = await prisma.user.findMany({
+      where: { role: 'FACULTY' },
+      select: {
+        fullName: true,
+        imageUrl: true,
+        _count: {
+          select: {
+            createdCourses: true, // courses created by this user
+          },
+        },
+      },
+      orderBy: {
+        createdCourses: { _count: 'desc' },
+      },
+      take: 10,
+    });
+
+    const formatted = faculty.map(f => ({
+      imageUrl: f.imageUrl || null,
+      name: f.fullName || 'Unknown',
+      totalCoursesCreated: f._count.createdCourses || 0,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error('Error in getTopFacultyByCoursesCreated:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };

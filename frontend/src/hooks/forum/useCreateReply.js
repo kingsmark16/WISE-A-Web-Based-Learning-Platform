@@ -12,13 +12,9 @@ export const useCreateReply = () => {
       );
       return response.data;
     },
-    onSuccess: (_, variables) => {
-      // Invalidate the post to refresh replies
-      queryClient.invalidateQueries({
-        queryKey: ["forum-post", variables.postId],
-      });
-      
-      // Invalidate posts list to update reply count
+    onSuccess: () => {
+      // Only invalidate posts list to update reply count
+      // Don't invalidate forum-post as ViewPostDialog manages its own state
       queryClient.invalidateQueries({
         queryKey: ["forum-posts"],
       });

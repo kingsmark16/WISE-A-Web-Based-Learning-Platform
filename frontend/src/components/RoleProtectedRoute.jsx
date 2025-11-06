@@ -30,7 +30,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
     if (userRole === 'ADMIN') {
       return <Navigate to="/admin/analytics" replace />;
     } else if (userRole === 'FACULTY') {
-      return <Navigate to="/faculty/faculty-homepage" replace />;
+      return <Navigate to="/faculty/faculty-dashboard" replace />;
     } else if (userRole === 'STUDENT') {
       return <Navigate to="/student/student-homepage" replace />;
     }

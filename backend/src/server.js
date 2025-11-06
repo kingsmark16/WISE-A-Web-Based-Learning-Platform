@@ -1,6 +1,8 @@
 import "./env.js";
 
 import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
@@ -24,10 +26,23 @@ import { updateLastActive } from './middlewares/updateLastActiveMiddleware.js';
 import youtubeAuthRoutes from "./routes/youtubeAuthRoutes.js";
 import youtubeVideoRoutes from "./routes/youtubeVideoRoutes.js";
 import linkRoutes from "./routes/linkRoutes.js";
+import quizRoutes from "./routes/quizRoutes.js";
 import { arcjetRateLimit, strictRateLimit } from "./middlewares/arcjetRateLimit.js"; 
-
-
+import certificatesRoutes from "./routes/certificatesRoutes.js";
+import completionsRoutes from "./routes/completionsRoutes.js";
+ 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: ["http://localhost:5173", "http://192.168.254.180:5173"],
+    credentials: true,
+  }
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,13 +86,17 @@ app.use('/api/forumNotif', requireAuth(), forumNotificationRoutes);
 
 
 
-app.use('/api/youtube-lessons', youtubeVideoRoutes);
-app.use('/api/upload-dropbox', dropboxUploadRoutes);
-app.use('/api/upload-pdf', uploadPdfRoutes);
-app.use('/api/link', linkRoutes);
+app.use('/api/youtube-lessons', updateLastActive, youtubeVideoRoutes);
+app.use('/api/upload-dropbox', updateLastActive, dropboxUploadRoutes);
+app.use('/api/upload-pdf', updateLastActive, uploadPdfRoutes);
+app.use('/api/link', updateLastActive, linkRoutes);
 
 app.use('/api/youtube-auth', requireAuth(), youtubeAuthRoutes);
 app.use('/api/dropbox-auth', dropboxAuthRoutes);
+
+app.use('/api/certificate', certificatesRoutes);
+app.use('/api/completions', updateLastActive, completionsRoutes);
+app.use('/api/quiz', updateLastActive, quizRoutes);
 
 // ===== Public APIs =====
 app.use('/api', strictRateLimit("5m", 10), guestRoutes);
@@ -96,7 +115,28 @@ console.log("ARCJET envs:", {
   MODE: process.env.ARCJET_MODE,
 });
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  // Join a specific post room
+  socket.on('join-post', (postId) => {
+    socket.join(`post-${postId}`);
+    console.log(`Socket ${socket.id} joined post-${postId}`);
+  });
+  
+  // Leave a post room
+  socket.on('leave-post', (postId) => {
+    socket.leave(`post-${postId}`);
+    console.log(`Socket ${socket.id} left post-${postId}`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 // Start server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

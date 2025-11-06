@@ -63,3 +63,53 @@ export const authCallback = async (req, res) => {
         return res.status(500).json({message: "Internal server error"});
     }
 }
+
+export const getCurrentUserProfile = async (req, res) => {
+    try {
+        const auth = req.auth();
+        const userId = auth?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: {
+                clerkId: userId
+            },
+            select: {
+                id: true,
+                fullName: true,
+                emailAddress: true,
+                imageUrl: true,
+                role: true,
+                _count: {
+                    select: {
+                        managedCourses: true,
+                        createdCourses: true
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({
+            user: {
+                id: user.id,
+                fullName: user.fullName,
+                emailAddress: user.emailAddress,
+                imageUrl: user.imageUrl,
+                role: user.role,
+                totalManagedCourses: user._count.managedCourses,
+                totalCreatedCourses: user._count.createdCourses
+            }
+        });
+
+    } catch (error) {
+        console.log('Error in getCurrentUserProfile', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}

@@ -1,4 +1,6 @@
 import prisma from "../lib/prisma.js";
+import { invalidateCoursesCertificates } from "../services/invalidateCertificates.service.js";
+import ProgressService from "../services/progress.service.js";
 
 export const createModule = async (req, res) => {
     try {
@@ -26,8 +28,12 @@ export const createModule = async (req, res) => {
             select: { id: true, role: true }
         });
 
-        // Check if user is course creator or faculty
-        if (user.id !== course.facultyId && user.role !== 'ADMIN' ) {
+        // Authorization: If faculty is assigned, only they can manage
+        // If no faculty is assigned, only creator can manage
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                            (!course.facultyId && user.id === course.createdById);
+        
+        if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to create modules for this course" });
         }
 
@@ -63,9 +69,22 @@ export const createModule = async (req, res) => {
             }
         });
 
+        // Invalidate any existing certificates for this course (new content added)
+        let invalidResult = { deletedCount: 0 };
+        try {
+            invalidResult = await invalidateCoursesCertificates(courseId);
+            if (invalidResult.deletedCount > 0) {
+                console.log(`[createModule] Invalidated ${invalidResult.deletedCount} certificates for course ${courseId}`);
+            }
+        } catch (error) {
+            console.error(`[createModule] Failed to invalidate certificates:`, error);
+            // Continue anyway - module creation should not fail
+        }
+
         res.status(201).json({
             message: "Module created successfully",
-            module: newModule
+            module: newModule,
+            certificatesInvalidated: invalidResult?.deletedCount || 0
         });
 
 
@@ -89,6 +108,7 @@ export const getModules = async (req, res) => {
             select: {
                 id: true,
                 title: true,
+                description: true,
                 position: true,
                 updatedAt: true,
                 _count: {
@@ -165,8 +185,12 @@ export const getModule = async (req, res) => {
                         id: true,
                         title: true,
                         description: true,
+                        isPublished: true,
                         timeLimit: true,
+                        attemptLimit: true,
                         questions: true,
+                        createdAt: true,
+                        updatedAt: true,
                     }
                 }
             },
@@ -212,8 +236,12 @@ export const updateModule = async (req, res) => {
             select: { id: true, role: true }
         });
 
-        if (user.role !== 'ADMIN' && 
-            existingModule.course.facultyId !== user.id) {
+        // Authorization: If faculty is assigned, only they can manage
+        // If no faculty is assigned, only creator can manage
+        const isAuthorized = (existingModule.course.facultyId && user.id === existingModule.course.facultyId) || 
+                            (!existingModule.course.facultyId && user.id === existingModule.course.createdById);
+        
+        if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to update this module" });
         }
 
@@ -275,35 +303,50 @@ export const deleteModule = async (req, res) => {
             select: { id: true, role: true }
         });
 
-        if (user.role !== 'ADMIN' && 
-            existingModule.course.facultyId !== user.id) {
+        // Authorization: If faculty is assigned, only they can manage
+        // If no faculty is assigned, only creator can manage
+        const isAuthorized = (existingModule.course.facultyId && user.id === existingModule.course.facultyId) || 
+                            (!existingModule.course.facultyId && user.id === existingModule.course.createdById);
+        
+        if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to delete this module" });
         }
 
         const modulePosition = existingModule.position;
         const courseId = existingModule.courseId;
 
-        // Use transaction to delete module and adjust positions
-        await prisma.$transaction(async (tx) => {
-            // 1. Delete the module
-            await tx.module.delete({
-                where: { id }
+        // Handle progress cleanup BEFORE deleting the module (so we can still query lessons)
+        try {
+            const progressCleanup = await ProgressService.handleModuleDeletion(id, courseId);
+            console.log("Module deletion progress cleanup completed:", {
+                deletedModuleProgressRecords: progressCleanup.deletedModuleProgressRecords,
+                deletedLessonProgressRecords: progressCleanup.deletedLessonProgressRecords,
+                deletedQuizSubmissions: progressCleanup.deletedQuizSubmissions,
+                recalculatedStudents: progressCleanup.recalculatedStudents
             });
+        } catch (progressError) {
+            console.warn("Warning: Module deletion progress cleanup failed:", progressError);
+            // Don't fail the deletion, just log the warning
+        }
 
-            // 2. Shift all modules with higher positions down by 1
-            await tx.module.updateMany({
-                where: {
-                    courseId: courseId,
-                    position: {
-                        gt: modulePosition
-                    }
-                },
-                data: {
-                    position: {
-                        decrement: 1
-                    }
+        // Delete the module and adjust positions sequentially (after progress cleanup)
+        await prisma.module.delete({
+            where: { id }
+        });
+
+        // Shift all modules with higher positions down by 1
+        await prisma.module.updateMany({
+            where: {
+                courseId: courseId,
+                position: {
+                    gt: modulePosition
                 }
-            });
+            },
+            data: {
+                position: {
+                    decrement: 1
+                }
+            }
         });
 
         res.status(200).json({
@@ -366,7 +409,11 @@ export const reorderModules = async (req, res) => {
       select: { id: true, role: true }
     });
 
-    if (user.role !== 'ADMIN' && course.facultyId !== user.id) {
+    // Check if user is course creator, assigned faculty, or admin
+    const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
+                        (!course.facultyId && user.id === course.createdById);
+    
+    if (!isAuthorized) {
       return res.status(403).json({ message: "Not authorized to reorder modules for this course" });
     }
 

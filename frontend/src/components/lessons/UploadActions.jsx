@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Play, Youtube, Upload, Link, FileText, ExternalLink, PlusCircle } from "lucide-react";
+import { Play, Youtube, Upload, Link, FileText, ExternalLink } from "lucide-react";
 
 const UploadActions = ({
   onUploadYoutube,
   onUploadDropbox,
   onUploadPdf,
   onAddLink,
-  onCreateQuiz,
 }) => (
   <div className="space-y-2.5 sm:space-y-3 md:space-y-4">
     {/* Video Upload Section */}
@@ -68,22 +67,6 @@ const UploadActions = ({
         >
           <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 flex-shrink-0" />
           <span className="truncate">Add Link</span>
-        </Button>
-      </div>
-
-      {/* Quiz */}
-      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-teal-100 dark:border-teal-900/30">
-        <h6 className="text-xs sm:text-sm font-semibold text-teal-900 dark:text-teal-100 mb-2 sm:mb-2.5 md:mb-3 flex items-center gap-1.5 sm:gap-2">
-          <PlusCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="truncate">Quiz</span>
-        </h6>
-        <Button
-          variant="outline"
-          className="h-8 sm:h-9 md:h-10 px-2 sm:px-3 text-xs sm:text-sm bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-700 hover:text-teal-800 dark:bg-teal-950/30 dark:border-teal-800/30 dark:text-teal-300 dark:hover:bg-teal-900/30 transition-all duration-200 min-w-0 flex-shrink-0"
-          onClick={onCreateQuiz}
-        >
-          <PlusCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 flex-shrink-0" />
-          <span className="truncate">Create Quiz</span>
         </Button>
       </div>
     </div>

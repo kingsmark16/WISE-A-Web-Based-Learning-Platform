@@ -10,22 +10,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useEditPost } from '../../hooks/forum/useEditPost';
 import { toast } from 'react-toastify';
 
-const EditPostDialog = ({ open, onOpenChange, post }) => {
+const EditPostDialog = ({ open, onOpenChange, post, categories }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [category, setCategory] = useState('');
   const editPostMutation = useEditPost();
 
-  // Update form when post changes
+  // Update form when post changes or dialog opens
   useEffect(() => {
-    if (post) {
+    if (post && open) {
       setTitle(post.title || '');
       setContent(post.content || '');
+      setCategory(post.category || '');
     }
-  }, [post]);
+  }, [post, open]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,6 +50,7 @@ const EditPostDialog = ({ open, onOpenChange, post }) => {
         postId: post.id,
         title: title.trim(),
         content: content.trim(),
+        category: category.trim() || 'Others',
       });
 
       toast.update(toastId, {
@@ -75,63 +79,91 @@ const EditPostDialog = ({ open, onOpenChange, post }) => {
       onOpenChange(false);
       setTitle('');
       setContent('');
+      setCategory('');
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Edit Post</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">Edit Post</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-title">Title</Label>
-            <Input
-              id="edit-title"
-              placeholder="Enter post title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={editPostMutation.isPending}
-              required
-            />
-          </div>
+        <div className="space-y-4 py-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                placeholder="Enter post title..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={editPostMutation.isPending}
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-content">Content</Label>
-            <Textarea
-              id="edit-content"
-              placeholder="Write your post content..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={10}
-              disabled={editPostMutation.isPending}
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-content">Content</Label>
+              <Textarea
+                className="h-24 resize-none"
+                id="edit-content"
+                placeholder="Write your post content..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={10}
+                disabled={editPostMutation.isPending}
+                required
+              />
+            </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={editPostMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={editPostMutation.isPending}>
-              {editPostMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Post'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Category</Label>
+              <Select
+                value={category}
+                onValueChange={setCategory}
+                disabled={editPostMutation.isPending}
+              >
+                <SelectTrigger id="edit-category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.name} value={cat.name}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </form>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={editPostMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleSubmit}
+            disabled={editPostMutation.isPending}
+          >
+            {editPostMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update Post'
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

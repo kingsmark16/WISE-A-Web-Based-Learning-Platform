@@ -10,7 +10,9 @@ import {
 } from "./useModule";
 
 export const useModuleManagement = () => {
-  const { id: courseId } = useParams();
+  // Support both 'id' and 'courseId' parameter names
+  const params = useParams();
+  const courseId = params.id || params.courseId;
 
   // Module state
   const [editOpen, setEditOpen] = useState(false);
@@ -87,7 +89,7 @@ export const useModuleManagement = () => {
 
   return {
     // Data
-    modules: data?.modules ?? [],
+    modules: Array.isArray(data?.modules) ? data.modules : [],
     courseId,
     isLoading,
     fetchError,

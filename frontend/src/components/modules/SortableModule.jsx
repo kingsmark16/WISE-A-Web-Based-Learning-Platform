@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Edit3, Trash2, Loader2, Play, GripVertical, FileText, Link as LinkIcon, HelpCircle } from "lucide-react";
+import { Edit3, Trash2, Loader2, Play, GripVertical, FileText, Link as LinkIcon, HelpCircle, BookOpen, CheckCircle2, Plus } from "lucide-react";
+import CreateQuizDialog from "../quiz/CreateQuizDialog";
+import EditQuizDialog from "../quiz/EditQuizDialog";
+import DeleteQuizDialog from "../quiz/DeleteQuizDialog";
 import {
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CSS } from "@dnd-kit/utilities";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-toastify";
 
 import {
   DndContext,
@@ -47,6 +52,7 @@ import VideoPlayer from "../videoPlayer";
 // added: upload hook import
 import { useUploadToDropbox } from "../../hooks/lessons/useUploadToDropbox";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDeleteQuiz, usePublishQuiz } from "../../hooks/useQuizAPI";
 
 // new import for modal
 import DropboxUploadModal from "../lessons/DropboxUploadModal";
@@ -66,10 +72,14 @@ const SortableModule = ({
   onPasteLink,
   onUploadPdf,
   onAddLink,
-  onCreateQuiz,
+  isAdminView = false,
 }) => {
   const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  // ref for triggering CreateQuizDialog
+  const quizDialogTriggerRef = useRef(null);
+  // ref for triggering EditQuizDialog
+  const editQuizDialogTriggerRef = useRef(null);
   // file input + upload state (optional fallback if parent doesn't handle upload)
   const fileInputRef = useRef(null);
   const ytFileInputRef = useRef(null);
@@ -96,6 +106,9 @@ const SortableModule = ({
   // active id + overlay size
   const [activeLessonId, setActiveLessonId] = useState(null);
   const [activeLinkId, setActiveLinkId] = useState(null);
+
+  // Quiz delete dialog state
+  const [deleteQuizOpen, setDeleteQuizOpen] = useState(false);
 
   // ---------- MODULE sortable (re-added) ----------
   // useSortable for the module item itself so modules can be dragged by the header handle
@@ -343,6 +356,69 @@ const SortableModule = ({
     if (currentLessonIndex > 0) setCurrentLessonIndex(currentLessonIndex - 1);
   };
 
+  // Delete quiz mutation
+  const deleteQuizMutation = useDeleteQuiz();
+  const publishQuizMutation = usePublishQuiz();
+
+  const handleDeleteQuiz = (e) => {
+    if (e?.stopPropagation) e.stopPropagation();
+    setDeleteQuizOpen(true);
+  };
+
+  const handleConfirmDeleteQuiz = (quiz) => {
+    if (!quiz?.id) return;
+    
+    deleteQuizMutation.mutate(quiz.id, {
+      onSuccess: () => {
+        toast.success("Quiz deleted successfully", {
+          autoClose: 3000,
+          pauseOnHover: true,
+        });
+        queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
+        setDeleteQuizOpen(false);
+      },
+      onError: (error) => {
+        const errorMessage = error?.response?.data?.message || 
+                           error?.message || 
+                           "Failed to delete quiz. Please try again.";
+        toast.error(errorMessage, {
+          autoClose: 4000,
+          pauseOnHover: true,
+        });
+        console.error("Delete quiz error:", error);
+      },
+    });
+  };
+
+  const handlePublishQuiz = (e) => {
+    e?.stopPropagation?.();
+    const quiz = moduleData?.module?.quiz;
+    if (!quiz) return;
+    
+    const newState = !quiz.isPublished;
+    const action = newState ? "published" : "unpublished";
+    
+    publishQuizMutation.mutate(
+      { quizId: quiz.id, moduleId },
+      {
+        onSuccess: () => {
+          toast.success(`Quiz ${action} successfully`, {
+            autoClose: 3000,
+            pauseOnHover: true,
+          });
+        },
+        onError: (error) => {
+          const errorMessage = error?.response?.data?.message || 
+                             "Failed to update quiz status. Please try again.";
+          toast.error(errorMessage, {
+            autoClose: 4000,
+            pauseOnHover: true,
+          });
+        },
+      }
+    );
+  };
+
   // pass moduleId so hook can optimistic-update the correct cache
   const {
     mutateAsync: editDropboxLessonAsync,
@@ -577,25 +653,26 @@ const SortableModule = ({
           <p className="text-sm text-muted-foreground italic">No description</p>
         )}
 
-        <UploadActions
-          onUploadYoutube={() => {
-            // prefer parent handler; fallback to internal picker
-            if (typeof onUploadYoutube === "function") return onUploadYoutube(item);
-            return openYoutubePicker();
-          }}
-          // prefer parent handler (same format as edit/delete). if none, fall back to internal picker.
-          onUploadDropbox={() => {
-            if (typeof onUploadDropbox === "function") return onUploadDropbox(item);
-            return openDropboxPicker();
-          }}
-          onPasteLink={() => onPasteLink?.(item)}
-          onUploadPdf={() => {
-            if (typeof onUploadPdf === "function") return onUploadPdf(item);
-            return openPdfPicker();
-          }}
-          onAddLink={() => openLinkModal()}
-          onCreateQuiz={() => onCreateQuiz?.(item)}
-        />
+        {!isAdminView && (
+          <UploadActions
+            onUploadYoutube={() => {
+              // prefer parent handler; fallback to internal picker
+              if (typeof onUploadYoutube === "function") return onUploadYoutube(item);
+              return openYoutubePicker();
+            }}
+            // prefer parent handler (same format as edit/delete). if none, fall back to internal picker.
+            onUploadDropbox={() => {
+              if (typeof onUploadDropbox === "function") return onUploadDropbox(item);
+              return openDropboxPicker();
+            }}
+            onPasteLink={() => onPasteLink?.(item)}
+            onUploadPdf={() => {
+              if (typeof onUploadPdf === "function") return onUploadPdf(item);
+              return openPdfPicker();
+            }}
+            onAddLink={() => openLinkModal()}
+          />
+        )}
 
         {/* hidden file input fallback (used only when parent doesn't provide onUploadDropbox) */}
         <input
@@ -670,6 +747,7 @@ const SortableModule = ({
                   onEditLesson={handleEditLessonLocal}
                   onDeleteLesson={handleDeleteLessonLocal}
                   editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
+                  isAdminView={isAdminView}
                 />
               </div>
             </SortableContext>
@@ -726,6 +804,7 @@ const SortableModule = ({
               onEditLesson={handleEditLessonLocal}
               onDeleteLesson={handleDeleteLessonLocal}
               editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
+              isAdminView={isAdminView}
             />
           </div>
         )}
@@ -745,6 +824,7 @@ const SortableModule = ({
                   onEditLink={handleEditLinkLocal}
                   onDeleteLink={handleDeleteLinkLocal}
                   editPending={Boolean(editLinkPending)}
+                  isAdminView={isAdminView}
                 />
               </div>
             </SortableContext>
@@ -801,20 +881,194 @@ const SortableModule = ({
               onEditLink={handleEditLinkLocal}
               onDeleteLink={handleDeleteLinkLocal}
               editPending={Boolean(editLinkPending)}
+              isAdminView={isAdminView}
             />
           </div>
         )}
 
         {/* Quiz Section */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h4 className="text-sm md:text-base font-semibold text-foreground">Quiz</h4>
           {moduleData.module.quiz ? (
-            <div className="p-4 rounded-md border border-input bg-card">
-              <p className="text-sm text-muted-foreground">Quiz available for this module.</p>
-              {/* Add quiz UI here */}
-            </div>
+            <Card className="w-full border-2">
+              <CardHeader className="">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base md:text-lg text-foreground">
+                      {moduleData.module.quiz.title}
+                    </CardTitle>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 flex-shrink-0 w-40">
+                    {!isAdminView && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-primary hover:bg-primary/10 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            editQuizDialogTriggerRef.current?.click();
+                          }}
+                          title="Edit quiz"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:bg-destructive/10 transition-colors"
+                          onClick={handleDeleteQuiz}
+                          disabled={deleteQuizMutation.isPending}
+                          title="Delete quiz"
+                          aria-label="Delete quiz"
+                        >
+                          {deleteQuizMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={moduleData.module.quiz.isPublished ? "outline" : "default"}
+                          onClick={handlePublishQuiz}
+                          disabled={publishQuizMutation.isPending}
+                          title={moduleData.module.quiz.isPublished ? "Click to unpublish quiz" : "Click to publish quiz"}
+                          aria-label={moduleData.module.quiz.isPublished ? "Unpublish quiz" : "Publish quiz"}
+                          className={`transition-all duration-200 ${
+                            publishQuizMutation.isPending
+                              ? "opacity-70 cursor-not-allowed"
+                              : moduleData.module.quiz.isPublished
+                              ? "text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                              : "bg-primary text-primary-foreground hover:bg-primary/90"
+                          }`}
+                        >
+                          {publishQuizMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                              <span className="hidden sm:inline">Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                              <span className="hidden sm:inline">
+                                {moduleData.module.quiz.isPublished ? "Unpublish" : "Publish"}
+                              </span>
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+
+              {moduleData.module.quiz.description && (
+                <div className="px-6">
+                  <span className="font-medium text-sm">Description:</span>
+                  <p className="text-xs md:text-sm mt-1 text-muted-foreground whitespace-pre-wrap break-words">
+                    {moduleData.module.quiz.description}
+                  </p>
+                </div>
+              )}
+
+              <CardContent className="space-y-4">
+                {/* Quiz Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* Total Questions */}
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Questions</p>
+                    <p className="text-lg md:text-xl font-bold text-foreground">
+                      {moduleData.module.quiz.questions?.length || 0}
+                    </p>
+                  </div>
+
+                  {/* Total Points */}
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Total Points</p>
+                    <p className="text-lg md:text-xl font-bold text-foreground">
+                      {moduleData.module.quiz.questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0}
+                    </p>
+                  </div>
+
+                  {/* Time Limit */}
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Time Limit</p>
+                    <p className="text-lg md:text-xl font-bold text-foreground">
+                      {moduleData.module.quiz.timeLimit && moduleData.module.quiz.timeLimit > 0
+                        ? `${Math.floor(moduleData.module.quiz.timeLimit / 60)}m`
+                        : "Unlimited"}
+                    </p>
+                  </div>
+
+                  {/* Attempt Limit */}
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Attempts</p>
+                    <p className="text-lg md:text-xl font-bold text-foreground">
+                      {moduleData.module.quiz.attemptLimit || "∞"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Last Updated */}
+                {moduleData.module.quiz.updatedAt && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium">Last updated:</span>
+                      <span className="ml-1">
+                        {new Date(moduleData.module.quiz.updatedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Questions Summary */}
+                {moduleData.module.quiz.questions && moduleData.module.quiz.questions.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <p className="text-xs font-medium text-muted-foreground">Question Types</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.from(
+                        moduleData.module.quiz.questions.reduce((acc, q) => {
+                          acc.set(q.type, (acc.get(q.type) || 0) + 1);
+                          return acc;
+                        }, new Map())
+                      ).map(([type, count]) => {
+                        const getTypeLabel = (t) => {
+                          switch (String(t).toUpperCase()) {
+                            case 'MULTIPLE_CHOICE':
+                              return 'Multiple Choice';
+                            case 'TRUE_FALSE':
+                              return 'True/False';
+                            case 'ENUMERATION':
+                              return 'Enumeration';
+                            default:
+                              return String(t).replace(/_/g, ' ');
+                          }
+                        };
+                        return (
+                          <div
+                            key={type}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                            {getTypeLabel(type)}
+                            <span className="text-primary/70">({Number(count) || 0})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ) : (
-            <Card className="w-full">
+            <Card className="w-full border-2 border-dashed border-border">
               <CardContent className="flex flex-col items-center justify-center py-12 px-6 text-center">
                 <div className="rounded-full bg-green-100 p-4 mb-4">
                   <HelpCircle className="h-8 w-8 text-green-600" />
@@ -822,9 +1076,22 @@ const SortableModule = ({
                 <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
                   No quiz yet
                 </h3>
-                <p className="text-xs md:text-sm text-muted-foreground max-w-sm">
+                <p className="text-xs md:text-sm text-muted-foreground max-w-sm mb-4">
                   Create a quiz to test student knowledge.
                 </p>
+                {!isAdminView && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      quizDialogTriggerRef.current?.click();
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Quiz
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -834,11 +1101,20 @@ const SortableModule = ({
     );
   };
 
+  // Set body cursor during drag
+  useEffect(() => {
+    if (moduleIsDragging) {
+      document.body.style.cursor = 'grabbing';
+      return () => {
+        document.body.style.cursor = '';
+      };
+    }
+  }, [moduleIsDragging]);
+
   // Keep module header non-draggable here (module-level drag handled elsewhere)
   const style = {
     transform: moduleTransform ? CSS.Transform.toString(moduleTransform) : undefined,
     transition: moduleTransition,
-    cursor: "grab",
     opacity: moduleIsDragging ? 0.75 : 1,
   };
 
@@ -847,16 +1123,19 @@ const SortableModule = ({
 
   return (
     <>
-      <AccordionItem
-        value={item.id}
-        key={item.id}
+      <div
         ref={setModuleNodeRef}
-        className="relative rounded-lg border-2 bg-card shadow-lg hover:shadow-xl border-input transition-all duration-200 hover:border-primary/30 [&[data-state=open]]:border-primary/50 w-full overflow-hidden"
+        className="relative rounded-lg border-2 bg-card shadow-lg hover:shadow-xl border-input transition-all duration-200 hover:border-primary/30 w-full overflow-clip"
         style={style}
       >
-        <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden">
+        <AccordionItem
+          value={item.id}
+          key={item.id}
+          className="border-0"
+        >
+          <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden [&>svg]:hidden">
           <div
-            className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-grab active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
+            className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-pointer active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
             {...(listenersDisabled ? {} : { ...moduleAttributes })}
             {...(listenersDisabled ? {} : { ...moduleListeners })}
             style={{ touchAction: "none" }}
@@ -871,31 +1150,37 @@ const SortableModule = ({
               <span className="text-xs sm:text-xs md:text-sm flex-shrink-0 mr-1">Module {item.position}:</span>
               <span className="block overflow-hidden text-ellipsis" title={item.title}>{item.title}</span>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              {/* Buttons for small screens */}
-              <div className="flex items-center gap-2 sm:hidden transition-all duration-200 opacity-100 scale-100" onClick={(e) => e.stopPropagation()}>
-                <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary active:bg-primary/20 focus:bg-primary/10 focus:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors cursor-pointer touch-manipulation" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
-                  <Edit3 className="h-4 w-4" />
-                </div>
-                <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive active:bg-destructive/20 focus:bg-destructive/10 focus:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive/50 transition-colors cursor-pointer touch-manipulation" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
-                  <Trash2 className="h-4 w-4" />
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-            <div className="text-sm text-muted-foreground whitespace-nowrap max-w-[5.5rem] overflow-hidden truncate flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="text-sm text-muted-foreground whitespace-nowrap max-w-[5.5rem] overflow-hidden truncate flex-shrink-0 hidden md:block">
               {(item._count?.lessons ?? 0) + (item._count?.attachments ?? 0)} lessons
             </div>
 
             <div className={`flex items-center gap-2 transition-all duration-200 opacity-100 scale-100`} onClick={(e) => e.stopPropagation()}>
-              <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
-                <Edit3 className="h-4 w-4" />
-              </div>
-              <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
-                <Trash2 className="h-4 w-4" />
-              </div>
+              {!isAdminView && (
+                <>
+                  <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
+                    <Edit3 className="h-4 w-4" />
+                  </div>
+                  <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Custom Arrow Button */}
+            <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
+              <svg
+                className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
         </AccordionTrigger>
@@ -904,12 +1189,47 @@ const SortableModule = ({
           {renderModuleContent()}
         </AccordionContent>
       </AccordionItem>
+      </div>
 
       {/* modal instance (open when user triggers upload and parent didn't handle upload) */}
       <DropboxUploadModal open={showDropboxModal} onClose={() => setShowDropboxModal(false)} moduleId={moduleId} />
       <YoutubeUploadModal open={showYoutubeModal} onClose={() => setShowYoutubeModal(false)} moduleId={moduleId} />
       <PdfUploadModal open={showPdfModal} onClose={() => setShowPdfModal(false)} moduleId={moduleId} />
       <LinkUploadModal open={showLinkModal} onClose={() => setShowLinkModal(false)} moduleId={moduleId} />
+      
+      <CreateQuizDialog 
+        moduleId={moduleId} 
+        onSuccess={() => {
+          queryClient.invalidateQueries(["module", moduleId]);
+        }}
+        trigger={
+          <div 
+            ref={quizDialogTriggerRef}
+            style={{ display: 'none' }}
+          />
+        }
+      />
+
+      <EditQuizDialog 
+        quiz={moduleData?.module?.quiz}
+        onSuccess={() => {
+          queryClient.invalidateQueries(["module", moduleId]);
+        }}
+        trigger={
+          <div 
+            ref={editQuizDialogTriggerRef}
+            style={{ display: 'none' }}
+          />
+        }
+      />
+
+      <DeleteQuizDialog
+        open={deleteQuizOpen}
+        onOpenChange={setDeleteQuizOpen}
+        quiz={moduleData?.module?.quiz}
+        onConfirm={handleConfirmDeleteQuiz}
+        isLoading={deleteQuizMutation.isPending}
+      />
 
       {currentLesson && (
         <>

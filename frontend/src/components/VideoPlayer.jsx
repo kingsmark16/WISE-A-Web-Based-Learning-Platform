@@ -362,6 +362,7 @@ export default function VideoPlayer({
     body.style.top = `-${scrollYRef.current}px`;
     body.style.left = "0";
     body.style.right = "0";
+    body.style.width = "100%";
     body.style.overflow = "hidden";
 
     return () => {
@@ -370,6 +371,7 @@ export default function VideoPlayer({
       body.style.top = "";
       body.style.left = "";
       body.style.right = "";
+      body.style.width = "";
       body.style.overflow = "";
       window.scrollTo(0, scrollYRef.current);
     };
@@ -379,7 +381,7 @@ export default function VideoPlayer({
   
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 min-h-screen w-screen"
       role="dialog"
       aria-modal="true"
       aria-label={title || "Video player"}
@@ -388,7 +390,7 @@ export default function VideoPlayer({
       <div
         ref={containerRef}
         className="w-full max-w-4xl sm:max-w-2xl lg:max-w-4xl bg-black rounded-md shadow-2xl overflow-hidden relative"
-        style={isMobile ? { height: "calc(100vh - 2rem)" } : { aspectRatio: "16/9", maxHeight: "90vh" }}
+        style={isMobile ? { height: "calc(100vh - 8rem)" } : { aspectRatio: "16/9", maxHeight: "90vh" }}
       >
         <div
           className={`absolute sm:top-2 top-4 left-2 right-2 z-40 flex items-center justify-between gap-2 transition-opacity duration-200 ${

@@ -23,7 +23,7 @@ const MainLayout = () => {
         <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
         
         <main className="flex-1 ml-0 lg:ml-64 min-h-[calc(100vh-5rem)] overflow-auto">
-          <div className="p-6"> {/* Increased padding for better spacing */}
+          <div className="px-3 sm:px-4 md:px-6 py-6"> {/* Reduced horizontal padding for wider content */}
             <Outlet />
           </div>
         </main>

@@ -14,6 +14,7 @@ const LessonList = ({
   onEditLesson,
   onDeleteLesson,
   editPending = false,
+  isAdminView = false,
 }) => {
   const pdfCount = lessons.filter(lesson => lesson.type && String(lesson.type).toLowerCase() === "pdf").length;
   const videoCount = lessons.filter(lesson => !lesson.type || String(lesson.type).toLowerCase() !== "pdf").length;
@@ -67,6 +68,7 @@ const LessonList = ({
               onEditLesson={onEditLesson}
               onDeleteLesson={onDeleteLesson}
               editPending={editPending}
+              isAdminView={isAdminView}
             />
           ))
         )}

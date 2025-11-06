@@ -2,12 +2,24 @@ import prisma from '../lib/prisma.js';
 
 export const requireCourseMembership = () => async (req, res, next) => {
   try {
-    const auth = req.auth?.();
+    const auth = req.auth;
     const clerkUserId = auth?.userId;
     if (!clerkUserId) return res.status(401).json({ message: 'Not authenticated' });
 
-    const { courseId } = req.params;
-    if (!courseId) return res.status(400).json({ message: 'courseId missing in params' });
+    let { courseId } = req.params;
+
+    // If courseId is not in params, try to get it from postId (for forum post operations)
+    if (!courseId && req.params.postId) {
+      const post = await prisma.forumPost.findUnique({
+        where: { id: req.params.postId },
+        select: { courseId: true }
+      });
+      if (post) {
+        courseId = post.courseId;
+      }
+    }
+
+    if (!courseId) return res.status(400).json({ message: 'courseId missing in params or could not be determined from post' });
 
     const dbUser = await prisma.user.findUnique({
       where: { clerkId: clerkUserId },

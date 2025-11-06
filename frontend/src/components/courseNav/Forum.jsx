@@ -2,9 +2,10 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { MessageSquare, Plus, Search, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'react-toastify';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import ForumAnalytics from '../forum/ForumAnalytics';
 import Categories from '../forum/Categories';
 import PostList from '../forum/PostList';
@@ -12,11 +13,12 @@ import CreatePostDialog from '../forum/CreatePostDialog';
 import ViewPostDialog from '../forum/ViewPostDialog';
 import EditPostDialog from '../forum/EditPostDialog';
 import DeletePostDialog from '../forum/DeletePostDialog';
-import DeleteReplyDialog from '../forum/DeleteReplyDialog';
 import { useGetPostList } from '../../hooks/forum/useGetPostList';
 import { useSearchPosts } from '../../hooks/forum/useSearchPosts';
 import { useDeletePost } from '../../hooks/forum/useDeletePost';
-import { useDeleteReply } from '../../hooks/forum/useDeleteReply';
+import { usePinPost } from '../../hooks/forum/usePinPost';
+import { useLockPost } from '../../hooks/forum/useLockPost';
+import { useGetForumCategories } from '../../hooks/forum/useGetForumCategories';
 
 const Forum = ({ courseId }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,9 +27,9 @@ const Forum = ({ courseId }) => {
   const [viewPostOpen, setViewPostOpen] = useState(false);
   const [editPostOpen, setEditPostOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [deletePostId, setDeletePostId] = useState(null);
-  const [deleteReplyId, setDeleteReplyId] = useState(null);
+  const [deletePostObject, setDeletePostObject] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(null);
 
   // Intersection observer for infinite scroll
   const loadMoreRef = useRef(null);
@@ -50,7 +52,11 @@ const Forum = ({ courseId }) => {
 
   // Mutations
   const deletePostMutation = useDeletePost();
-  const deleteReplyMutation = useDeleteReply();
+  const pinPostMutation = usePinPost();
+  const lockPostMutation = useLockPost();
+
+  // Fetch forum categories
+  const { data: categories = [] } = useGetForumCategories(courseId);
 
   // Transform backend data to match frontend structure
   const transformPosts = (items) => {
@@ -59,14 +65,18 @@ const Forum = ({ courseId }) => {
       id: item.id,
       title: item.title,
       content: item.content,
-      author: item.author.fullName,
-      authorAvatar: item.author.imageUrl || '',
-      authorId: item.author.id,
+      category: item.category,
+      likes: item.likes || 0,
+      author: {
+        id: item.author.id,
+        clerkId: item.author.clerkId,
+        fullName: item.author.fullName,
+        imageUrl: item.author.imageUrl || ''
+      },
       isPinned: item.isPinned,
       isLocked: item.isLocked,
-      views: 0,
       replies: item._count?.replies || 0,
-      likes: 0,
+      likeCount: item._count?.likedBy || 0,
       lastActivity: new Date(item.updatedAt).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -74,9 +84,7 @@ const Forum = ({ courseId }) => {
         hour: '2-digit',
         minute: '2-digit'
       }),
-      lastReplyBy: 'N/A',
       excerpt: item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content,
-      category: 'general',
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     }));
@@ -129,25 +137,25 @@ const Forum = ({ courseId }) => {
     );
   }
 
-  // Mock categories
-  const categories = [
-    { id: 'general', name: 'General Discussion', count: 45, color: 'bg-blue-500' },
-    { id: 'questions', name: 'Questions & Answers', count: 62, color: 'bg-green-500' },
-    { id: 'announcements', name: 'Announcements', count: 8, color: 'bg-purple-500' },
-    { id: 'assignments', name: 'Assignment Help', count: 34, color: 'bg-orange-500' },
-  ];
-
-  // Filter posts based on active tab (for main list)
+  // Filter posts based on active tab and category (for main list)
   const getFilteredPosts = () => {
+    let filtered = allPosts;
+
+    // First apply category filter
+    if (activeCategory) {
+      filtered = filtered.filter(p => p.category === activeCategory);
+    }
+
+    // Then apply tab filter
     switch (activeTab) {
       case 'pinned':
-        return allPosts.filter(p => p.isPinned);
+        return filtered.filter(p => p.isPinned);
       case 'recent':
-        return [...allPosts].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        return [...filtered].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       case 'popular':
-        return [...allPosts].sort((a, b) => b.replies - a.replies);
+        return [...filtered].sort((a, b) => b.replies - a.replies);
       default:
-        return allPosts;
+        return filtered;
     }
   };
 
@@ -175,17 +183,17 @@ const Forum = ({ courseId }) => {
     setEditPostOpen(true);
   };
 
-  const handleDeletePost = async (postId) => {
+  const handleDeletePost = async (post) => {
     const toastId = toast.loading('Deleting post...');
     try {
-      await deletePostMutation.mutateAsync(postId);
+      await deletePostMutation.mutateAsync(post.id);
       toast.update(toastId, {
         render: 'Post deleted successfully',
         type: 'success',
         isLoading: false,
         autoClose: 3000,
       });
-      setDeletePostId(null);
+      setDeletePostObject(null);
     } catch (error) {
       console.error('Failed to delete post:', error);
       toast.update(toastId, {
@@ -197,30 +205,51 @@ const Forum = ({ courseId }) => {
     }
   };
 
-  const handleDeleteReply = async (replyId) => {
-    if (!selectedPost) return;
-    const toastId = toast.loading('Deleting reply...');
+  const handlePinPost = async (post) => {
+    const toastId = toast.loading(post.isPinned ? 'Unpinning post...' : 'Pinning post...');
     try {
-      await deleteReplyMutation.mutateAsync({
-        postId: selectedPost.id,
-        replyId,
-      });
+      await pinPostMutation.mutateAsync({ postId: post.id, pin: !post.isPinned });
       toast.update(toastId, {
-        render: 'Reply deleted successfully',
+        render: post.isPinned ? 'Post unpinned successfully' : 'Post pinned successfully',
         type: 'success',
         isLoading: false,
         autoClose: 3000,
       });
-      setDeleteReplyId(null);
     } catch (error) {
-      console.error('Failed to delete reply:', error);
+      console.error('Failed to pin/unpin post:', error);
       toast.update(toastId, {
-        render: 'Failed to delete reply. Please try again.',
+        render: 'Failed to pin/unpin post. Please try again.',
         type: 'error',
         isLoading: false,
         autoClose: 3000,
       });
     }
+  };
+
+  const handleLockPost = async (post) => {
+    const toastId = toast.loading(post.isLocked ? 'Unlocking post...' : 'Locking post...');
+    try {
+      await lockPostMutation.mutateAsync({ postId: post.id, lock: !post.isLocked });
+      toast.update(toastId, {
+        render: post.isLocked ? 'Post unlocked successfully' : 'Post locked successfully',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to lock/unlock post:', error);
+      toast.update(toastId, {
+        render: 'Failed to lock/unlock post. Please try again.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleCategoryClick = (categoryName) => {
+    setActiveCategory(activeCategory === categoryName ? null : categoryName);
+    setActiveTab('all'); // Reset tab when category is selected
   };
 
   const handleSearchChange = (e) => {
@@ -236,10 +265,94 @@ const Forum = ({ courseId }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading forum...</p>
+      <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+        {/* Header Skeleton */}
+        <div className="flex items-start sm:items-center justify-between gap-2">
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1">
+            <Skeleton className="h-5 w-5 sm:h-6 sm:w-6 rounded flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 sm:h-7 w-32 sm:w-40" />
+              <Skeleton className="h-4 w-48 sm:w-64 hidden sm:block" />
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Create Button Skeleton */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <Skeleton className="flex-1 h-9 sm:h-10" />
+          <Skeleton className="h-9 sm:h-10 w-full sm:w-32" />
+        </div>
+
+        {/* Categories Skeleton */}
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-8 w-20 sm:w-24 rounded-full" />
+          ))}
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="border-b">
+          <div className="flex gap-4 sm:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-10 w-16 sm:w-20" />
+            ))}
+          </div>
+        </div>
+
+        {/* Posts List Skeleton - Simplified but matching structure */}
+        <div className="space-y-2 sm:space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="hover:bg-accent/50 transition-colors">
+              <CardContent className="py-1.5 sm:py-2 md:py-2.5 px-3 sm:px-4 md:px-5">
+                <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
+                  {/* Avatar */}
+                  <Skeleton className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full flex-shrink-0" />
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    {/* Title row with icons and buttons */}
+                    <div className="flex items-start gap-1 sm:gap-2 justify-between">
+                      <div className="flex items-start gap-1 sm:gap-2 flex-1 min-w-0">
+                        {/* Pin icon */}
+                        <Skeleton className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0 mt-0.5 sm:mt-1 rounded" />
+                        {/* Title */}
+                        <Skeleton className="h-5 sm:h-6 md:h-6 flex-1 w-2/3 sm:w-3/4" />
+                      </div>
+                      
+                      {/* Action buttons - Hidden on mobile */}
+                      <div className="hidden sm:flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
+                        <Skeleton className="h-9 w-9 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded" />
+                        <Skeleton className="h-9 w-9 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded" />
+                        <Skeleton className="h-9 w-9 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded" />
+                      </div>
+                      
+                      {/* 3-dots menu - Mobile only */}
+                      <Skeleton className="sm:hidden h-9 w-9 rounded flex-shrink-0" />
+                    </div>
+
+                    {/* Excerpt - 2 lines */}
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 sm:h-5 md:h-5 w-full" />
+                      <Skeleton className="h-4 sm:h-5 md:h-5 w-5/6" />
+                    </div>
+
+                    {/* Meta info row */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-20 sm:w-28" />
+                      <Skeleton className="h-5 sm:h-5 md:h-5 w-20 sm:w-24 rounded-md" />
+                    </div>
+
+                    {/* Footer row - replies, likes, timestamp */}
+                    <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-wrap">
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-12" />
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-12" />
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-20 hidden sm:block" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -264,110 +377,123 @@ const Forum = ({ courseId }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <MessageSquare className="h-6 w-6 text-primary" />
-          <div>
-            <h4 className="font-semibold text-xl">Course Forum</h4>
-            <p className="text-sm text-muted-foreground">Discuss, ask questions, and collaborate</p>
+      <div className="flex items-start sm:items-center justify-between gap-2">
+        <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-lg sm:text-xl truncate">Course Forum</h4>
+            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Discuss, ask questions, and collaborate</p>
           </div>
         </div>
-
-        <Button className="gap-2" onClick={() => setNewPostOpen(true)}>
-          <Plus className="h-4 w-4" />
-          New Post
-        </Button>
       </div>
 
       {/* Analytics */}
       <ForumAnalytics stats={forumStats} />
 
-      {/* Search with Results Dropdown */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-        <Input
-          placeholder="Search all posts..."
-          className="pl-10 pr-10"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
-        />
-        {searchQuery && (
-          <button
-            onClick={clearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+      {/* Search and Create Post */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="relative flex-1 order-1 sm:order-none">
+          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground z-10" />
+          <Input
+            placeholder="Search posts..."
+            className="pl-8 sm:pl-10 pr-8 sm:pr-10 h-9 sm:h-10 text-sm"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+            >
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+          )}
 
-        {/* Search Results Dropdown */}
-        {showSearchResults && (
-          <Card className="absolute top-full mt-2 w-full max-h-96 overflow-y-auto z-50 shadow-lg">
-            {isSearching ? (
-              <div className="p-4 text-center">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
-                <p className="text-sm text-muted-foreground">Searching...</p>
-              </div>
-            ) : searchFilteredPosts.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
-                <p className="text-sm">No posts found matching "{searchQuery}"</p>
-              </div>
-            ) : (
-              <div className="p-2">
-                <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
-                  {searchFilteredPosts.length} result{searchFilteredPosts.length !== 1 ? 's' : ''} found
+          {/* Search Results Dropdown */}
+          {showSearchResults && (
+            <Card className="absolute top-full mt-2 w-full max-h-[60vh] sm:max-h-96 overflow-y-auto z-50 shadow-lg">
+              {isSearching ? (
+                <div className="p-3 sm:p-4 text-center">
+                  <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin mx-auto mb-2 text-primary" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">Searching...</p>
                 </div>
-                {searchFilteredPosts.map((post) => (
-                  <button
-                    key={post.id}
-                    onClick={() => handleViewPost(post)}
-                    className="w-full text-left p-3 hover:bg-accent rounded-lg transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <MessageSquare className="h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm mb-1 truncate">{post.title}</h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span>{post.author}</span>
-                          <span>•</span>
-                          <span>{post.replies} replies</span>
-                          <span>•</span>
-                          <span>{post.lastActivity}</span>
+              ) : searchFilteredPosts.length === 0 ? (
+                <div className="p-3 sm:p-4 text-center text-muted-foreground">
+                  <p className="text-xs sm:text-sm">No posts found matching "{searchQuery}"</p>
+                </div>
+              ) : (
+                <div className="p-1.5 sm:p-2">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground px-2 py-1 mb-1">
+                    {searchFilteredPosts.length} result{searchFilteredPosts.length !== 1 ? 's' : ''} found
+                  </div>
+                  {searchFilteredPosts.map((post) => (
+                    <button
+                      key={post.id}
+                      onClick={() => handleViewPost(post)}
+                      className="w-full text-left p-2 sm:p-3 hover:bg-accent rounded-lg transition-colors"
+                    >
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 sm:mt-1 flex-shrink-0 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-xs sm:text-sm mb-1 truncate">{post.title}</h4>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                          <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
+                            <span className="truncate max-w-[100px] sm:max-w-none">{post.author?.fullName || 'Unknown'}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>{post.replies} replies</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">{post.lastActivity}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
-        )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+
+        <Button className="gap-2 h-9 text-sm whitespace-nowrap" onClick={() => setNewPostOpen(true)}>
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">New Post</span>
+          <span className="sm:hidden">New</span>
+        </Button>
       </div>
 
       {/* Categories */}
-      <Categories categories={categories} />
+      <Categories 
+        categories={categories} 
+        onCategoryClick={handleCategoryClick}
+        activeCategory={activeCategory}
+      />
 
       {/* Tabs for filtering */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">All Posts ({allPosts.length})</TabsTrigger>
-          <TabsTrigger value="pinned">Pinned ({allPosts.filter(p => p.isPinned).length})</TabsTrigger>
-          <TabsTrigger value="recent">Recent</TabsTrigger>
-          <TabsTrigger value="popular">Popular</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsTrigger value="all" className="text-sm px-2 py-2">
+            <span className="hidden sm:inline">All Posts ({getFilteredPosts().length})</span>
+            <span className="sm:hidden">All ({getFilteredPosts().length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="pinned" className="text-sm px-2 py-2">
+            <span className="hidden sm:inline">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
+            <span className="sm:hidden">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="text-sm px-2 py-2">Recent</TabsTrigger>
+          <TabsTrigger value="popular" className="text-sm px-2 py-2">Popular</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="space-y-3 mt-4">
+        <TabsContent value={activeTab} className="space-y-4 mt-4 sm:mt-6">
           {getFilteredPosts().length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">No posts found</p>
-              <p className="text-sm">Be the first to start a discussion!</p>
+            <div className="text-center py-6 text-muted-foreground px-4">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-medium">No posts found</p>
+              <p className="text-xs mt-1">Be the first to start a discussion!</p>
               <Button 
-                className="mt-4" 
+                className="mt-2 text-xs" 
                 onClick={() => setNewPostOpen(true)}
               >
                 Create First Post
@@ -379,22 +505,25 @@ const Forum = ({ courseId }) => {
                 posts={getFilteredPosts()}
                 categories={categories}
                 onViewPost={handleViewPost}
-                onDeletePost={setDeletePostId}
+                onDeletePost={setDeletePostObject}
+                onEditPost={handleEditPost}
+                onPinPost={handlePinPost}
+                onLockPost={handleLockPost}
               />
               
               {/* Infinite Scroll Trigger */}
               {hasNextPage && (
-                <div ref={loadMoreRef} className="flex justify-center py-4">
+                <div ref={loadMoreRef} className="flex justify-center py-3 sm:py-4">
                   {isFetchingNextPage ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Loading more posts...</span>
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="text-xs sm:text-sm">Loading more...</span>
                     </div>
                   ) : (
                     <Button 
                       variant="outline" 
                       onClick={() => fetchNextPage()}
-                      className="gap-2"
+                      className="gap-1.5 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9"
                     >
                       Load More Posts
                     </Button>
@@ -403,7 +532,7 @@ const Forum = ({ courseId }) => {
               )}
               
               {!hasNextPage && allPosts.length > 0 && (
-                <p className="text-center text-sm text-muted-foreground py-4">
+                <p className="text-center text-xs sm:text-sm text-muted-foreground py-3 sm:py-4">
                   You've reached the end of posts
                 </p>
               )}
@@ -425,7 +554,6 @@ const Forum = ({ courseId }) => {
         onOpenChange={setViewPostOpen}
         post={selectedPost}
         categories={categories}
-        onDeleteReply={setDeleteReplyId}
         onEditPost={handleEditPost}
       />
 
@@ -433,18 +561,15 @@ const Forum = ({ courseId }) => {
         open={editPostOpen}
         onOpenChange={setEditPostOpen}
         post={selectedPost}
+        categories={categories}
       />
 
       <DeletePostDialog
-        open={!!deletePostId}
-        onOpenChange={() => setDeletePostId(null)}
-        onConfirm={() => handleDeletePost(deletePostId)}
-      />
-
-      <DeleteReplyDialog
-        open={!!deleteReplyId}
-        onOpenChange={() => setDeleteReplyId(null)}
-        onConfirm={() => handleDeleteReply(deleteReplyId)}
+        open={!!deletePostObject}
+        onOpenChange={() => setDeletePostObject(null)}
+        onConfirm={() => handleDeletePost(deletePostObject)}
+        post={deletePostObject}
+        isLoading={deletePostMutation.isPending}
       />
     </div>
   );
