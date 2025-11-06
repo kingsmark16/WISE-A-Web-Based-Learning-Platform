@@ -89,7 +89,7 @@ export const useModuleManagement = () => {
 
   return {
     // Data
-    modules: data?.modules ?? [],
+    modules: Array.isArray(data?.modules) ? data.modules : [],
     courseId,
     isLoading,
     fetchError,

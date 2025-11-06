@@ -90,3 +90,55 @@ export const getSingleCourse = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export const getRandomPublishedCourses = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 6;
+
+        const randomCourses = await prisma.$queryRaw`
+            SELECT 
+                c.id,
+                c.title,
+                c.description,
+                c.college,
+                c.status,
+                c.thumbnail as "imageUrl",
+                c."facultyId",
+                c."createdAt",
+                COUNT(e.id) as "enrollmentCount"
+            FROM "Course" c
+            LEFT JOIN "Enrollment" e ON c.id = e."courseId"
+            WHERE c.status = 'PUBLISHED'
+            GROUP BY c.id
+            ORDER BY RANDOM()
+            LIMIT ${limit}
+        `;
+
+        // Fetch instructor details for each course
+        const coursesWithInstructor = await Promise.all(
+            randomCourses.map(async (course) => {
+                let instructor = null;
+                if (course.facultyId) {
+                    instructor = await prisma.user.findUnique({
+                        where: { id: course.facultyId },
+                        select: { id: true, fullName: true, emailAddress: true, imageUrl: true }
+                    });
+                }
+                return {
+                    ...course,
+                    enrollmentCount: parseInt(course.enrollmentCount) || 0,
+                    instructor
+                };
+            })
+        );
+
+        res.status(200).json({
+            success: true,
+            data: coursesWithInstructor,
+            total: coursesWithInstructor.length
+        });
+    } catch (error) {
+        console.log("Error in getRandomPublishedCourses", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}

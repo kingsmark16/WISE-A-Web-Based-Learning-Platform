@@ -12,7 +12,7 @@ import { AddModuleDialog, EditModuleDialog, DeleteModuleDialog } from "../module
 import { useModuleManagement } from "../../hooks/useModuleManagement";
 import { useDragAndDrop } from "../../hooks/useDragAndDrop";
 
-const ModuleContent = () => {
+const ModuleContent = ({ isAdminView = false }) => {
   // keep Accordion controlled for its whole lifetime by initializing to empty string
   const [openId, setOpenId] = useState("");
   const [addModuleOpen, setAddModuleOpen] = useState(false);
@@ -58,34 +58,40 @@ const ModuleContent = () => {
           <h4 className="font-semibold text-lg">Modules</h4>
         </div>
 
-        <AddModuleDialog
-          open={addModuleOpen}
-          onOpenChange={setAddModuleOpen}
-          onSubmit={createModule}
-          isLoading={isCreating}
-          error={createError || fetchError}
-          disabled={isCreating}
-        />
+        {!isAdminView && (
+          <AddModuleDialog
+            open={addModuleOpen}
+            onOpenChange={setAddModuleOpen}
+            onSubmit={createModule}
+            isLoading={isCreating}
+            error={createError || fetchError}
+            disabled={isCreating}
+          />
+        )}
       </div>
 
       {/* Edit Module Dialog */}
-      <EditModuleDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        onSubmit={updateModule}
-        isLoading={isUpdating}
-        error={updateError}
-        module={editingModule}
-      />
+      {!isAdminView && (
+        <EditModuleDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSubmit={updateModule}
+          isLoading={isUpdating}
+          error={updateError}
+          module={editingModule}
+        />
+      )}
 
       {/* Delete Module Dialog */}
-      <DeleteModuleDialog
-        open={deleteModuleOpen}
-        onOpenChange={setDeleteModuleOpen}
-        onConfirm={deleteModule}
-        isLoading={isDeleting}
-        module={moduleToDelete}
-      />
+      {!isAdminView && (
+        <DeleteModuleDialog
+          open={deleteModuleOpen}
+          onOpenChange={setDeleteModuleOpen}
+          onConfirm={deleteModule}
+          isLoading={isDeleting}
+          module={moduleToDelete}
+        />
+      )}
 
       <div className="grid gap-4 w-full overflow-hidden">
         {isLoading ? (
@@ -96,10 +102,10 @@ const ModuleContent = () => {
           <div className="text-sm text-muted-foreground">No modules yet. Add one to get started.</div>
         ) : (
           <DndContext
-            sensors={sensors}
+            sensors={isAdminView ? [] : sensors}
             collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
+            onDragStart={isAdminView ? undefined : handleDragStart}
+            onDragEnd={isAdminView ? undefined : handleDragEnd}
           >
             <SortableContext items={localModules.map(m => m.id)} strategy={verticalListSortingStrategy}>
               <Accordion
@@ -113,17 +119,18 @@ const ModuleContent = () => {
                   <SortableModule
                     key={m.id}
                     item={m}
-                    listenersDisabled={reorderMutation.isLoading || isUpdating || isDeleting}
+                    listenersDisabled={isAdminView || reorderMutation.isLoading || isUpdating || isDeleting}
                     isOpen={openId === m.id}
-                    onEdit={handleEditModule}
-                    onDelete={showDeleteDialog} // CHANGED: Use showDeleteDialog instead of deleteModule
+                    onEdit={isAdminView ? undefined : handleEditModule}
+                    onDelete={isAdminView ? undefined : showDeleteDialog}
+                    isAdminView={isAdminView}
                   />
                 ))}
               </Accordion>
             </SortableContext>
 
             <DragOverlay>
-              {activeId ? (() => {
+              {!isAdminView && activeId ? (() => {
                 const activeModule = localModules.find(m => m.id === activeId);
                 return activeModule ? (
                   <div className="relative rounded-lg border-2 bg-card shadow-lg border-input w-full overflow-hidden">

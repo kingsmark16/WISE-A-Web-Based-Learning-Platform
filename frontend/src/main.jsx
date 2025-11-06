@@ -11,6 +11,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider } from './components/ThemeProvider.jsx'
 import { SocketProvider } from './contexts/SocketContext.jsx'
+import { ModeProvider } from './contexts/ModeContext.jsx'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -42,9 +43,11 @@ createRoot(document.getElementById('root')).render(
          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           <SocketProvider>
             <ThemeProvider defaultTheme="dark" storageKey="wise-theme">
-              <AuthProvider>
-                <App />
-              </AuthProvider>
+              <ModeProvider>
+                <AuthProvider>
+                  <App />
+                </AuthProvider>
+              </ModeProvider>
             </ThemeProvider>
           </SocketProvider>
           <ToastContainer

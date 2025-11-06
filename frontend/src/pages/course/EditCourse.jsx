@@ -201,7 +201,7 @@ const EditCourse = () => {
                 // Navigate to course details page based on user role
                 const detailsRoute = isFaculty 
                     ? `/faculty/courses/${id}/manage` 
-                    : `/admin/courses/view/${id}`;
+                    : `/admin/courses/${id}`;
                 navigate(detailsRoute);
             }
         });

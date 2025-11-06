@@ -5,7 +5,7 @@ import { GripVertical, ExternalLink, Edit3, Trash2, MoreHorizontal } from "lucid
 import { DeleteLinkDialog, EditLinkDialog } from "./LinkDialog"; // <-- import here
 import LinkDetailDialog from "./LinkDetailDialog"; // <-- import detail dialog
 
-const SortableLink = ({ link, index, onEditLink, onDeleteLink, editPending = false }) => {
+const SortableLink = ({ link, index, onEditLink, onDeleteLink, editPending = false, isAdminView = false }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
 
   // Ref to title node so we can read computed font-size when drag begins
@@ -181,47 +181,55 @@ const SortableLink = ({ link, index, onEditLink, onDeleteLink, editPending = fal
                   style={{ top: menuPosition.top, left: menuPosition.left }}
                   onPointerDown={(e) => e.stopPropagation()} /* keep pointer events inside the dropdown from bubbling */
                 >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-muted/10"
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setEditOpen(true); }}
-                  >
-                    <Edit3 className="h-4 w-4 text-primary" />
-                    <span className="text-sm">Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-muted/10 text-destructive"
-                    onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="text-sm">Delete</span>
-                  </button>
+                  {!isAdminView && (
+                    <>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-muted/10"
+                        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setEditOpen(true); }}
+                      >
+                        <Edit3 className="h-4 w-4 text-primary" />
+                        <span className="text-sm">Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-muted/10 text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="text-sm">Delete</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Desktop / tablet: separate edit & delete buttons */}
             <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                aria-label="edit-link"
-                className="h-8 w-8 p-1 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors touch-manipulation"
-                onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
-              >
-                <Edit3 className="h-4 w-4" />
-              </button>
+              {!isAdminView && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="edit-link"
+                    className="h-8 w-8 p-1 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors touch-manipulation"
+                    onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
 
-              <button
-                type="button"
-                aria-label="delete-link"
-                className="h-8 w-8 p-1 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors touch-manipulation"
-                onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+                  <button
+                    type="button"
+                    aria-label="delete-link"
+                    className="h-8 w-8 p-1 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors touch-manipulation"
+                    onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

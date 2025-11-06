@@ -379,6 +379,9 @@ const ModuleAccordion = ({ courseId }) => {
   const { data: modules = [], isLoading, error, refetch } = useModulesForStudent(courseId);
   const { data: courseProgress } = useStudentCourseProgress(courseId);
 
+  // Ensure modules is always an array
+  const safeModules = Array.isArray(modules) ? modules : [];
+
   if (isLoading) {
     return <ModulesSkeleton />;
   }
@@ -387,14 +390,14 @@ const ModuleAccordion = ({ courseId }) => {
     return <ErrorState error={error} onRetry={refetch} />;
   }
 
-  if (modules.length === 0) {
+  if (safeModules.length === 0) {
     return <EmptyState />;
   }
 
   return (
     <div className="-mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 py-4 md:py-6">
       <Accordion type="single" collapsible className="w-full space-y-2">
-        {modules.map((module, index) => (
+        {safeModules.map((module, index) => (
           <ModuleItem
             key={module.id}
             module={module}

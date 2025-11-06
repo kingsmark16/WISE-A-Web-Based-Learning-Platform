@@ -129,7 +129,7 @@ const SearchResults = () => {
               <div
                 key={course.id}
                 className="flex items-center justify-between p-2 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/admin/courses/view/${course.id}`)}
+                onClick={() => navigate(`/admin/courses/${course.id}`)}
               >
                 <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                   <div className="h-8 w-8 md:h-12 md:w-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">

@@ -51,14 +51,28 @@ export const getAllFaculty = async (req, res) => {
         const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
 
         const where = {
-         role: 'FACULTY',
+         OR: [
+            {
+               role: 'FACULTY'
+            },
+            {
+               role: 'ADMIN',
+               managedCourses: {
+                  some: {}
+               }
+            }
+         ],
          ...(search && {
-            OR: [
+            AND: [
                {
-                  fullName: {contains: search, mode: "insensitive"}
-               },
-               {
-                  emailAddress: {contains: search, mode: "insensitive"}
+                  OR: [
+                     {
+                        fullName: {contains: search, mode: "insensitive"}
+                     },
+                     {
+                        emailAddress: {contains: search, mode: "insensitive"}
+                     }
+                  ]
                }
             ]
          })
@@ -92,6 +106,25 @@ export const getAllFaculty = async (req, res) => {
                 emailAddress: true,
                 imageUrl: true,
                 lastActiveAt:true,
+                managedCourses: {
+                    select: {
+                        id: true,
+                        title: true,
+                        createdBy: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                imageUrl: true
+                            }
+                        }
+                    }
+                },
+                createdCourses: {
+                    select: {
+                        id: true,
+                        title: true
+                    }
+                },
                 _count: {
                     select: {
                         managedCourses: true,
@@ -111,7 +144,10 @@ export const getAllFaculty = async (req, res) => {
             imageUrl: f.imageUrl,
             lastActiveAt: f.lastActiveAt,
             totalManagedCourses: f._count.managedCourses,
-            totalCreatedCourses: f._count.createdCourses
+            totalCreatedCourses: f._count.createdCourses,
+            managedCourses: f.managedCourses,
+            createdCourses: f.createdCourses,
+            adminAssignedCourses: []
         }));
 
         res.status(200).json({
@@ -163,7 +199,12 @@ export const getSingleFaculty = async (req, res) => {
                   thumbnail: true,
                   college: true,
                   updatedAt: true,
-                  status: true
+                  status: true,
+                  _count: {
+                     select: {
+                        enrollments: true
+                     }
+                  }
                }
             }
          }
@@ -498,3 +539,46 @@ export const adminSearch = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const getTopCoursesByEnrollments = async (req, res) => {
+    try {
+        const topCourses = await prisma.course.findMany({
+            select: {
+                id: true,
+                title: true,
+                thumbnail: true,
+                _count: {
+                    select: {
+                        enrollments: true,
+                        completions: true,
+                    }
+                },
+                managedBy: {
+                    select: {
+                        fullName: true,
+                        imageUrl: true,
+                    }
+                }
+            },
+            orderBy: {
+                enrollments: { _count: 'desc' }
+            },
+            take: 5,
+        });
+
+        const formatted = topCourses.map(course => ({
+            id: course.id,
+            title: course.title,
+            thumbnail: course.thumbnail,
+            enrollments: course._count.enrollments || 0,
+            completions: course._count.completions || 0,
+            faculty: course.managedBy?.fullName || 'Unknown',
+        }));
+
+        res.status(200).json(formatted);
+    } catch (error) {
+        console.error('Error in getTopCoursesByEnrollments:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+

@@ -13,3 +13,14 @@ export const useGetCoursesByCategory = () => {
 
     })
 }
+
+export const useGetRandomPublishedCourses = () => {
+    return useQuery({
+        queryKey: ['randomPublishedCourses'],
+        queryFn: async () => {
+            const response = await axiosInstance.get('/courses/random?limit=6');
+            return response.data;
+        },
+        staleTime: 1000 * 60 * 10 // 10 minutes
+    })
+}

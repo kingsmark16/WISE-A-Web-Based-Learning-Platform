@@ -274,6 +274,7 @@ export const getTopStudentsByFinished = async (req, res) => {
           select: {
             completions: true,   // used for sorting (courses finished)
             enrollments: true,   // returned as totalCoursesEnrolled
+            certificates: true,  // total certificates earned
           },
         },
       },
@@ -287,6 +288,8 @@ export const getTopStudentsByFinished = async (req, res) => {
       imageUrl: s.imageUrl || null,
       name: s.fullName || 'Unknown',
       totalCoursesEnrolled: s._count.enrollments || 0,
+      coursesCompleted: s._count.completions || 0,
+      certificatesEarned: s._count.certificates || 0,
     }));
 
     res.status(200).json(formatted);

@@ -275,26 +275,18 @@ const FacultyManagement = () => {
               </Card>
             )}
           </div>
-          <div className="hidden lg:flex flex-row gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              onClick={() => handleSortToggle("totalManagedCourses")}
+              onClick={() => handleSortToggle("fullName")}
               className="flex items-center justify-center gap-2 border-2 text-sm"
             >
               <ArrowUpDown className="h-4 w-4" />
-              Sort by Managed Courses {sortBy === "totalManagedCourses" && (sortOrder === "asc" ? "↑" : "↓")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleSortToggle("totalCreatedCourses")}
-              className="flex items-center justify-center gap-2 border-2 text-sm"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              Sort by Created Courses {sortBy === "totalCreatedCourses" && (sortOrder === "asc" ? "↑" : "↓")}
+              A-Z {sortBy === "fullName" && (sortOrder === "asc" ? "↑" : "↓")}
             </Button>
             {hasActiveFilters && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={clearFilters}
                 className="border-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors text-sm"
               >
@@ -319,18 +311,8 @@ const FacultyManagement = () => {
                   onClick={() => handleSortToggle("totalManagedCourses")}
                   className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold mx-auto text-xs sm:text-sm"
                 >
-                  Managed Courses
+                  Courses
                   {sortBy === "totalManagedCourses" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
-                </Button>
-              </TableHead>
-              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSortToggle("totalCreatedCourses")}
-                  className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold mx-auto text-xs sm:text-sm"
-                >
-                  Created Courses
-                  {sortBy === "totalCreatedCourses" && (sortOrder === "asc" ? "↑" : "↓")}
                 </Button>
               </TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
@@ -348,7 +330,7 @@ const FacultyManagement = () => {
           <TableBody>
             {displayedFaculty.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 sm:h-32 text-center">
+                <TableCell colSpan={7} className="h-24 sm:h-32 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <User className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 mb-2" />
                     <p className="font-medium text-sm sm:text-base">No faculty found</p>
@@ -383,10 +365,9 @@ const FacultyManagement = () => {
                     <span className="text-xs sm:text-sm">{fac.emailAddress}</span>
                   </TableCell>
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px]">
-                    <span className="font-medium text-sm sm:text-base">{fac.totalManagedCourses}</span>
-                  </TableCell>
-                  <TableCell className="py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px]">
-                    <span className="font-medium text-sm sm:text-base">{fac.totalCreatedCourses}</span>
+                    <span className="text-xs sm:text-sm font-medium">
+                      {fac.totalManagedCourses || 0}
+                    </span>
                   </TableCell>
                   <TableCell className="py-2 sm:py-4 px-3 sm:px-6 min-w-[100px] sm:min-w-[150px] text-center">
                     <LiveRelativeTime date={fac.lastActiveAt} />

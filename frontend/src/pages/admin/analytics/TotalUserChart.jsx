@@ -45,65 +45,73 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
     chartData.reduce((acc, curr) => acc + (curr.count || 0), 0);
 
   return (
-    <Card className="flex flex-col">
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          style={{ minWidth: 200, minHeight: 200, width: "100%", height: "100%" }}
-          className="mx-auto aspect-square max-h-[200px]"
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-              data={chartData}
-              dataKey="count"
-              nameKey="role"
-              innerRadius={60}
-              strokeWidth={5}
-              isAnimationActive={true}
-            >
-              {chartData.map((entry, idx) => (
-                <Cell key={`cell-${idx}`} fill={entry.fill} />
-              ))}
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
+    <Card className="flex flex-col w-full h-full">
+      <CardHeader className="pb-3 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg font-semibold">Users</CardTitle>
+      </CardHeader>
+      
+      <CardContent className="flex-1 pb-2 sm:pb-4">
+        <div className="flex justify-center items-center h-64 sm:h-80">
+          <ChartContainer
+            config={chartConfig}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <PieChart width={280} height={280}>
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Pie
+                data={chartData}
+                dataKey="count"
+                nameKey="role"
+                innerRadius={50}
+                outerRadius={100}
+                strokeWidth={2}
+                isAnimationActive={true}
+              >
+                {chartData.map((entry, idx) => (
+                  <Cell key={`cell-${idx}`} fill={entry.fill} />
+                ))}
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text
                           x={viewBox.cx}
                           y={viewBox.cy}
-                          className="fill-foreground text-3xl font-bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
                         >
-                          {total.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-foreground"
-                        >
-                          Users
-                        </tspan>
-                      </text>
-                    );
-                  }
-                }}
-              />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-2xl sm:text-3xl font-bold"
+                          >
+                            {total.toLocaleString()}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 20}
+                            className="fill-muted-foreground text-xs sm:text-sm"
+                          >
+                            Users
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        </div>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 leading-none font-medium">
-          Showing total User <TrendingUp className="h-4 w-4" />
+      
+      <CardFooter className="flex-col gap-2 text-xs sm:text-sm pt-2 sm:pt-4 border-t">
+        <div className="flex items-center gap-2 leading-none font-medium text-muted-foreground">
+          <span>Total User</span>
+          <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
       </CardFooter>
     </Card>

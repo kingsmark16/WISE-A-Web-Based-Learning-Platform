@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
-
 import {
   Card,
   CardContent,
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   ChartContainer,
   ChartLegend,
@@ -101,15 +101,23 @@ export function ActiveUserAnalytics({ activeUsersData, isLoading, error }) {
   
   if (isLoading)
     return (
-      <div className="flex justify-center p-8">
-        Loading active users...
-      </div>
+      <Card className="w-full">
+        <CardHeader className="pb-3 sm:pb-4">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-full sm:w-96 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-64 sm:h-80 w-full" />
+        </CardContent>
+      </Card>
     )
   if (error)
     return (
-      <div className="flex justify-center p-8 text-red-500">
-        Error loading active users: {error.message}
-      </div>
+      <Card className="w-full border-destructive">
+        <CardContent className="flex justify-center p-4 sm:p-8 text-destructive text-sm">
+          Error loading active users: {error.message}
+        </CardContent>
+      </Card>
     )
 
   const getTimeRangeLabel = () => {
@@ -126,24 +134,22 @@ export function ActiveUserAnalytics({ activeUsersData, isLoading, error }) {
   }
 
   return (
-    <Card className="pt-0">
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-        <div className="grid flex-1 gap-1">
-          <CardTitle>
-            Active Users
-          </CardTitle>
-          <CardDescription>
+    <Card className="w-full">
+      <CardHeader className="flex flex-col gap-4 space-y-0 border-b pb-3 sm:pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid gap-0.5 sm:gap-1">
+          <CardTitle className="text-base sm:text-lg">Active Users</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Showing active faculty and students for the {getTimeRangeLabel()}
           </CardDescription>
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger
-            className="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
+            className="w-full sm:w-40 rounded-lg text-xs sm:text-sm"
             aria-label="Select a value"
           >
             <SelectValue placeholder="Last 3 months" />
           </SelectTrigger>
-          <SelectContent className="rounded-xl">
+          <SelectContent className="rounded-xl text-xs sm:text-sm">
             <SelectItem value="90d" className="rounded-lg">
               Last 3 months
             </SelectItem>
@@ -156,95 +162,104 @@ export function ActiveUserAnalytics({ activeUsersData, isLoading, error }) {
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
-          <AreaChart data={filteredData}>
-            <defs>
-              <linearGradient id="fillActiveFaculty" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-activeFaculty)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-activeFaculty)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillActiveStudents" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-activeStudents)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-activeStudents)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value + "T12:00:00")
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              padding={{ top: 20, bottom: 0 }}
-              tickFormatter={(value) => value.toLocaleString()}
-            />
-            <ChartTooltip
-              cursor={true}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value + "T12:00:00").toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      }
-                    )
+      <CardContent className="p-3 sm:p-6">
+        <div className="w-full overflow-x-auto -mx-3 sm:mx-0">
+          <div className="px-3 sm:px-0 min-w-full sm:min-w-0">
+            <ChartContainer
+              config={chartConfig}
+              className="h-64 sm:h-80 w-full"
+            >
+              <AreaChart data={filteredData} margin={{ top: 12, right: 12, left: 0, bottom: 12 }}>
+                <defs>
+                  <linearGradient id="fillActiveFaculty" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-activeFaculty)"
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-activeFaculty)"
+                      stopOpacity={0.1}
+                    />
+                  </linearGradient>
+                  <linearGradient id="fillActiveStudents" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-activeStudents)"
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-activeStudents)"
+                      stopOpacity={0.1}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  minTickGap={32}
+                  tick={{ fontSize: 11 }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value + "T12:00:00")
+                    return date.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })
                   }}
-                  indicator="dot"
                 />
-              }
-            />
-            <Area
-              dataKey="activeFaculty"
-              type="monotone"
-              fill="url(#fillActiveFaculty)"
-              stroke="var(--color-activeFaculty)"
-              strokeWidth={2}
-            />
-            <Area
-              dataKey="activeStudents"
-              type="monotone"
-              fill="url(#fillActiveStudents)"
-              stroke="var(--color-activeStudents)"
-              strokeWidth={2}
-            />
-            <ChartLegend content={<ChartLegendContent />} />
-          </AreaChart>
-        </ChartContainer>
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  width={40}
+                  tick={{ fontSize: 12 }}
+                  padding={{ top: 12, bottom: 0 }}
+                  tickFormatter={(value) => value.toLocaleString()}
+                />
+                <ChartTooltip
+                  cursor={true}
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(value) => {
+                        return new Date(value + "T12:00:00").toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )
+                      }}
+                      indicator="dot"
+                    />
+                  }
+                />
+                <Area
+                  dataKey="activeFaculty"
+                  type="monotone"
+                  fill="url(#fillActiveFaculty)"
+                  stroke="var(--color-activeFaculty)"
+                  strokeWidth={2}
+                  isAnimationActive={true}
+                />
+                <Area
+                  dataKey="activeStudents"
+                  type="monotone"
+                  fill="url(#fillActiveStudents)"
+                  stroke="var(--color-activeStudents)"
+                  strokeWidth={2}
+                  isAnimationActive={true}
+                />
+                <ChartLegend content={<ChartLegendContent />} />
+              </AreaChart>
+            </ChartContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

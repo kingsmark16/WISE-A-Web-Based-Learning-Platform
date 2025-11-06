@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import gsap from "gsap"
 import { UserButton, useUser } from "@clerk/clerk-react"
 import { useNavigate } from "react-router-dom"
 import { Search, X, Menu, BookOpen, Users, GraduationCap, Loader2 } from "lucide-react"
@@ -20,11 +21,77 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false)
   const searchRef = useRef(null)
+  const logoRef = useRef(null)
+  const dotRef = useRef(null)
 
   // Check if user is admin, faculty, or student
   const isAdmin = user?.publicMetadata?.role === "ADMIN"
   const isFaculty = user?.publicMetadata?.role === "FACULTY"
   const isStudent = user?.publicMetadata?.role === "STUDENT"
+
+  // Animate logo on mount and hover
+  useEffect(() => {
+    if (!logoRef.current || !dotRef.current) return
+
+    // Initial animation on mount
+    gsap.fromTo(
+      logoRef.current,
+      { opacity: 0, y: -10 },
+      { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }
+    )
+
+    gsap.fromTo(
+      dotRef.current,
+      { scale: 0, opacity: 0 },
+      { scale: 1, opacity: 0.6, duration: 0.8, delay: 0.2, ease: "elastic.out(1, 0.5)" }
+    )
+
+    // Continuous floating animation
+    gsap.to(dotRef.current, {
+      y: -3,
+      duration: 2,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut"
+    })
+  }, [])
+
+  // Logo hover animations
+  const handleLogoHover = () => {
+    if (!logoRef.current || !dotRef.current) return
+
+    gsap.to(logoRef.current, {
+      duration: 0.4,
+      color: "#3b82f6", // blue-500
+      textShadow: "0 0 20px rgba(59, 130, 246, 0.5)",
+      ease: "power2.out"
+    })
+
+    gsap.to(dotRef.current, {
+      duration: 0.4,
+      scale: 1.3,
+      boxShadow: "0 0 15px rgba(59, 130, 246, 0.8)",
+      ease: "power2.out"
+    })
+  }
+
+  const handleLogoHoverEnd = () => {
+    if (!logoRef.current || !dotRef.current) return
+
+    gsap.to(logoRef.current, {
+      duration: 0.4,
+      color: "inherit",
+      textShadow: "none",
+      ease: "power2.out"
+    })
+
+    gsap.to(dotRef.current, {
+      duration: 0.4,
+      scale: 1,
+      boxShadow: "none",
+      ease: "power2.out"
+    })
+  }
 
   // Detect if any video player modal is open
   useEffect(() => {
@@ -352,12 +419,33 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           variant="ghost"
           size="icon"
           onClick={onToggleSidebar}
-          className={`lg:hidden ${isSidebarOpen ? 'hidden' : ''}`}
+          className={`lg:hidden h-9 w-9 hover:bg-accent/50 transition-all duration-200 ${isSidebarOpen ? 'hidden' : ''}`}
         >
-          {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
         
-        <h2 className={`text-lg md:text-2xl font-bold tracking-wide ${isSidebarOpen ? 'hidden lg:block' : 'block'}`}>WISE</h2>
+        <div 
+          className={`relative group ${isSidebarOpen ? 'hidden lg:flex' : 'flex'} items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-accent/30 transition-all duration-300 cursor-pointer`}
+          onMouseEnter={handleLogoHover}
+          onMouseLeave={handleLogoHoverEnd}
+        >
+          {/* Animated background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/20 to-accent/0 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity duration-300" />
+          
+          {/* Logo text with modern styling */}
+          <span 
+            ref={logoRef}
+            className="relative text-xl md:text-2xl font-black tracking-wider text-foreground"
+          >
+            WISE
+          </span>
+          
+          {/* Accent dot indicator */}
+          <div 
+            ref={dotRef}
+            className="relative w-2 h-2 bg-blue-500 rounded-full opacity-60" 
+          />
+        </div>
       </div>
       
       {/* Search Bar - Desktop (For Admin, Faculty, and Students) */}

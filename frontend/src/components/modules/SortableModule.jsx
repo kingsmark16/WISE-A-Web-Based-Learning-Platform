@@ -72,6 +72,7 @@ const SortableModule = ({
   onPasteLink,
   onUploadPdf,
   onAddLink,
+  isAdminView = false,
 }) => {
   const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
@@ -652,24 +653,26 @@ const SortableModule = ({
           <p className="text-sm text-muted-foreground italic">No description</p>
         )}
 
-        <UploadActions
-          onUploadYoutube={() => {
-            // prefer parent handler; fallback to internal picker
-            if (typeof onUploadYoutube === "function") return onUploadYoutube(item);
-            return openYoutubePicker();
-          }}
-          // prefer parent handler (same format as edit/delete). if none, fall back to internal picker.
-          onUploadDropbox={() => {
-            if (typeof onUploadDropbox === "function") return onUploadDropbox(item);
-            return openDropboxPicker();
-          }}
-          onPasteLink={() => onPasteLink?.(item)}
-          onUploadPdf={() => {
-            if (typeof onUploadPdf === "function") return onUploadPdf(item);
-            return openPdfPicker();
-          }}
-          onAddLink={() => openLinkModal()}
-        />
+        {!isAdminView && (
+          <UploadActions
+            onUploadYoutube={() => {
+              // prefer parent handler; fallback to internal picker
+              if (typeof onUploadYoutube === "function") return onUploadYoutube(item);
+              return openYoutubePicker();
+            }}
+            // prefer parent handler (same format as edit/delete). if none, fall back to internal picker.
+            onUploadDropbox={() => {
+              if (typeof onUploadDropbox === "function") return onUploadDropbox(item);
+              return openDropboxPicker();
+            }}
+            onPasteLink={() => onPasteLink?.(item)}
+            onUploadPdf={() => {
+              if (typeof onUploadPdf === "function") return onUploadPdf(item);
+              return openPdfPicker();
+            }}
+            onAddLink={() => openLinkModal()}
+          />
+        )}
 
         {/* hidden file input fallback (used only when parent doesn't provide onUploadDropbox) */}
         <input
@@ -744,6 +747,7 @@ const SortableModule = ({
                   onEditLesson={handleEditLessonLocal}
                   onDeleteLesson={handleDeleteLessonLocal}
                   editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
+                  isAdminView={isAdminView}
                 />
               </div>
             </SortableContext>
@@ -800,6 +804,7 @@ const SortableModule = ({
               onEditLesson={handleEditLessonLocal}
               onDeleteLesson={handleDeleteLessonLocal}
               editPending={Boolean(editDropboxPending || editPdfPending || editYoutubePending)}
+              isAdminView={isAdminView}
             />
           </div>
         )}
@@ -819,6 +824,7 @@ const SortableModule = ({
                   onEditLink={handleEditLinkLocal}
                   onDeleteLink={handleDeleteLinkLocal}
                   editPending={Boolean(editLinkPending)}
+                  isAdminView={isAdminView}
                 />
               </div>
             </SortableContext>
@@ -875,6 +881,7 @@ const SortableModule = ({
               onEditLink={handleEditLinkLocal}
               onDeleteLink={handleDeleteLinkLocal}
               editPending={Boolean(editLinkPending)}
+              isAdminView={isAdminView}
             />
           </div>
         )}
@@ -892,62 +899,66 @@ const SortableModule = ({
                     </CardTitle>
                   </div>
                   <div className="flex items-center justify-end gap-2 flex-shrink-0 w-40">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-primary hover:bg-primary/10 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        editQuizDialogTriggerRef.current?.click();
-                      }}
-                      title="Edit quiz"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive hover:bg-destructive/10 transition-colors"
-                      onClick={handleDeleteQuiz}
-                      disabled={deleteQuizMutation.isPending}
-                      title="Delete quiz"
-                      aria-label="Delete quiz"
-                    >
-                      {deleteQuizMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={moduleData.module.quiz.isPublished ? "outline" : "default"}
-                      onClick={handlePublishQuiz}
-                      disabled={publishQuizMutation.isPending}
-                      title={moduleData.module.quiz.isPublished ? "Click to unpublish quiz" : "Click to publish quiz"}
-                      aria-label={moduleData.module.quiz.isPublished ? "Unpublish quiz" : "Publish quiz"}
-                      className={`transition-all duration-200 ${
-                        publishQuizMutation.isPending
-                          ? "opacity-70 cursor-not-allowed"
-                          : moduleData.module.quiz.isPublished
-                          ? "text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90"
-                      }`}
-                    >
-                      {publishQuizMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                          <span className="hidden sm:inline">Processing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                          <span className="hidden sm:inline">
-                            {moduleData.module.quiz.isPublished ? "Unpublish" : "Publish"}
-                          </span>
-                        </>
-                      )}
-                    </Button>
+                    {!isAdminView && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-primary hover:bg-primary/10 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            editQuizDialogTriggerRef.current?.click();
+                          }}
+                          title="Edit quiz"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:bg-destructive/10 transition-colors"
+                          onClick={handleDeleteQuiz}
+                          disabled={deleteQuizMutation.isPending}
+                          title="Delete quiz"
+                          aria-label="Delete quiz"
+                        >
+                          {deleteQuizMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={moduleData.module.quiz.isPublished ? "outline" : "default"}
+                          onClick={handlePublishQuiz}
+                          disabled={publishQuizMutation.isPending}
+                          title={moduleData.module.quiz.isPublished ? "Click to unpublish quiz" : "Click to publish quiz"}
+                          aria-label={moduleData.module.quiz.isPublished ? "Unpublish quiz" : "Publish quiz"}
+                          className={`transition-all duration-200 ${
+                            publishQuizMutation.isPending
+                              ? "opacity-70 cursor-not-allowed"
+                              : moduleData.module.quiz.isPublished
+                              ? "text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                              : "bg-primary text-primary-foreground hover:bg-primary/90"
+                          }`}
+                        >
+                          {publishQuizMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                              <span className="hidden sm:inline">Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                              <span className="hidden sm:inline">
+                                {moduleData.module.quiz.isPublished ? "Unpublish" : "Publish"}
+                              </span>
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -1068,17 +1079,19 @@ const SortableModule = ({
                 <p className="text-xs md:text-sm text-muted-foreground max-w-sm mb-4">
                   Create a quiz to test student knowledge.
                 </p>
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    quizDialogTriggerRef.current?.click();
-                  }}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Quiz
-                </Button>
+                {!isAdminView && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      quizDialogTriggerRef.current?.click();
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Quiz
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1145,12 +1158,16 @@ const SortableModule = ({
             </div>
 
             <div className={`flex items-center gap-2 transition-all duration-200 opacity-100 scale-100`} onClick={(e) => e.stopPropagation()}>
-              <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
-                <Edit3 className="h-4 w-4" />
-              </div>
-              <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
-                <Trash2 className="h-4 w-4" />
-              </div>
+              {!isAdminView && (
+                <>
+                  <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
+                    <Edit3 className="h-4 w-4" />
+                  </div>
+                  <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Custom Arrow Button */}

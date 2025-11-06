@@ -30,7 +30,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useGetCourses } from "../../hooks/courses/useCourses";
 import { 
   Eye, 
-  Edit, 
   Trash2, 
   Plus, 
   Search, 
@@ -40,9 +39,9 @@ import {
   Filter,
   X,
   BookOpen,
-  Calendar,
   ArrowUpDown,
-  Archive as ArchiveIcon
+  Archive as ArchiveIcon,
+  BarChart3
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -195,10 +194,72 @@ const Courses = () => {
         </div>
 
         {/* Table Skeleton */}
-        <div className="space-y-2">
-          {[...Array(12)].map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
+        <div className="rounded-lg overflow-hidden overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary/5 hover:bg-primary/10">
+                <TableHead className="font-semibold min-w-[200px]">
+                  <Skeleton className="h-4 w-24" />
+                </TableHead>
+                <TableHead className="font-semibold min-w-[120px]">
+                  <Skeleton className="h-4 w-16" />
+                </TableHead>
+                <TableHead className="font-semibold min-w-[100px]">
+                  <Skeleton className="h-4 w-12" />
+                </TableHead>
+                <TableHead className="font-semibold min-w-[150px]">
+                  <Skeleton className="h-4 w-20" />
+                </TableHead>
+                <TableHead className="font-semibold min-w-[120px]">
+                  <Skeleton className="h-4 w-24" />
+                </TableHead>
+                <TableHead className="font-semibold min-w-[120px]">
+                  <Skeleton className="h-4 w-20" />
+                </TableHead>
+                <TableHead className="font-semibold min-w-[100px] text-right">
+                  <Skeleton className="h-4 w-16 ml-auto" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(12)].map((_, i) => (
+                <TableRow key={i} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="min-w-[200px]">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-lg" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
+                    <Skeleton className="h-5 w-16" />
+                  </TableCell>
+                  <TableCell className="min-w-[100px]">
+                    <Skeleton className="h-5 w-12" />
+                  </TableCell>
+                  <TableCell className="min-w-[120px] sm:min-w-[150px]">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
+                    <div className="flex items-center justify-center">
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-[100px] text-right">
+                    <Skeleton className="h-8 w-8 rounded ml-auto" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
     );
@@ -377,7 +438,7 @@ const Courses = () => {
               <TableHead className="font-semibold min-w-[100px]">Status</TableHead>
               <TableHead className="font-semibold min-w-[150px]">Instructor</TableHead>
               <TableHead className="font-semibold min-w-[120px]">Total Enrolled</TableHead>
-              <TableHead className="font-semibold min-w-[120px]">Last Updated</TableHead>
+              <TableHead className="font-semibold min-w-[100px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -385,8 +446,7 @@ const Courses = () => {
               displayedCourses.map((course) => (
                 <TableRow 
                   key={course.id} 
-                  className="hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/admin/courses/view/${course.id}`)}
+                  className="hover:bg-muted/50 transition-colors"
                 >
                   <TableCell className="min-w-[200px]">
                     <div className="flex items-center gap-3">
@@ -445,23 +505,49 @@ const Courses = () => {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="min-w-[120px]">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {new Date(course.updatedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric"
-                        })}
-                      </span>
-                    </div>
+                  <TableCell className="min-w-[100px] text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/courses/${course.id}?tab=overview`);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Review Content
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/courses/${course.id}/analytics`);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          View Analytics
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <BookOpen className="h-12 w-12 opacity-50 mb-2" />
                     <p className="font-medium">No courses found</p>

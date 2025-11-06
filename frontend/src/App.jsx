@@ -30,6 +30,8 @@ import DraftCourses from "./pages/faculty/DraftCourses"
 import ArchivedCourses from "./pages/faculty/ArchivedCourses"
 import StudentInfo from "./pages/admin/userManagement/StudentInfo"
 import StudentManagement from "./pages/admin/userManagement/StudentManagement"
+import AdminCourseView from "./pages/admin/AdminCourseView"
+import AdminCourseAnalytics from "./pages/admin/AdminCourseAnalytics"
 import MyCourses from "./pages/student/MyCourses"
 import AchievementsPage from "./pages/student/AchievementsPage"
 import ArchivedCoursesPage from "./pages/student/ArchivedCoursesPage"
@@ -81,8 +83,10 @@ const App = () => {
           <Route path="search" element={<SearchResults/>}/>
           <Route path="courses" element={<Courses/>}/>
           <Route path="courses/create" element={<CreateCourse/>}/>
-          <Route path="courses/view/:id" element={<CourseDetail/>}/>
           <Route path="courses/edit/:id" element={<EditCourse/>}/>
+          <Route path="courses/view/:id" element={<CourseDetail/>}/>
+          <Route path="courses/:courseId" element={<AdminCourseView/>}/>
+          <Route path="courses/:courseId/analytics" element={<AdminCourseAnalytics/>}/>
           <Route path="faculty-management" element={<FacultyManagement/>}/>
           <Route path="faculty-management/view/:id" element={<FacultyInfo/>}/>
           <Route path="student-management" element={<StudentManagement/>}/>

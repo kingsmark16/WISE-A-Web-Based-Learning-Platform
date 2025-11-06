@@ -175,6 +175,7 @@ export const getCourse = async (req, res) => {
                 college: true,
                 status: true,
                 code: true,
+                facultyId: true,
                 updatedAt: true,
                 createdBy: {
                     select: {

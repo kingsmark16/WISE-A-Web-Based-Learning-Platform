@@ -67,7 +67,7 @@ export const useReorderModules = (courseId) => {
             const previous = queryClient.getQueryData(queryKey);
 
             // apply optimistic ordering if previous exists
-            if (previous?.modules) {
+            if (previous?.modules && Array.isArray(previous.modules)) {
                 const idToPos = new Map(orderedModules.map(m => [m.id, m.position]));
                 const optimisticModules = [...previous.modules]
                     .map(m => ({ ...m, position: idToPos.has(m.id) ? idToPos.get(m.id) : m.position }))
@@ -113,7 +113,7 @@ export const useUpdateModule = () => {
             queries.forEach(q => {
                 previous[q.queryKey] = queryClient.getQueryData(q.queryKey);
                 const data = queryClient.getQueryData(q.queryKey);
-                if (data?.modules) {
+                if (data?.modules && Array.isArray(data.modules)) {
                     queryClient.setQueryData(q.queryKey, {
                         ...data,
                         modules: data.modules.map(m => m.id === id ? { ...m, title: title ?? m.title, description: description ?? m.description } : m)
@@ -149,7 +149,7 @@ export const useDeleteModule = (courseId) => {
             await queryClient.cancelQueries(queryKey);
             const previous = queryClient.getQueryData(queryKey);
 
-            if (previous?.modules) {
+            if (previous?.modules && Array.isArray(previous.modules)) {
                 const deletedModule = previous.modules.find(m => m.id === id);
                 const deletedPosition = deletedModule?.position;
                 

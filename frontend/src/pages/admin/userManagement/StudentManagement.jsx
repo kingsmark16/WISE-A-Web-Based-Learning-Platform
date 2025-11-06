@@ -275,30 +275,21 @@ const StudentManagement = () => {
               </Card>
             )}
           </div>
-          <div className="hidden lg:flex flex-row gap-2">
+          <div className="flex flex-row gap-2 flex-wrap">
             <Button
               variant="outline"
-              onClick={() => handleSortToggle("totalEnrolledCourses")}
-              className="flex items-center justify-center gap-2 border-2 text-sm"
+              onClick={() => handleSortToggle("fullName")}
+              className="flex items-center justify-center gap-2 border-2 text-xs sm:text-sm h-8 sm:h-9"
             >
-              <ArrowUpDown className="h-4 w-4" />
-              Sort by Enrolled Courses {sortBy === "totalEnrolledCourses" && (sortOrder === "asc" ? "↑" : "↓")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleSortToggle("totalCertificates")}
-              className="flex items-center justify-center gap-2 border-2 text-sm"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              Sort by Certificates {sortBy === "totalCertificates" && (sortOrder === "asc" ? "↑" : "↓")}
+              A-Z {sortBy === "fullName" && (sortOrder === "asc" ? "↑" : "↓")}
             </Button>
             {hasActiveFilters && (
               <Button 
                 variant="outline" 
                 onClick={clearFilters}
-                className="border-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors text-sm"
+                className="border-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors text-xs sm:text-sm h-8 sm:h-9"
               >
-                <X className="mr-2 h-4 w-4" />
+                <X className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 Clear
               </Button>
             )}
@@ -311,28 +302,19 @@ const StudentManagement = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[200px] text-xs sm:text-sm">Student Name</TableHead>
+              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[200px] text-xs sm:text-sm">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSortToggle("fullName")}
+                  className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold text-xs sm:text-sm"
+                >
+                  Student Name
+                  {sortBy === "fullName" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
+                </Button>
+              </TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 min-w-[150px] sm:min-w-[250px] text-xs sm:text-sm">Email Address</TableHead>
-              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSortToggle("totalEnrolledCourses")}
-                  className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold mx-auto text-xs sm:text-sm"
-                >
-                  Enrolled Courses
-                  {sortBy === "totalEnrolledCourses" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
-                </Button>
-              </TableHead>
-              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSortToggle("totalCertificates")}
-                  className="flex items-center gap-1 sm:gap-2 h-auto p-0 font-semibold mx-auto text-xs sm:text-sm"
-                >
-                  Certificates
-                  {sortBy === "totalCertificates" && (sortOrder === "asc" ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />)}
-                </Button>
-              </TableHead>
+              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">Enrolled Courses</TableHead>
+              <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">Certificates</TableHead>
               <TableHead className="font-semibold py-2 sm:py-4 px-3 sm:px-6 text-center min-w-[100px] sm:min-w-[150px] text-xs sm:text-sm">
                 <Button
                   variant="ghost"
