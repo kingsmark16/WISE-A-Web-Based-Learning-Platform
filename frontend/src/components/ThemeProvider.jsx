@@ -3,7 +3,7 @@ import { ThemeProviderContext } from "../contexts/ThemeContext"
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "dark",
   storageKey = "vite-ui-theme",
   ...props
 }) {
