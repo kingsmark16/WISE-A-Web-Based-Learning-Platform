@@ -33,7 +33,41 @@ const QUESTION_TYPES = [
   { value: "ENUMERATION", label: "Enumeration" },
 ];
 
-const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, questionNumber }) => {
+// Validate a single question and return errors
+const validateQuestion = (question) => {
+  const errors = [];
+  
+  if (!question.question?.trim()) {
+    errors.push("Question text is required");
+  }
+  
+  if (!question.correctAnswer) {
+    errors.push("Correct answer is required");
+  }
+  
+  if (question.type === "MULTIPLE_CHOICE") {
+    const validOptions = (question.options || []).filter((o) => o.trim());
+    if (validOptions.length < 2) {
+      errors.push("At least 2 options required");
+    }
+    
+    const duplicates = (question.options || []).filter((o) => o.trim()).some((o, idx, arr) => arr.indexOf(o) !== idx);
+    if (duplicates) {
+      errors.push("Duplicate options not allowed");
+    }
+    
+    if (!validOptions.includes(question.correctAnswer)) {
+      errors.push("Correct answer must be one of the options");
+    }
+  }
+  
+  return errors;
+};
+
+const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, questionNumber, isSubmitting }) => {
+  const errors = validateQuestion(question);
+  const hasErrors = errors.length > 0;
+  
   const handleOptionAdd = () => {
     const newOptions = [...(question.options || []), ""];
     onUpdate({ ...question, options: newOptions });
@@ -51,16 +85,26 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
   };
 
   return (
-    <Card className="relative rounded-lg border-2 bg-card shadow-sm hover:shadow-lg border-input transition-all duration-200 hover:border-primary/30 cursor-pointer" onClick={() => onExpand(question.id)}>
-      <div className="flex items-center justify-between px-3">
-        <div className="flex-1">
-          <p className="font-semibold text-sm">
-            <span className="text-muted-foreground mr-2">{questionNumber}.</span>
-            {question.question || "Untitled Question"}
-          </p>
+    <Card className={`relative rounded-lg border-2 bg-card shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer ${
+      hasErrors ? 'border-destructive/50 bg-destructive/5' : 'border-input hover:border-primary/30'
+    }`} onClick={() => onExpand(question.id)}>
+      <div className="flex items-center justify-between px-2 sm:px-3 py-2 sm:py-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <p className="font-semibold text-xs sm:text-sm truncate">
+              <span className="text-muted-foreground mr-1 sm:mr-2">{questionNumber}.</span>
+              {question.question || "Untitled Question"}
+            </p>
+            {hasErrors && (
+              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive flex-shrink-0" title={`${errors.length} error(s)`} />
+            )}
+            {!hasErrors && question.question && (
+              <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">{question.type || "No type selected"}</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -68,22 +112,38 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
               e.stopPropagation();
               onRemove();
             }}
-            className="text-destructive hover:bg-destructive/10"
+            disabled={isSubmitting}
+            className="text-destructive hover:bg-destructive/10 h-7 w-7 sm:h-8 sm:w-8 p-0"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
-          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {isExpanded ? <ChevronUp className="h-4 w-4 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 flex-shrink-0" />}
         </div>
       </div>
 
       {isExpanded && (
         <>
           <Separator />
-          <CardContent className="" onClick={(e) => e.stopPropagation()}>
-            <div className="grid gap-4">
+          <CardContent className="p-3 sm:p-6" onClick={(e) => e.stopPropagation()}>
+            {/* Error Alert */}
+            {hasErrors && (
+              <Alert className="mb-3 sm:mb-4 border-destructive/50 bg-destructive/5">
+                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
+                <AlertDescription className="text-destructive text-xs sm:text-sm">
+                  <strong>Errors found:</strong>
+                  <ul className="mt-1.5 sm:mt-2 ml-3 sm:ml-4 list-disc space-y-0.5 sm:space-y-1">
+                    {errors.map((error, idx) => (
+                      <li key={idx}>{error}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="grid gap-3 sm:gap-4">
               {/* Question Text */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-text-${question.id}`} className="text-sm font-medium">
+              <div className="grid gap-1 sm:gap-1.5">
+                <Label htmlFor={`q-text-${question.id}`} className="text-xs sm:text-sm font-medium">
                   Question
                 </Label>
                 <Textarea
@@ -91,17 +151,18 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
                   value={question.question || ""}
                   onChange={(e) => onUpdate({ ...question, question: e.target.value })}
                   placeholder="Enter your question here"
-                  className="min-h-20 resize-none border-border/80"
+                  disabled={isSubmitting}
+                  className="min-h-16 sm:min-h-20 resize-none border-border/80 text-sm"
                 />
               </div>
 
               {/* Question Type */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-type-${question.id}`} className="text-sm font-medium">
+              <div className="grid gap-1 sm:gap-1.5">
+                <Label htmlFor={`q-type-${question.id}`} className="text-xs sm:text-sm font-medium">
                   Question Type
                 </Label>
-                <Select value={question.type || ""} onValueChange={(val) => onUpdate({ ...question, type: val })}>
-                  <SelectTrigger id={`q-type-${question.id}`} className="border-border/80">
+                <Select value={question.type || ""} onValueChange={(val) => onUpdate({ ...question, type: val })} disabled={isSubmitting}>
+                  <SelectTrigger id={`q-type-${question.id}`} className="border-border/80 h-9 sm:h-10 text-sm">
                     <SelectValue placeholder="Select question type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -115,8 +176,8 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
               </div>
 
               {/* Points */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-points-${question.id}`} className="text-sm font-medium">
+              <div className="grid gap-1 sm:gap-1.5">
+                <Label htmlFor={`q-points-${question.id}`} className="text-xs sm:text-sm font-medium">
                   Points
                 </Label>
                 <Input
@@ -126,36 +187,38 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
                   value={question.points || 1}
                   onChange={(e) => onUpdate({ ...question, points: Math.max(1, parseInt(e.target.value) || 1) })}
                   placeholder="1"
-                  className="border-border/80"
+                  disabled={isSubmitting}
+                  className="border-border/80 h-9 sm:h-10 text-sm"
                 />
               </div>
 
               {/* Options */}
               {question.type === "MULTIPLE_CHOICE" && (
-                <div className="grid gap-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
+                <div className="grid gap-1.5 sm:gap-2">
+                  <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
                     Options <span className="text-destructive">*</span>
                   </Label>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {(question.options || []).map((opt, idx) => {
                       const isDuplicate = opt.trim() && (question.options || []).filter((o) => o.trim() === opt.trim()).length > 1;
                       const isCorrectAnswer = opt.trim() === question.correctAnswer;
                       return (
-                        <div key={idx} className="flex gap-2">
+                        <div key={idx} className="flex gap-1.5 sm:gap-2">
                           <Input
                             value={opt}
                             onChange={(e) => handleOptionUpdate(idx, e.target.value)}
                             placeholder={`Option ${idx + 1}`}
-                            className={`flex-1 border-border/80 ${isDuplicate ? 'border-destructive/50 bg-destructive/5' : ''} ${isCorrectAnswer ? 'border-green-500/50 bg-green-500/5' : ''}`}
+                            disabled={isSubmitting}
+                            className={`flex-1 border-border/80 h-9 sm:h-10 text-sm ${isDuplicate ? 'border-destructive/50 bg-destructive/5' : ''} ${isCorrectAnswer ? 'border-green-500/50 bg-green-500/5' : ''}`}
                           />
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOptionRemove(idx)}
-                            disabled={(question.options || []).length <= 2}
-                            className="text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={(question.options || []).length <= 2 || isSubmitting}
+                            className="text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed h-9 sm:h-10 w-9 sm:w-10 p-0 flex-shrink-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       );
@@ -166,9 +229,10 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
                       variant="outline"
                       size="sm"
                       onClick={handleOptionAdd}
-                      className="w-full border-border/80"
+                      disabled={isSubmitting}
+                      className="w-full border-border/80 h-8 sm:h-9 text-xs sm:text-sm"
                     >
-                      <Plus className="h-3 w-3 mr-2" />
+                      <Plus className="h-3 w-3 sm:h-3 sm:w-3 mr-1.5 sm:mr-2" />
                       Add Option
                     </Button>
                   )}
@@ -193,13 +257,13 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
               )}
 
               {/* Correct Answer */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-answer-${question.id}`} className="text-sm font-medium">
+              <div className="grid gap-1 sm:gap-1.5">
+                <Label htmlFor={`q-answer-${question.id}`} className="text-xs sm:text-sm font-medium">
                   Correct Answer
                 </Label>
                 {question.type === "TRUE_FALSE" ? (
-                  <Select value={question.correctAnswer || ""} onValueChange={(val) => onUpdate({ ...question, correctAnswer: val })}>
-                    <SelectTrigger id={`q-answer-${question.id}`} className="border-border/80">
+                  <Select value={question.correctAnswer || ""} onValueChange={(val) => onUpdate({ ...question, correctAnswer: val })} disabled={isSubmitting}>
+                    <SelectTrigger id={`q-answer-${question.id}`} className="border-border/80 h-9 sm:h-10 text-sm">
                       <SelectValue placeholder="Select correct answer" />
                     </SelectTrigger>
                     <SelectContent>
@@ -213,7 +277,8 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
                     value={question.correctAnswer || ""}
                     onChange={(e) => onUpdate({ ...question, correctAnswer: e.target.value })}
                     placeholder="Enter the correct answer"
-                    className="border-border/80"
+                    disabled={isSubmitting}
+                    className="border-border/80 h-9 sm:h-10 text-sm"
                   />
                 )}
               </div>
@@ -392,70 +457,66 @@ export const CreateQuizDialog = ({ moduleId, onSuccess, trigger }) => {
         )}
       </DialogTrigger>
 
-      <DialogContent className="!max-w-[calc(100vw-2rem)] sm:!max-w-[90vw] w-full max-h-[90vh] overflow-hidden border-2 border-border flex flex-col">
-        <DialogHeader className="border-b pb-4 flex-shrink-0">
-          <DialogTitle className="text-lg font-bold">Create Quiz</DialogTitle>
-          <DialogDescription className="text-sm mt-1">
-            Build a comprehensive quiz with multiple question types and settings
+      <DialogContent className="!max-w-[calc(100vw-1rem)] sm:!max-w-[calc(100vw-2rem)] lg:!max-w-4xl w-full h-[95vh] sm:h-[90vh] overflow-hidden border-2 border-border flex flex-col p-0 my-6 sm:my-0" showCloseButton={false}>
+        <DialogHeader className="border-b pb-2 sm:pb-3 px-3 sm:px-4 pt-3 sm:pt-4 flex-shrink-0">
+          <DialogTitle className="text-sm sm:text-lg font-bold">Create Quiz</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm mt-0.5 sm:mt-1">
+            Build your quiz by adding questions and configuring settings
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex gap-6">
-          {/* Settings Section */}
-          <div className="w-80 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted border-r flex-shrink-0">
-            <form className="space-y-6 p-6">
-              {/* Title */}
-              <div className="grid gap-3">
-                <Label htmlFor="quiz-title" className="text-sm font-semibold flex items-center gap-2">
-                  Quiz Title <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="quiz-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value.slice(0, 200))}
-                  placeholder="e.g., Chapter 1 Assessment"
-                  required
-                  disabled={isSubmitting}
-                  maxLength={200}
-                  className="h-11"
-                />
-                <div className="text-xs text-muted-foreground text-right">
-                  {title.length}/200 characters
-                </div>
-              </div>
+        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-0 lg:gap-4 min-h-0">
+          {/* Desktop Settings Panel - Left Sidebar */}
+          <div className="hidden lg:flex flex-col w-72 border-r border-border flex-shrink-0 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted">
+            <div className="p-4 space-y-4">
+              <div>
+                <h4 className="font-semibold text-sm mb-3">Quiz Settings</h4>
+                <div className="space-y-3">
+                  {/* Title */}
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="quiz-title" className="text-xs font-medium">
+                      Title <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="quiz-title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value.slice(0, 200))}
+                      placeholder="e.g., Chapter 1 Assessment"
+                      required
+                      disabled={isSubmitting}
+                      maxLength={200}
+                      className="h-9 text-sm"
+                    />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {title.length}/200
+                    </div>
+                  </div>
 
-              {/* Description */}
-              <div className="grid gap-3">
-                <Label htmlFor="quiz-desc" className="text-sm font-semibold">
-                  Description <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
-                </Label>
-                <Textarea
-                  id="quiz-desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value.slice(0, 500))}
-                  placeholder="Add instructions or context for students..."
-                  disabled={isSubmitting}
-                  maxLength={500}
-                  className="min-h-24 resize-none"
-                />
-                <div className="text-xs text-muted-foreground text-right">
-                  {description.length}/500 characters
-                </div>
-              </div>
+                  {/* Description */}
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="quiz-desc" className="text-xs font-medium">
+                      Description <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                    </Label>
+                    <Textarea
+                      id="quiz-desc"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value.slice(0, 500))}
+                      placeholder="Add instructions for students..."
+                      disabled={isSubmitting}
+                      maxLength={500}
+                      className="min-h-16 resize-none text-sm"
+                    />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {description.length}/500
+                    </div>
+                  </div>
 
-              <Separator />
+                  <Separator />
 
-              {/* Limits Card */}
-              <Card className="bg-muted/50 border-0">
-                <CardHeader>
-                  <CardTitle className="text-base">Quiz Limits</CardTitle>
-                  <CardDescription>Configure time and attempt restrictions</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-4">
                   {/* Time Limit */}
-                  <div className="grid gap-3">
-                    <Label htmlFor="time-limit" className="text-sm font-medium">
-                      Time Limit <span className="text-xs text-muted-foreground font-normal">(minutes)</span>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="time-limit" className="text-xs font-medium">
+                      Time Limit (minutes)
                     </Label>
                     <Input
                       id="time-limit"
@@ -465,16 +526,16 @@ export const CreateQuizDialog = ({ moduleId, onSuccess, trigger }) => {
                       value={timeLimit}
                       onChange={(e) => setTimeLimit(e.target.value)}
                       disabled={isSubmitting}
-                      className="h-10"
+                      className="h-9 text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
-                      {timeLimit ? `${timeLimit} minute${timeLimit !== '1' ? 's' : ''} (${timeLimit * 60} seconds)` : "No time limit"}
+                      {timeLimit ? `${timeLimit} minute${timeLimit !== '1' ? 's' : ''}` : "No time limit"}
                     </p>
                   </div>
 
                   {/* Attempt Limit */}
-                  <div className="grid gap-3">
-                    <Label htmlFor="attempt-limit" className="text-sm font-medium">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="attempt-limit" className="text-xs font-medium">
                       Attempt Limit
                     </Label>
                     <Input
@@ -485,220 +546,191 @@ export const CreateQuizDialog = ({ moduleId, onSuccess, trigger }) => {
                       value={attemptLimit}
                       onChange={(e) => setAttemptLimit(e.target.value)}
                       disabled={isSubmitting}
-                      className="h-10"
+                      className="h-9 text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
                       {attemptLimit ? `${attemptLimit} attempt(s) allowed` : "Unlimited attempts"}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
-            </form>
-          </div>
-
-          {/* Questions Section */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <h3 className="font-semibold text-base mb-3 flex-shrink-0">Questions</h3>
-
-            {/* Questions Layout with Preview */}
-            <div className="flex-1 overflow-hidden flex gap-4">
-              {/* Questions List - Left Side */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {/* Questions Header with Add Button - Aligned with questions container */}
-                <div className="flex items-center justify-between gap-4 mb-3 flex-shrink-0">
-                  <p className="text-xs text-muted-foreground">
-                    {questions.length === 0 ? "No questions yet" : `${questions.length} question${questions.length !== 1 ? 's' : ''} added`}
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAddQuestion}
-                    disabled={isSubmitting}
-                    className="gap-2 flex-shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Question
-                  </Button>
-                </div>
-
-                {/* Questions List Scroll Area */}
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted pr-2">
-                  {questions.length > 0 ? (
-                    <div className="space-y-2">
-                      {questions.map((q, index) => (
-                        <div key={q.id}>
-                          <QuestionBuilder
-                            question={q}
-                            onUpdate={(updated) => handleUpdateQuestion(q.id, updated)}
-                            onRemove={() => handleRemoveQuestion(q.id)}
-                            onExpand={handleExpandQuestion}
-                            isExpanded={expandedQuestionId === q.id}
-                            questionNumber={index + 1}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-64">
-                      <div className="text-center">
-                        <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-                        <p className="text-sm font-medium text-muted-foreground mb-2">
-                          No questions yet
-                        </p>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Click "Add Question" to start building your quiz
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleAddQuestion}
-                          disabled={isSubmitting}
-                          className="gap-2"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add Your First Question
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Questions Summary - Right Side */}
-              <div className="w-56 border-2 border-border rounded-lg overflow-hidden flex flex-col flex-shrink-0">
-                <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted">
-                  <div className="p-4 space-y-4">
-                    <div>
-                    <h4 className="font-semibold text-sm mb-3">Quiz Summary</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total Questions:</span>
-                        <span className="font-medium">{questions.length}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total Points:</span>
-                        <span className="font-medium">{questions.reduce((sum, q) => sum + (q.points || 1), 0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Time Limit:</span>
-                        <span className="font-medium">{timeLimit ? `${timeLimit} min` : "Unlimited"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Attempts:</span>
-                        <span className="font-medium">{attemptLimit ? attemptLimit : "Unlimited"}</span>
-                      </div>
-                    </div>
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold text-sm mb-3">Summary</h4>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Questions:</span>
+                    <span className="font-medium">{questions.length}/5</span>
                   </div>
-
-                  <Separator />
-
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3">Question Types</h4>
-                    <div className="space-y-1 text-xs">
-                      {QUESTION_TYPES.map((type) => {
-                        const count = questions.filter((q) => q.type === type.value).length;
-                        return count > 0 ? (
-                          <div key={type.value} className="flex justify-between text-muted-foreground">
-                            <span>{type.label}:</span>
-                            <span className="font-medium">{count}</span>
-                          </div>
-                        ) : null;
-                      })}
-                      {questions.every((q) => !q.type) && (
-                        <p className="text-muted-foreground italic">No question types assigned yet</p>
-                      )}
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Points:</span>
+                    <span className="font-medium">{questions.reduce((sum, q) => sum + (q.points || 1), 0)}</span>
                   </div>
-
-                  <Separator />
-
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3">Validation Status</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-start gap-2">
-                        {title.trim() ? (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        ) : (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-                        <span className="text-muted-foreground">{title.trim() ? 'Title provided' : 'Title required'}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        {questions.length >= 5 ? (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        ) : (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-                        <span className="text-muted-foreground">{questions.length >= 5 ? `${questions.length} question(s)` : `At least 5 questions (${questions.length}/5)`}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        {questions.every((q) => q.question && q.correctAnswer) ? (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        ) : (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-                        <span className="text-muted-foreground">All questions complete</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        {questions.every((q) => {
-                          if (q.type === "MULTIPLE_CHOICE") {
-                            const validOpts = (q.options || []).filter(o => o.trim());
-                            return validOpts.length >= 2 && validOpts.includes(q.correctAnswer);
-                          }
-                          if (q.type === "TRUE_FALSE") {
-                            return ["true", "false"].includes(q.correctAnswer);
-                          }
-                          return q.type !== "" && q.correctAnswer;
-                        }) ? (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        ) : (
-                          <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-                        <span className="text-muted-foreground">All validations pass</span>
-                      </div>
-                    </div>
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Time Limit:</span>
+                    <span className="font-medium">{timeLimit ? `${timeLimit} min` : "Unlimited"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Attempts:</span>
+                    <span className="font-medium">{attemptLimit || "Unlimited"}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Mobile Settings Panel */}
+          <div className="lg:hidden border-b border-border flex-shrink-0">
+            <div className="p-2 space-y-2 max-h-40 overflow-y-auto scrollbar-thin">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="grid gap-1">
+                  <Label htmlFor="quiz-title" className="text-xs font-medium">
+                    Title <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="quiz-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value.slice(0, 200))}
+                    placeholder="Quiz name"
+                    required
+                    disabled={isSubmitting}
+                    maxLength={200}
+                    className="h-7 sm:h-8 text-xs"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="time-limit" className="text-xs font-medium">
+                    Time (min)
+                  </Label>
+                  <Input
+                    id="time-limit"
+                    type="number"
+                    min="0"
+                    placeholder="∞"
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(e.target.value)}
+                    disabled={isSubmitting}
+                    className="h-7 sm:h-8 text-xs"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="attempt-limit" className="text-xs font-medium">
+                    Attempts
+                  </Label>
+                  <Input
+                    id="attempt-limit"
+                    type="number"
+                    min="1"
+                    placeholder="∞"
+                    value={attemptLimit}
+                    onChange={(e) => setAttemptLimit(e.target.value)}
+                    disabled={isSubmitting}
+                    className="h-7 sm:h-8 text-xs"
+                  />
+                </div>
+              </div>
+              {/* Description field on mobile */}
+              <div className="grid gap-1 pt-2 border-t border-border/50">
+                <Label htmlFor="quiz-desc" className="text-xs font-medium">
+                  Description <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                </Label>
+                <Textarea
+                  id="quiz-desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value.slice(0, 500))}
+                  placeholder="Add instructions for students..."
+                  disabled={isSubmitting}
+                  maxLength={500}
+                  className="min-h-12 resize-none text-xs"
+                />
+                <div className="text-xs text-muted-foreground text-right">
+                  {description.length}/500
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Questions Area */}
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0 lg:min-h-auto">
+            <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 flex-shrink-0 bg-muted/30">
+              <h3 className="font-semibold text-xs sm:text-sm">Questions ({questions.length}/5)</h3>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleAddQuestion}
+                disabled={isSubmitting}
+                className="gap-1 h-7 sm:h-8 text-xs px-2"
+              >
+                <Plus className="h-3 w-3" />
+                <span className="hidden sm:inline">Add</span>
+              </Button>
+            </div>
+
+            {/* Questions List - Main Content */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-muted-foreground scrollbar-track-transparent hover:scrollbar-thumb-muted min-h-0 px-3 sm:px-4 py-3 sm:py-4">
+              {questions.length > 0 ? (
+                <div className="space-y-1.5 pb-3">
+                  {questions.map((q, index) => (
+                    <div key={q.id}>
+                      <QuestionBuilder
+                        question={q}
+                        onUpdate={(updated) => handleUpdateQuestion(q.id, updated)}
+                        onRemove={() => handleRemoveQuestion(q.id)}
+                        onExpand={handleExpandQuestion}
+                        isExpanded={expandedQuestionId === q.id}
+                        questionNumber={index + 1}
+                        isSubmitting={isSubmitting}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 sm:h-40">
+                  <div className="text-center">
+                    <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-30" />
+                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                      No questions yet
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Add at least 5 questions to create your quiz
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddQuestion}
+                      disabled={isSubmitting}
+                      className="gap-1 h-7 text-xs"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Get Started
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Footer with Actions */}
-        <DialogFooter className="border-t px-6 py-3 flex gap-2 flex-row-reverse flex-shrink-0 mt-auto items-center justify-between">
-          <div className="flex gap-2">
+        <DialogFooter className="border-t px-4 sm:px-6 py-2.5 sm:py-3 pb-15 sm:pb-3 flex gap-2 flex-col-reverse sm:flex-row-reverse flex-shrink-0 mt-auto items-stretch sm:items-center sm:justify-between">
+          <div className="flex gap-2 flex-col sm:flex-row">
             <Button
               type="submit"
               onClick={handleSubmit}
               disabled={isSubmitting || questions.length < 5}
-              className="gap-2"
+              className="text-foreground gap-1 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm w-full sm:w-auto"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                   Creating...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   Create Quiz
                 </>
               )}
@@ -708,7 +740,7 @@ export const CreateQuizDialog = ({ moduleId, onSuccess, trigger }) => {
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isSubmitting}
-              className="hover:bg-muted/50 transition-colors duration-200"
+              className="hover:bg-muted/50 transition-colors duration-200 h-9 sm:h-10 text-xs sm:text-sm w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -719,7 +751,7 @@ export const CreateQuizDialog = ({ moduleId, onSuccess, trigger }) => {
             variant="destructive"
             onClick={handleResetForm}
             disabled={isSubmitting}
-            className="hover:bg-muted/50 transition-colors duration-200"
+            className="hover:bg-muted/50 transition-colors duration-200 h-9 sm:h-10 text-xs sm:text-sm w-full sm:w-auto"
           >
             Reset
           </Button>

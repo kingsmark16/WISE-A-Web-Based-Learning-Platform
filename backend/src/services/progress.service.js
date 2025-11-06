@@ -53,38 +53,38 @@ class ProgressService {
     }
 
     /**
-     * Update module progress based on lessons and quiz completion
+     * Update module progress by moduleId directly
+     * @param {string} studentId - The student ID
+     * @param {string} moduleId - The module ID
+     * @param {boolean} updateLastAccessed - Whether to update lastAccessedAt (default: true)
      */
-    static async updateModuleProgress(studentId, lessonId) {
-        // Get the module for this lesson
-        const lesson = await prisma.lesson.findUnique({
-            where: { id: lessonId },
+    static async updateModuleProgressByModuleId(studentId, moduleId, updateLastAccessed = true) {
+        // Get the module
+        const module = await prisma.module.findUnique({
+            where: { id: moduleId },
             select: {
-                moduleId: true,
-                module: {
-                    select: {
-                        id: true,
-                        lessons: { select: { id: true } },
-                        quiz: { select: { id: true } }
-                    }
-                }
+                id: true,
+                lessons: { select: { id: true } },
+                quiz: { select: { id: true } }
             }
         });
 
-        if (!lesson) return;
+        if (!module) return;
 
-        const moduleId = lesson.moduleId;
-        const totalLessons = lesson.module.lessons.length;
-        const hasQuiz = !!lesson.module.quiz;
+        const totalLessons = module.lessons.length;
+        const hasQuiz = !!module.quiz;
 
         // Count completed lessons in this module
-        const completedLessons = await prisma.lessonProgress.count({
-            where: {
-                studentId,
-                lessonId: { in: lesson.module.lessons.map(l => l.id) },
-                isCompleted: true
-            }
-        });
+        let completedLessons = 0;
+        if (totalLessons > 0) {
+            completedLessons = await prisma.lessonProgress.count({
+                where: {
+                    studentId,
+                    lessonId: { in: module.lessons.map(l => l.id) },
+                    isCompleted: true
+                }
+            });
+        }
 
         // Check quiz completion
         let quizCompleted = false;
@@ -94,7 +94,7 @@ class ProgressService {
             const quizSubmission = await prisma.quizSubmission.findFirst({
                 where: {
                     studentId,
-                    quizId: lesson.module.quiz.id
+                    quizId: module.quiz.id
                 },
                 orderBy: { score: 'desc' },
                 select: { score: true }
@@ -129,21 +129,28 @@ class ProgressService {
 
         const isCompleted = overallProgress >= 100;
 
+        // Prepare update data
+        const updateData = {
+            progressPercentage: Math.round(overallProgress),
+            lessonsCompleted: completedLessons,
+            quizCompleted,
+            quizScore,
+            isCompleted,
+            completedAt: isCompleted ? new Date() : null,
+            updatedAt: new Date()
+        };
+
+        // Only update lastAccessedAt if requested
+        if (updateLastAccessed) {
+            updateData.lastAccessedAt = new Date();
+        }
+
         // Update module progress
         const moduleProgress = await prisma.moduleProgress.upsert({
             where: {
                 studentId_moduleId: { studentId, moduleId }
             },
-            update: {
-                progressPercentage: Math.round(overallProgress),
-                lessonsCompleted: completedLessons,
-                quizCompleted,
-                quizScore,
-                isCompleted,
-                completedAt: isCompleted ? new Date() : null,
-                lastAccessedAt: new Date(),
-                updatedAt: new Date()
-            },
+            update: updateData,
             create: {
                 studentId,
                 moduleId,
@@ -157,6 +164,79 @@ class ProgressService {
         });
 
         return moduleProgress;
+    }
+
+    /**
+     * Batch update module progress for multiple students efficiently
+     * @param {Array<{studentId: string, moduleId: string}>} updates - Array of student-module pairs to update
+     * @param {boolean} updateLastAccessed - Whether to update lastAccessedAt (default: true)
+     */
+    static async batchUpdateModuleProgress(updates, updateLastAccessed = true) {
+        if (!updates || updates.length === 0) return;
+
+        // Group updates by moduleId to minimize module queries
+        const updatesByModule = updates.reduce((acc, { studentId, moduleId }) => {
+            if (!acc[moduleId]) acc[moduleId] = [];
+            acc[moduleId].push(studentId);
+            return acc;
+        }, {});
+
+        // Process all modules in parallel
+        await Promise.all(
+            Object.entries(updatesByModule).map(async ([moduleId, studentIds]) => {
+                // Process all students for this module in parallel
+                await Promise.all(
+                    studentIds.map(studentId =>
+                        this.updateModuleProgressByModuleId(studentId, moduleId, updateLastAccessed)
+                    )
+                );
+            })
+        );
+    }
+
+    /**
+     * Batch recalculate course progress for multiple students efficiently
+     * @param {Array<{studentId: string, courseId: string}>} updates - Array of student-course pairs to update
+     */
+    static async batchRecalculateCourseProgress(updates) {
+        if (!updates || updates.length === 0) return;
+
+        // Group updates by courseId to minimize course queries
+        const updatesByCourse = updates.reduce((acc, { studentId, courseId }) => {
+            if (!acc[courseId]) acc[courseId] = [];
+            acc[courseId].push(studentId);
+            return acc;
+        }, {});
+
+        // Process all courses in parallel
+        await Promise.all(
+            Object.entries(updatesByCourse).map(async ([courseId, studentIds]) => {
+                // Process all students for this course in parallel
+                await Promise.all(
+                    studentIds.map(studentId =>
+                        this.recalculateCourseProgressByCourseId(studentId, courseId)
+                    )
+                );
+            })
+        );
+    }
+
+    /**
+     * Update module progress based on lessons and quiz completion
+     */
+    static async updateModuleProgress(studentId, lessonId) {
+        // Get the module for this lesson
+        const lesson = await prisma.lesson.findUnique({
+            where: { id: lessonId },
+            select: {
+                moduleId: true
+            }
+        });
+
+        if (!lesson) return;
+
+        // Use the new function to update by moduleId
+        return await this.updateModuleProgressByModuleId(studentId, lesson.moduleId);
     }
 
     /**
@@ -800,8 +880,7 @@ class ProgressService {
                 moduleId: true,
                 module: {
                     select: {
-                        courseId: true,
-                        lessons: { select: { id: true } }
+                        courseId: true
                     }
                 }
             }
@@ -810,7 +889,7 @@ class ProgressService {
         if (!quiz) return;
 
         // Update module progress (which calculates based on lessons + quiz)
-        await this.updateModuleProgress(studentId, quiz.module.lessons[0]?.id);
+        await this.updateModuleProgressByModuleId(studentId, quiz.moduleId);
 
         // Also update course progress to reflect quiz completion
         // Use recalculateCourseProgressByCourseId to ensure accurate calculation

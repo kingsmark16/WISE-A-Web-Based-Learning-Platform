@@ -66,13 +66,13 @@ const TopCoursesByEngagement = ({ facultyId }) => {
   };
 
   return (
-    <div className="p-6 border rounded-lg space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 md:p-6 border rounded-lg space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">Top Courses by Engagement</h3>
           <p className="text-xs text-muted-foreground mt-1">Ranked by content coverage percentage</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={timeRange === '1d' ? 'default' : 'outline'}
             size="sm"
@@ -128,18 +128,18 @@ const TopCoursesByEngagement = ({ facultyId }) => {
 
       {!isLoading && chartData.length > 0 && (
         <>
-          <ChartContainer config={chartConfig} className="h-80 w-full">
+          <ChartContainer config={chartConfig} className="h-64 sm:h-80 w-full">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="name"
                 stroke="hsl(var(--muted-foreground))"
-                style={{ fontSize: '11px' }}
+                style={{ fontSize: '10px', display: window.innerWidth < 1024 ? 'none' : 'block' }}
                 height={40}
               />
               <YAxis
                 stroke="hsl(var(--muted-foreground))"
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '11px' }}
                 allowDecimals={false}
                 domain={[0, 100]}
                 tickFormatter={(value) => `${value}%`}
@@ -210,7 +210,7 @@ const TopCoursesByEngagement = ({ facultyId }) => {
           </ChartContainer>
 
           {/* Engagement Formula Explanation */}
-          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm">
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 md:p-4 text-xs md:text-sm">
             <p className="text-blue-900 dark:text-blue-100 font-medium mb-2">How Engagement is Calculated</p>
             <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
               <p><strong>Coverage Percentage</strong> = (60% × Lessons Accessed) + (40% × Quizzes Attempted)</p>
@@ -219,8 +219,8 @@ const TopCoursesByEngagement = ({ facultyId }) => {
           </div>
 
           {/* Course Details Table */}
-          <div className="mt-8 space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="mt-6 md:mt-8 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h4 className="text-sm font-semibold">Engagement Details</h4>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -229,8 +229,8 @@ const TopCoursesByEngagement = ({ facultyId }) => {
               </div>
               
               {/* Sort Options */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium">Sort by:</span>
+              <div className="flex flex-col xs:flex-row xs:items-center xs:gap-2 gap-2">
+                <span className="text-xs font-medium whitespace-nowrap">Sort by:</span>
                 <div className="flex flex-wrap gap-1">
                   <button
                     onClick={() => setSortBy('engagement')}
@@ -268,12 +268,12 @@ const TopCoursesByEngagement = ({ facultyId }) => {
             <div className="space-y-3">
               {getSortedCourses().map((course, index) => (
                 <div key={course.id} className="space-y-2">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-border">
-                    <div className="flex items-center justify-center w-8 h-8 rounded font-bold text-primary bg-primary/10" style={{ backgroundColor: chartData.find(c => c.id === course.id)?.fill + '20' || '#3b82f620' }}>
+                  <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 p-2 xs:p-3 rounded-lg bg-muted/40 border border-border">
+                    <div className="flex items-center justify-center w-8 h-8 rounded font-bold text-primary bg-primary/10 flex-shrink-0" style={{ backgroundColor: chartData.find(c => c.id === course.id)?.fill + '20' || '#3b82f620' }}>
                       {index + 1}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{course.title}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{course.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {course.enrollments.total} enrolled
                       </p>
@@ -281,52 +281,52 @@ const TopCoursesByEngagement = ({ facultyId }) => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="gap-2"
+                      className="gap-2 text-xs w-full xs:w-auto"
                       onClick={() => navigate(`/faculty/courses/${course.id}/analytics`)}
                     >
-                      <BarChart3 className="w-4 h-4" />
-                      View Analytics
+                      <BarChart3 className="w-3 h-3 md:w-4 md:h-4" />
+                      <span>View Analytics</span>
                     </Button>
                   </div>
                   
                   {/* Engagement Metrics Grid */}
-                  <div className="grid grid-cols-3 gap-2 ml-2 text-xs">
-                    <div className="bg-green-50 dark:bg-green-950 rounded-md p-3 border border-green-200 dark:border-green-800">
-                      <p className="text-green-700 dark:text-green-300 font-semibold flex items-center gap-1 mb-2">
-                        <BookOpen className="w-4 h-4" />
-                        Lessons
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 ml-0 xs:ml-2 text-xs">
+                    <div className="bg-green-50 dark:bg-green-950 rounded-md p-2 md:p-3 border border-green-200 dark:border-green-800">
+                      <p className="text-green-700 dark:text-green-300 font-semibold flex items-center gap-1 mb-1 md:mb-2 text-xs">
+                        <BookOpen className="w-3 h-3 md:w-4 md:h-4" />
+                        <span>Lessons</span>
                       </p>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      <div className="flex items-baseline gap-1">
+                        <p className="text-xl md:text-2xl font-bold text-green-700 dark:text-green-300">
                           {course.engagement.uniqueLessonAccess}
                         </p>
-                        <p className="text-xs text-green-600/70 dark:text-green-400/70">
-                          unique views
+                        <p className="text-xs text-green-600/70 dark:text-green-400/70 whitespace-nowrap">
+                          views
                         </p>
                       </div>
                     </div>
                     
-                    <div className="bg-blue-50 dark:bg-blue-950 rounded-md p-3 border border-blue-200 dark:border-blue-800">
-                      <p className="text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-1 mb-2">
-                        <MessageSquare className="w-4 h-4" />
-                        Quizzes
+                    <div className="bg-blue-50 dark:bg-blue-950 rounded-md p-2 md:p-3 border border-blue-200 dark:border-blue-800">
+                      <p className="text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-1 mb-1 md:mb-2 text-xs">
+                        <MessageSquare className="w-3 h-3 md:w-4 md:h-4" />
+                        <span>Quizzes</span>
                       </p>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                      <div className="flex items-baseline gap-1">
+                        <p className="text-xl md:text-2xl font-bold text-blue-700 dark:text-blue-300">
                           {course.engagement.uniqueQuizAttempts}
                         </p>
-                        <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
-                          unique attempts
+                        <p className="text-xs text-blue-600/70 dark:text-blue-400/70 whitespace-nowrap">
+                          attempts
                         </p>
                       </div>
                     </div>
                     
-                    <div className="bg-purple-50 dark:bg-purple-950 rounded-md p-3 border border-purple-200 dark:border-purple-800">
-                      <p className="text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-1 mb-1">
-                        <TrendingUp className="w-4 h-4" />
-                        Engagement
+                    <div className="bg-purple-50 dark:bg-purple-950 rounded-md p-2 md:p-3 border border-purple-200 dark:border-purple-800 col-span-2 md:col-span-1">
+                      <p className="text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-1 mb-1 text-xs">
+                        <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
+                        <span>Engagement</span>
                       </p>
-                      <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                      <p className="text-lg md:text-2xl font-bold text-purple-700 dark:text-purple-300">
                         {course.engagement.score}%
                       </p>
                     </div>

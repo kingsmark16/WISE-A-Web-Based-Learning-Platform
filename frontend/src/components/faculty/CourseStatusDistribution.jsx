@@ -69,7 +69,7 @@ const CourseStatusDistribution = ({ courseStats }) => {
   return (
     <div className="p-4 border rounded-lg">
       <h3 className="text-sm font-semibold mb-4">Course Status Distribution</h3>
-      <ChartContainer config={chartConfig} className="h-80 w-full">
+      <ChartContainer config={chartConfig} className="h-64 sm:h-80 w-full">
         <PieChart>
           <Pie
             data={filteredData}
@@ -77,7 +77,7 @@ const CourseStatusDistribution = ({ courseStats }) => {
             cy="50%"
             labelLine={false}
             label={({ name, value }) => `${name}: ${value}`}
-            outerRadius={100}
+            outerRadius={window.innerWidth < 640 ? 60 : 100}
             fill="#8884d8"
             dataKey="value"
             isAnimationActive={true}

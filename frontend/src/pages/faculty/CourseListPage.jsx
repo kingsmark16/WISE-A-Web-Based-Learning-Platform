@@ -53,7 +53,7 @@ const CourseListPage = ({ status, title, description }) => {
 
   if (!isSignedIn) {
     return (
-      <div className="p-6">
+      <div className="px-2 md:px-4 py-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-yellow-800">Please sign in to access your courses</p>
         </div>
@@ -63,7 +63,7 @@ const CourseListPage = ({ status, title, description }) => {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-2 md:px-4 py-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">
             Error loading courses: {error?.message || 'Unknown error'}
@@ -75,21 +75,46 @@ const CourseListPage = ({ status, title, description }) => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 px-2 md:px-4 py-6">
         {/* Header Skeleton */}
-        <div>
+        <div className="space-y-2">
           <Skeleton className="h-9 w-64 mb-2" />
           <Skeleton className="h-5 w-96" />
         </div>
 
-        {/* Courses Grid Skeleton - using new ArchivedCourseGridSkeleton */}
-        <ArchivedCourseGridSkeleton count={6} />
+        {/* Courses Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="border rounded-lg overflow-hidden">
+              {/* Thumbnail Skeleton */}
+              <Skeleton className="w-full h-40 sm:h-48" />
+              
+              {/* Content Skeleton */}
+              <div className="p-3 md:p-4 space-y-3">
+                {/* College Badge */}
+                <Skeleton className="h-3 w-24" />
+                
+                {/* Title - 2 lines */}
+                <div className="space-y-1">
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-3/4" />
+                </div>
+                
+                {/* Actions Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <Skeleton className="flex-1 h-10" />
+                  <Skeleton className="flex-1 h-10" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 px-2 md:px-4 py-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">{title}</h1>
@@ -102,7 +127,7 @@ const CourseListPage = ({ status, title, description }) => {
           <p className="text-muted-foreground">No {status} courses</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {courses.map(course => (
             <CourseCard key={course.id} course={course} />
           ))}
@@ -135,11 +160,11 @@ const CourseCard = ({ course }) => {
       <div className="p-4 space-y-3">
         {/* College Badge */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{course.college}</span>
+          <span className="text-xs text-muted-foreground truncate">{course.college}</span>
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold line-clamp-2">{course.title}</h3>
+        <h3 className="font-semibold truncate">{course.title}</h3>
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">

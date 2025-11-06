@@ -32,7 +32,17 @@ const PostCard = ({ post, categories, onView, onDelete, onEdit, onPin, onLock })
   };
 
   return (
-    <Card className="hover:bg-accent/50 transition-colors">
+    <Card 
+      className="hover:bg-accent/50 transition-colors cursor-pointer" 
+      onClick={() => onView(post)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onView(post);
+        }
+      }}
+    >
       <CardContent className="py-1.5 sm:py-2 md:py-2.5 px-3 sm:px-4 md:px-5">
         <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
           <Avatar className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 flex-shrink-0">
@@ -46,8 +56,7 @@ const PostCard = ({ post, categories, onView, onDelete, onEdit, onPin, onLock })
                 {post.isPinned && <Pin className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0 mt-0.5 sm:mt-1" />}
                 {post.isLocked && <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-1" />}
                 <h5 
-                  className="font-semibold text-base sm:text-lg md:text-lg hover:text-primary transition-colors cursor-pointer flex-1 line-clamp-2"
-                  onClick={() => onView(post)}
+                  className="font-semibold text-base sm:text-lg md:text-lg hover:text-primary transition-colors flex-1 line-clamp-2"
                 >
                   {post.title}
                 </h5>

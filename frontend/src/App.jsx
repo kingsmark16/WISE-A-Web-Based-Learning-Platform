@@ -20,6 +20,7 @@ import StudentSearchResults from "./pages/student/SearchResults"
 import MainLayout from "./pages/MainLayout"
 import HomePage from "./pages/student/home/HomePage"
 import CoursePage from "./pages/student/home/CoursePage"
+import CollegeCourses from "./components/CollegeCourses"
 import FacultyDashboard from "./pages/faculty/FacultyDashboard"
 import CourseAnalytics from "./pages/faculty/CourseAnalytics"
 import FacultyCreateCourse from "./pages/faculty/CreateCourse"
@@ -102,6 +103,7 @@ const App = () => {
           <Route index element={<HomePage/>}/>
           <Route path="student-homepage" element={<HomePage/>}/>
           <Route path="search" element={<StudentSearchResults/>}/>
+          <Route path="college/:collegeName" element={<CollegeCourses/>}/>
           <Route path="homepage/:id/selected-course" element={<CoursePage/>}/>
           <Route path="my-courses" element={<MyCourses/>}/>
           <Route path="achievements" element={<AchievementsPage/>}/>

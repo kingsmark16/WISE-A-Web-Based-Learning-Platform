@@ -40,23 +40,26 @@ const SearchResults = () => {
       <div className="space-y-4 sm:space-y-6 px-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-6 sm:h-8 w-32 sm:w-40 mb-2" />
+            <Skeleton className="h-4 w-48 sm:w-64" />
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((j) => (
-            <Card key={j} className="h-[300px] flex flex-col p-0 w-full">
-              <Skeleton className="rounded-t-xl w-full h-[180px]" />
-              <CardContent className="p-4 flex-1 flex flex-col justify-between">
-                <div>
-                  <Skeleton className="h-4 w-3/4 mb-2" />
-                  <Skeleton className="h-3 w-1/2 mb-3" />
-                  <Skeleton className="h-3 w-2/3" />
+        <div className="p-4 sm:p-6">
+          <div className="space-y-2 md:space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between p-2 md:p-4 border rounded-lg">
+                <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+                  <Skeleton className="h-8 w-8 md:h-12 md:w-12 rounded-lg flex-shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-1 sm:space-y-2">
+                    <Skeleton className="h-3 sm:h-5 w-3/4" />
+                    <Skeleton className="h-2.5 sm:h-3 w-1/2" />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <Skeleton className="h-6 w-6 sm:h-10 sm:w-10 rounded" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -104,43 +107,45 @@ const SearchResults = () => {
 
       {/* Courses Section */}
       {courses.length > 0 && (
-        <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Courses ({courses.length})</h2>
+          </div>
+          <div className="space-y-2 md:space-y-3">
             {courses.map((course) => (
               <div
                 key={course.id}
+                className="flex items-center justify-between p-2 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
                 onClick={() => navigate(`/student/homepage/${course.id}/selected-course`)}
-                role="button"
-                tabIndex={0}
-                className="h-full cursor-pointer"
-                style={{ outline: "none" }}
               >
-                <Card className="hover:shadow-xl transition-shadow duration-200 group h-[300px] flex flex-col p-0 w-full">
-                  <div className="rounded-t-xl overflow-hidden flex items-center justify-center bg-muted h-[180px]">
+                <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+                  <div className="h-8 w-8 md:h-12 md:w-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
                     {course.thumbnail ? (
                       <img
                         src={course.thumbnail}
                         alt={course.title}
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        className="h-full w-full object-cover rounded-lg"
                       />
                     ) : (
-                      <BookOpen className="w-12 h-12 text-slate-400" />
+                      <BookOpen className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
                     )}
                   </div>
-                  <CardContent className="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-semibold text-sm text-primary mb-2 truncate">
-                        {course.title}
-                      </h3>
-                      <p className="text-muted-foreground text-xs mb-3 truncate">
-                        {course.college}
-                      </p>
-                      <p className="text-muted-foreground text-xs truncate">
-                        {course.managedBy?.fullName || "No instructor"}
-                      </p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-xs md:text-base truncate">{course.title}</h3>
+                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[10px] md:text-sm text-muted-foreground mt-0.5 md:mt-1">
+                      {course.college && (
+                        <Badge variant="outline" className="text-[9px] md:text-xs px-1 py-0 h-3.5 md:h-4">{course.college}</Badge>
+                      )}
+                      {course.managedBy && (
+                        <span className="truncate">by {course.managedBy.fullName}</span>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6 md:h-10 md:w-10 flex-shrink-0">
+                  <ArrowRight className="h-3 w-3 md:h-4 md:w-4" />
+                </Button>
               </div>
             ))}
           </div>

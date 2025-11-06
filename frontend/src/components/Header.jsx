@@ -82,14 +82,37 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Don't close if clicking the search toggle button
+      if (event.target.closest('button')?.classList.contains('md:hidden')) {
+        return // This is the search toggle button, don't close
+      }
+      
+      // Close if clicking outside the search ref
       if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false)
+        setIsSearchOpen(false)
+      }
+    }
+
+    // Also close search when clicking anywhere on the document
+    const closeSearchOnClick = (event) => {
+      // Skip if it's a button click
+      if (event.target.closest('button')) return
+      
+      if (isSearchOpen && searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsSearchOpen(false)
         setShowSuggestions(false)
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    document.addEventListener("click", closeSearchOnClick)
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("click", closeSearchOnClick)
+    }
+  }, [isSearchOpen])
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'react-toastify';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import ForumAnalytics from '../forum/ForumAnalytics';
 import Categories from '../forum/Categories';
 import PostList from '../forum/PostList';
@@ -277,19 +277,6 @@ const Forum = ({ courseId }) => {
           </div>
         </div>
 
-        {/* Analytics Skeleton */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="p-3 sm:p-4 border rounded-lg space-y-2">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-4 sm:h-5 sm:w-5 rounded" />
-                <Skeleton className="h-3 w-20 sm:w-24" />
-              </div>
-              <Skeleton className="h-6 sm:h-8 w-12" />
-            </div>
-          ))}
-        </div>
-
         {/* Search and Create Button Skeleton */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Skeleton className="flex-1 h-9 sm:h-10" />
@@ -312,38 +299,59 @@ const Forum = ({ courseId }) => {
           </div>
         </div>
 
-        {/* Posts List Skeleton */}
-        <div className="space-y-3 sm:space-y-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="p-3 sm:p-4 border rounded-lg space-y-3">
-              {/* Post Header */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0" />
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <Skeleton className="h-4 w-32 sm:w-40" />
-                    <Skeleton className="h-3 w-20 sm:w-24" />
+        {/* Posts List Skeleton - Simplified but matching structure */}
+        <div className="space-y-2 sm:space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="hover:bg-accent/50 transition-colors">
+              <CardContent className="py-1.5 sm:py-2 md:py-2.5 px-3 sm:px-4 md:px-5">
+                <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
+                  {/* Avatar */}
+                  <Skeleton className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full flex-shrink-0" />
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    {/* Title row with icons and buttons */}
+                    <div className="flex items-start gap-1 sm:gap-2 justify-between">
+                      <div className="flex items-start gap-1 sm:gap-2 flex-1 min-w-0">
+                        {/* Pin icon */}
+                        <Skeleton className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0 mt-0.5 sm:mt-1 rounded" />
+                        {/* Title */}
+                        <Skeleton className="h-5 sm:h-6 md:h-6 flex-1 w-2/3 sm:w-3/4" />
+                      </div>
+                      
+                      {/* Action buttons - Hidden on mobile */}
+                      <div className="hidden sm:flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
+                        <Skeleton className="h-9 w-9 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded" />
+                        <Skeleton className="h-9 w-9 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded" />
+                        <Skeleton className="h-9 w-9 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded" />
+                      </div>
+                      
+                      {/* 3-dots menu - Mobile only */}
+                      <Skeleton className="sm:hidden h-9 w-9 rounded flex-shrink-0" />
+                    </div>
+
+                    {/* Excerpt - 2 lines */}
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 sm:h-5 md:h-5 w-full" />
+                      <Skeleton className="h-4 sm:h-5 md:h-5 w-5/6" />
+                    </div>
+
+                    {/* Meta info row */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-20 sm:w-28" />
+                      <Skeleton className="h-5 sm:h-5 md:h-5 w-20 sm:w-24 rounded-md" />
+                    </div>
+
+                    {/* Footer row - replies, likes, timestamp */}
+                    <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-wrap">
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-12" />
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-12" />
+                      <Skeleton className="h-3 sm:h-4 md:h-4 w-20 hidden sm:block" />
+                    </div>
                   </div>
                 </div>
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </div>
-
-              {/* Post Title */}
-              <Skeleton className="h-5 sm:h-6 w-3/4" />
-
-              {/* Post Content */}
-              <div className="space-y-1.5">
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-5/6" />
-              </div>
-
-              {/* Post Footer */}
-              <div className="flex items-center gap-3 sm:gap-4 pt-2 border-t">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -449,8 +457,8 @@ const Forum = ({ courseId }) => {
           )}
         </div>
 
-        <Button className="gap-1.5 sm:gap-2 h-9 sm:h-10 text-sm whitespace-nowrap" onClick={() => setNewPostOpen(true)}>
-          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <Button className="gap-2 h-9 text-sm whitespace-nowrap" onClick={() => setNewPostOpen(true)}>
+          <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Post</span>
           <span className="sm:hidden">New</span>
         </Button>
@@ -466,26 +474,26 @@ const Forum = ({ courseId }) => {
       {/* Tabs for filtering */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto">
-          <TabsTrigger value="all" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">
+          <TabsTrigger value="all" className="text-sm px-2 py-2">
             <span className="hidden sm:inline">All Posts ({getFilteredPosts().length})</span>
             <span className="sm:hidden">All ({getFilteredPosts().length})</span>
           </TabsTrigger>
-          <TabsTrigger value="pinned" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">
+          <TabsTrigger value="pinned" className="text-sm px-2 py-2">
             <span className="hidden sm:inline">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
             <span className="sm:hidden">Pinned ({allPosts.filter(p => p.isPinned && (!activeCategory || p.category === activeCategory)).length})</span>
           </TabsTrigger>
-          <TabsTrigger value="recent" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">Recent</TabsTrigger>
-          <TabsTrigger value="popular" className="text-sm sm:text-sm md:text-sm px-2 sm:px-3 py-2">Popular</TabsTrigger>
+          <TabsTrigger value="recent" className="text-sm px-2 py-2">Recent</TabsTrigger>
+          <TabsTrigger value="popular" className="text-sm px-2 py-2">Popular</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="space-y-3 mt-3 sm:mt-4">
+        <TabsContent value={activeTab} className="space-y-4 mt-4 sm:mt-6">
           {getFilteredPosts().length === 0 ? (
-            <div className="text-center py-8 sm:py-12 text-muted-foreground px-4">
-              <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
-              <p className="text-base sm:text-lg font-medium">No posts found</p>
-              <p className="text-xs sm:text-sm mt-1">Be the first to start a discussion!</p>
+            <div className="text-center py-6 text-muted-foreground px-4">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-medium">No posts found</p>
+              <p className="text-xs mt-1">Be the first to start a discussion!</p>
               <Button 
-                className="mt-3 sm:mt-4 text-sm" 
+                className="mt-2 text-xs" 
                 onClick={() => setNewPostOpen(true)}
               >
                 Create First Post

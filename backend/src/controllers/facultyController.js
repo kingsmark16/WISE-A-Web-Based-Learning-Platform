@@ -569,14 +569,23 @@ export const getCourseAnalytics = async (req, res) => {
     });
 
     const topStudents = Array.from(studentMetrics.entries())
-      .map(([studentId, metrics]) => ({
-        studentId,
-        studentName: metrics.studentName,
-        lessonViews: metrics.lessonViews,
-        lessonsViewed: metrics.lessonsViewed.size,
-        quizzesAttempted: metrics.quizzesAttempted || 0,
-        engagementScore: (metrics.lessonViews * 0.5) + (metrics.lessonsViewed.size * 10) + (metrics.quizzesAttempted || 0) * 5
-      }))
+      .map(([studentId, metrics]) => {
+        // Simple engagement score calculation:
+        // Lesson views (2 points each) + Lessons viewed (10 points each) + Quiz attempts (15 points each)
+        const engagementScore = 
+          (metrics.lessonViews * 2) + 
+          (metrics.lessonsViewed.size * 10) + 
+          ((metrics.quizzesAttempted || 0) * 15);
+        
+        return {
+          studentId,
+          studentName: metrics.studentName,
+          lessonViews: metrics.lessonViews,
+          lessonsViewed: metrics.lessonsViewed.size,
+          quizzesAttempted: metrics.quizzesAttempted || 0,
+          engagementScore
+        };
+      })
       .sort((a, b) => b.engagementScore - a.engagementScore)
       .slice(0, 5);
 
@@ -1096,6 +1105,234 @@ export const getStudentQuizAttempts = async (req, res) => {
     });
   } catch (err) {
     console.error('getStudentQuizAttempts error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Clear all quiz submissions for all enrolled students in a course
+ * DELETE /api/faculty/courses/:courseId/clear-submissions
+ */
+export const clearAllCourseSubmissions = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.auth.userId; // Clerk ID
+
+    // Verify the user is a faculty member
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { 
+        id: true, 
+        role: true 
+      }
+    });
+
+    if (!user || (user.role !== 'FACULTY' && user.role !== 'ADMIN')) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    // Verify the course exists and belongs to this faculty
+    const course = await prisma.course.findFirst({
+      where: {
+        id: courseId,
+        facultyId: user.id
+      },
+      select: {
+        id: true,
+        title: true,
+        modules: {
+          select: {
+            id: true,
+            quiz: {
+              select: { id: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found or you do not have permission' });
+    }
+
+    // Get all quiz IDs in this course
+    const quizIds = course.modules
+      .filter(module => module.quiz)
+      .map(module => module.quiz.id);
+
+    if (quizIds.length === 0) {
+      return res.json({ 
+        message: 'No quizzes found in this course',
+        deletedCount: 0 
+      });
+    }
+
+    // Get all enrolled students
+    const enrollments = await prisma.enrollment.findMany({
+      where: { courseId },
+      select: { studentId: true }
+    });
+
+    const studentIds = enrollments.map(e => e.studentId);
+
+    if (studentIds.length === 0) {
+      return res.json({ 
+        message: 'No students enrolled in this course',
+        deletedCount: 0 
+      });
+    }
+
+    // Delete all quiz submissions for these students in these quizzes
+    const deleteResult = await prisma.quizSubmission.deleteMany({
+      where: {
+        quizId: { in: quizIds },
+        studentId: { in: studentIds }
+      }
+    });
+
+    // Update module and course progress using optimized batch operations
+    const ProgressService = (await import('../services/progress.service.js')).default;
+    
+    // Get list of module IDs that have quizzes
+    const moduleIdsWithQuiz = course.modules
+      .filter(module => module.quiz)
+      .map(module => module.id);
+
+    // Prepare batch updates for module progress
+    const moduleUpdates = studentIds.flatMap(studentId =>
+      moduleIdsWithQuiz.map(moduleId => ({ studentId, moduleId }))
+    );
+
+    // Prepare batch updates for course progress
+    const courseUpdates = studentIds.map(studentId => ({ studentId, courseId }));
+
+    // Execute batch updates in parallel
+    await Promise.all([
+      ProgressService.batchUpdateModuleProgress(moduleUpdates, false),
+      ProgressService.batchRecalculateCourseProgress(courseUpdates)
+    ]);
+
+    return res.json({ 
+      message: `Successfully cleared ${deleteResult.count} quiz submission(s) for ${studentIds.length} student(s)`,
+      deletedCount: deleteResult.count,
+      affectedStudents: studentIds.length
+    });
+  } catch (err) {
+    console.error('clearAllCourseSubmissions error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Clear all quiz submissions for a specific student in a course
+ * DELETE /api/faculty/courses/:courseId/students/:studentId/clear-submissions
+ */
+export const clearStudentCourseSubmissions = async (req, res) => {
+  try {
+    const { courseId, studentId } = req.params;
+    const userId = req.auth.userId; // Clerk ID
+
+    // Verify the user is a faculty member
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { 
+        id: true, 
+        role: true 
+      }
+    });
+
+    if (!user || (user.role !== 'FACULTY' && user.role !== 'ADMIN')) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    // Verify the course exists and belongs to this faculty
+    const course = await prisma.course.findFirst({
+      where: {
+        id: courseId,
+        facultyId: user.id
+      },
+      select: {
+        id: true,
+        title: true,
+        modules: {
+          select: {
+            id: true,
+            quiz: {
+              select: { id: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found or you do not have permission' });
+    }
+
+    // Verify the student is enrolled in the course
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId,
+          courseId
+        }
+      },
+      select: {
+        student: {
+          select: { fullName: true }
+        }
+      }
+    });
+
+    if (!enrollment) {
+      return res.status(404).json({ message: 'Student not enrolled in this course' });
+    }
+
+    // Get all quiz IDs in this course
+    const quizIds = course.modules
+      .filter(module => module.quiz)
+      .map(module => module.quiz.id);
+
+    if (quizIds.length === 0) {
+      return res.json({ 
+        message: 'No quizzes found in this course',
+        deletedCount: 0 
+      });
+    }
+
+    // Delete all quiz submissions for this student in these quizzes
+    const deleteResult = await prisma.quizSubmission.deleteMany({
+      where: {
+        quizId: { in: quizIds },
+        studentId
+      }
+    });
+
+    // Update module progress to reflect quiz resets using parallel processing
+    const ProgressService = (await import('../services/progress.service.js')).default;
+    
+    // Get list of module IDs that have quizzes
+    const moduleIdsWithQuiz = course.modules
+      .filter(module => module.quiz)
+      .map(module => module.id);
+
+    // Process all updates in parallel for better performance
+    await Promise.all([
+      // Update all module progress in parallel
+      ...moduleIdsWithQuiz.map(moduleId =>
+        ProgressService.updateModuleProgressByModuleId(studentId, moduleId, false)
+      ),
+      // Recalculate course progress
+      ProgressService.recalculateCourseProgressByCourseId(studentId, courseId)
+    ]);
+
+    return res.json({ 
+      message: `Successfully cleared ${deleteResult.count} quiz submission(s) for ${enrollment.student.fullName}`,
+      deletedCount: deleteResult.count,
+      studentName: enrollment.student.fullName
+    });
+  } catch (err) {
+    console.error('clearStudentCourseSubmissions error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

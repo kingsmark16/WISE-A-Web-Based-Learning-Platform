@@ -78,19 +78,23 @@ export const MyCourses = () => {
     return (
       <div className="space-y-4 sm:space-y-6 px-0">
         {/* Header skeleton */}
-        <div className="flex items-center justify-between">
+        <div className="px-4 sm:px-6">
           <Skeleton className="h-8 w-32 mb-2" />
         </div>
         
         {/* Filters skeleton */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <Skeleton className="h-10 flex-1" />
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 w-full md:w-40" />
+            <Skeleton className="h-10 w-full md:w-40" />
+          </div>
         </div>
 
         {/* Grid skeleton - using new MyCourseGridSkeleton */}
-        <MyCourseGridSkeleton count={6} />
+        <div className="px-4 sm:px-6">
+          <MyCourseGridSkeleton count={6} />
+        </div>
       </div>
     );
   }

@@ -53,7 +53,7 @@ const FacultyDashboard = () => {
   // Show loading while fetching stats
   if (isLoading) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-8 px-2 md:px-4 py-6">
         {/* Header Skeleton */}
         <div>
           <Skeleton className="h-9 w-64 mb-2" />
@@ -63,41 +63,47 @@ const FacultyDashboard = () => {
         {/* Key Metrics - Top Row Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="p-6 border rounded-lg space-y-3">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-lg" />
+            <div key={i} className="border rounded-lg overflow-hidden">
+              <div className="px-3 md:px-6 py-3 md:py-4 flex flex-row items-center justify-between">
                 <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-6 rounded-full" />
               </div>
-              <Skeleton className="h-8 w-16" />
+              <div className="px-3 md:px-6 pb-3 md:pb-4">
+                <Skeleton className="h-7 w-16 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </div>
             </div>
           ))}
         </div>
 
         {/* Charts Section Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="border rounded-lg p-6 space-y-4">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-64 w-full" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <div className="border rounded-lg">
+            <div className="px-3 md:px-4 py-3 md:py-4 border-b">
+              <Skeleton className="h-5 w-48" />
+            </div>
+            <div className="p-3 md:p-4">
+              <Skeleton className="h-64 sm:h-80 w-full rounded" />
+            </div>
           </div>
-          <div className="border rounded-lg p-6 space-y-4">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-64 w-full" />
+          <div className="border rounded-lg">
+            <div className="px-3 md:px-4 py-3 md:py-4 border-b">
+              <Skeleton className="h-5 w-48" />
+            </div>
+            <div className="p-3 md:p-4">
+              <Skeleton className="h-64 sm:h-80 w-full rounded" />
+            </div>
           </div>
         </div>
 
         {/* Top Courses Section Skeleton */}
-        <div className="border rounded-lg p-6 space-y-4">
-          <Skeleton className="h-6 w-64" />
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
-                <Skeleton className="h-12 w-12 rounded" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))}
+        <div className="border rounded-lg">
+          <div className="px-3 md:px-4 py-3 md:py-4 border-b space-y-2">
+            <Skeleton className="h-5 w-64" />
+            <Skeleton className="h-3 w-96" />
+          </div>
+          <div className="p-3 md:p-4">
+            <Skeleton className="h-64 sm:h-80 w-full rounded" />
           </div>
         </div>
       </div>
@@ -106,7 +112,7 @@ const FacultyDashboard = () => {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-2 md:px-4 py-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">Error loading dashboard: {error.message}</p>
         </div>
@@ -116,7 +122,7 @@ const FacultyDashboard = () => {
 
   if (!facultyId) {
     return (
-      <div className="p-6">
+      <div className="px-2 md:px-4 py-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-yellow-800">Unable to load dashboard - Faculty ID not found</p>
         </div>
@@ -125,7 +131,7 @@ const FacultyDashboard = () => {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 px-2 md:px-4 py-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Faculty Dashboard</h1>

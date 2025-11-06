@@ -9,7 +9,9 @@ import {
   getTopCoursesByEngagement,
   getFacultyCourseStudents,
   getStudentQuizAttempts,
-  searchFacultyCourses
+  searchFacultyCourses,
+  clearAllCourseSubmissions,
+  clearStudentCourseSubmissions
 } from '../controllers/facultyController.js';
 
 const router = Router();
@@ -30,6 +32,12 @@ router.get('/courses', allowFacultyOrAdmin, getFacultyCourses);
 // Get enrolled students in a specific course (any authenticated user, authorization checked in controller)
 // MUST be BEFORE /:facultyId/courses/:courseId/* routes
 router.get('/courses/:courseId/students', getFacultyCourseStudents);
+
+// Clear all quiz submissions for all enrolled students in a course
+router.delete('/courses/:courseId/clear-submissions', allowFacultyOrAdmin, clearAllCourseSubmissions);
+
+// Clear all quiz submissions for a specific student in a course
+router.delete('/courses/:courseId/students/:studentId/clear-submissions', allowFacultyOrAdmin, clearStudentCourseSubmissions);
 
 // Get student quiz attempts for a course
 router.get('/courses/:courseId/students/:studentId/quiz-attempts', getStudentQuizAttempts);

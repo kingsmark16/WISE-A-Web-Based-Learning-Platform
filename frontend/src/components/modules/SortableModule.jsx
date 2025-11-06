@@ -1120,7 +1120,7 @@ const SortableModule = ({
           key={item.id}
           className="border-0"
         >
-          <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden">
+          <AccordionTrigger className="group py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 flex items-center justify-between gap-2 sm:gap-3 md:gap-4 hover:bg-accent/50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border w-full overflow-hidden [&>svg]:hidden">
           <div
             className="flex-shrink-0 mr-2 sm:mr-3 p-1 rounded cursor-pointer active:cursor-grabbing touch-none select-none hover:bg-accent/30 transition-colors"
             {...(listenersDisabled ? {} : { ...moduleAttributes })}
@@ -1137,21 +1137,10 @@ const SortableModule = ({
               <span className="text-xs sm:text-xs md:text-sm flex-shrink-0 mr-1">Module {item.position}:</span>
               <span className="block overflow-hidden text-ellipsis" title={item.title}>{item.title}</span>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              {/* Buttons for small screens */}
-              <div className="flex items-center gap-2 sm:hidden transition-all duration-200 opacity-100 scale-100" onClick={(e) => e.stopPropagation()}>
-                <div role="button" tabIndex={0} title="Edit module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary active:bg-primary/20 focus:bg-primary/10 focus:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors cursor-pointer touch-manipulation" onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}>
-                  <Edit3 className="h-4 w-4" />
-                </div>
-                <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive active:bg-destructive/20 focus:bg-destructive/10 focus:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive/50 transition-colors cursor-pointer touch-manipulation" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
-                  <Trash2 className="h-4 w-4" />
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-            <div className="text-sm text-muted-foreground whitespace-nowrap max-w-[5.5rem] overflow-hidden truncate flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="text-sm text-muted-foreground whitespace-nowrap max-w-[5.5rem] overflow-hidden truncate flex-shrink-0 hidden md:block">
               {(item._count?.lessons ?? 0) + (item._count?.attachments ?? 0)} lessons
             </div>
 
@@ -1162,6 +1151,19 @@ const SortableModule = ({
               <div role="button" tabIndex={0} title="Delete module" className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); onDelete?.(item); }}>
                 <Trash2 className="h-4 w-4" />
               </div>
+            </div>
+
+            {/* Custom Arrow Button */}
+            <div className="flex items-center justify-center w-5 h-5 flex-shrink-0">
+              <svg
+                className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
         </AccordionTrigger>

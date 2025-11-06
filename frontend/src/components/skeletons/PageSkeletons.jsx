@@ -273,33 +273,33 @@ export const MyCourseCardSkeleton = () => (
     
     <div className="flex flex-col flex-1">
       {/* Header section with title and badge */}
-      <div className="pb-2 flex-shrink-0 space-y-2 p-4">
+      <div className="pb-1 sm:pb-2 flex-shrink-0 space-y-2 p-3 sm:p-4">
         <div className="text-center">
           <Skeleton className="h-5 w-3/4 mx-auto mb-2" />
         </div>
         <div className="flex justify-center">
-          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full" />
         </div>
       </div>
 
       {/* Content section with faculty and progress */}
-      <div className="flex-1 flex flex-col justify-between space-y-3 p-4 pb-4">
+      <div className="flex flex-col space-y-1 p-3 sm:p-4 pb-3 sm:pb-4 flex-shrink-0">
         {/* Faculty Info with border-bottom */}
-        <div className="flex items-center gap-3 pb-2 border-b flex-shrink-0">
-          <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+        <div className="flex items-center gap-2 pb-1 sm:pb-2 border-b">
+          <Skeleton className="h-6 w-6 rounded-full flex-shrink-0" />
           <div className="flex-1 min-w-0 space-y-1">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-2 w-16" />
           </div>
         </div>
 
-        {/* Progress Bar at bottom */}
-        <div className="space-y-2 mt-auto">
+        {/* Progress Bar */}
+        <div className="space-y-0.5">
           <div className="flex justify-between items-center">
-            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-3 w-16" />
             <Skeleton className="h-3 w-8" />
           </div>
-          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-1 w-full" />
         </div>
       </div>
     </div>
@@ -308,22 +308,32 @@ export const MyCourseCardSkeleton = () => (
 
 // Archived/Faculty Course Card Skeleton - with action buttons
 export const ArchivedCourseCardSkeleton = () => (
-  <div className="border rounded-lg overflow-hidden">
+  <div className="h-96 flex flex-col border rounded-lg overflow-hidden p-0">
     {/* Thumbnail */}
-    <Skeleton className="w-full h-40" />
-    
-    {/* Content */}
-    <div className="p-4 space-y-3">
-      {/* College Badge */}
-      <Skeleton className="h-4 w-24" />
-
-      {/* Title */}
-      <Skeleton className="h-5 w-full" />
-
-      {/* Actions - Two buttons */}
-      <div className="flex gap-2 pt-2">
-        <Skeleton className="flex-1 h-9" />
-        <Skeleton className="flex-1 h-9" />
+    <Skeleton className="w-full h-48 flex-shrink-0" />
+    <div className="pb-1 sm:pb-2 flex-shrink-0 space-y-2 p-3 sm:p-4">
+      <div className="text-center">
+        <Skeleton className="h-5 w-3/4 mx-auto mb-2" />
+      </div>
+      <div className="flex justify-center">
+        <Skeleton className="h-5 w-24 rounded-full" />
+      </div>
+    </div>
+    {/* Content section with faculty and progress */}
+    <div className="flex flex-col space-y-1 p-3 sm:p-4 pb-3 sm:pb-4 flex-shrink-0">
+      <div className="flex items-center gap-2 pb-1 sm:pb-2 border-b">
+        <Skeleton className="h-6 w-6 rounded-full flex-shrink-0" />
+        <div className="flex-1 min-w-0 space-y-1">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-2 w-16" />
+        </div>
+      </div>
+      <div className="space-y-0.5">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-8" />
+        </div>
+        <Skeleton className="h-1 w-full" />
       </div>
     </div>
   </div>

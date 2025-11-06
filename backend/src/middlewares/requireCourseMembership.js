@@ -2,7 +2,7 @@ import prisma from '../lib/prisma.js';
 
 export const requireCourseMembership = () => async (req, res, next) => {
   try {
-    const auth = req.auth?.();
+    const auth = req.auth;
     const clerkUserId = auth?.userId;
     if (!clerkUserId) return res.status(401).json({ message: 'Not authenticated' });
 

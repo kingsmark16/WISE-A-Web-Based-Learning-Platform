@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCourseCompletion } from "@/hooks/student/useCourseCompletion";
 import { useCourseProgress } from "@/hooks/student/useCourseProgress";
 import { useCompleteCourse } from "@/hooks/student/useCompleteCourse";
@@ -150,11 +151,84 @@ const CertificationTab = ({ courseId, courseTitle }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading certification details...</p>
+      <div className="w-full space-y-4 sm:space-y-6">
+        {/* Success Banner Skeleton */}
+        <div className="relative overflow-hidden rounded-lg">
+          <Card className="border-0">
+            <CardContent className="pt-6 pb-6 sm:pt-8 sm:pb-8">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <Skeleton className="h-10 sm:h-12 w-10 sm:w-12 rounded-full flex-shrink-0" />
+                <div className="flex-1 min-w-0 space-y-2">
+                  <Skeleton className="h-5 sm:h-6 w-1/2" />
+                  <Skeleton className="h-4 sm:h-5 w-3/4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Certificate Card Skeleton */}
+        <Card className="overflow-hidden shadow-lg border-0">
+          <CardHeader className="border-b p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <Skeleton className="h-4 sm:h-5 w-4 sm:w-5 rounded" />
+                <Skeleton className="h-5 sm:h-6 w-32" />
+              </div>
+              <Skeleton className="h-6 w-20" />
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-6 pb-6 sm:pt-8 sm:pb-8 px-4 sm:px-6 md:px-8">
+            <div className="space-y-4 sm:space-y-6">
+              {/* Mobile Download Button Skeleton */}
+              <div className="md:hidden flex justify-center">
+                <Skeleton className="h-10 w-full rounded-lg" />
+              </div>
+
+              {/* PDF Preview Skeleton - Hidden on Mobile */}
+              <div className="hidden md:block w-full bg-gray-100 dark:bg-slate-800 rounded-lg border-2 border-muted overflow-hidden">
+                <Skeleton className="w-full h-96" />
+              </div>
+
+              {/* Certificate Details Grid Skeleton */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                  <Skeleton className="h-2.5 w-16" />
+                  <Skeleton className="h-4 sm:h-5 w-full" />
+                </div>
+                <div className="space-y-2 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                  <Skeleton className="h-2.5 w-16" />
+                  <Skeleton className="h-4 sm:h-5 w-full" />
+                </div>
+                <div className="space-y-2 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                  <Skeleton className="h-2.5 w-16" />
+                  <Skeleton className="h-4 sm:h-5 w-24" />
+                </div>
+                <div className="space-y-2 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                  <Skeleton className="h-2.5 w-16" />
+                  <Skeleton className="h-4 sm:h-5 w-28" />
+                </div>
+              </div>
+
+              {/* Desktop Download Button Skeleton */}
+              <div className="hidden md:flex justify-center pt-2 sm:pt-4">
+                <Skeleton className="h-10 w-48 rounded-lg" />
+              </div>
+
+              {/* Verify Info Skeleton */}
+              <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Skeleton className="h-3.5 sm:h-4 w-3.5 sm:w-4 rounded flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-32" />
+                    <Skeleton className="h-3.5 w-40" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -435,7 +509,7 @@ const CertificationTab = ({ courseId, courseTitle }) => {
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   {isCertificateGenerating 
-                    ? 'Your certificate is being prepared in the background. You can leave this page and come back later—it will be ready shortly.'
+                    ? 'Your certificate is being prepared. Please wait while we generate your official certificate of completion.'
                     : `Click below to generate and download your official certificate of completion for ${courseTitle}.`
                   }
                 </p>

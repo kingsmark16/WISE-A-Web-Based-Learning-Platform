@@ -60,63 +60,70 @@ const CoursePage = () => {
       <Card className="shadow-lg overflow-hidden border-none bg-transparent">
         {isLoading ? (
           <CardContent className="px-0 w-full overflow-hidden">
-            <div className="flex flex-col gap-6">
-              {/* Thumbnail and Course Info Row */}
-              <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
-                {/* Course Information */}
-                <div className="flex-1 space-y-6">
-                  {/* Title and Badges */}
-                  <div>
-                    <Skeleton className="h-8 sm:h-9 w-2/3 mb-3 sm:mb-4" />
-                    
-                    {/* Thumbnail skeleton below title on small and medium screens */}
-                    <div className="block lg:hidden mb-4 w-full">
-                      <Skeleton className="h-48 w-full sm:max-w-64 md:max-w-80 rounded-lg" />
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Skeleton className="h-7 w-32 rounded-full" />
-                    </div>
-                    
-                    {/* Enroll Button Skeleton */}
-                    <Skeleton className="h-10 w-32 rounded-md" />
-                  </div>
+            <div className="space-y-4 sm:space-y-6">
+              {/* Mobile-first layout: thumbnail on top for small screens */}
+              <div className="flex flex-col gap-4 sm:gap-6">
+                {/* Thumbnail Skeleton - Mobile first (visible on mobile/tablet) */}
+                <div className="block lg:hidden w-full">
+                  <Skeleton className="h-48 sm:h-56 md:h-64 w-full rounded-lg" />
+                </div>
 
-                  {/* Instructor and Last Updated */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    {/* Instructor Skeleton */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <Skeleton className="h-3 w-20" />
-                        <Skeleton className="h-4 w-32" />
+                {/* Main Content and Desktop Thumbnail Row */}
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
+                  {/* Main Content Section - Full width on mobile, flex-1 on desktop */}
+                  <div className="flex-1 space-y-4 sm:space-y-6">
+                    {/* Title and Badges Skeleton */}
+                    <div className="space-y-2 sm:space-y-3">
+                      <Skeleton className="h-8 sm:h-9 w-3/4" />
+                      <div className="flex flex-wrap gap-2">
+                        <Skeleton className="h-7 sm:h-8 w-24 rounded-full" />
                       </div>
                     </div>
 
-                    {/* Last Updated Skeleton */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-28" />
+                    {/* Enroll Button Skeleton - Responsive width */}
+                    <div className="flex gap-2">
+                      <Skeleton className="h-10 sm:h-11 w-full sm:w-32 rounded-md" />
+                    </div>
+
+                    {/* Instructor and Last Updated Info Skeleton - Responsive grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      {/* Instructor Skeleton */}
+                      <div className="flex items-start gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg">
+                        <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <Skeleton className="h-3 w-16" />
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-6 rounded-full flex-shrink-0" />
+                            <Skeleton className="h-4 w-20" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Last Updated Skeleton */}
+                      <div className="flex items-start gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex-shrink-0" />
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Skeleton className="h-2.5 w-20" />
+                          <Skeleton className="h-4 w-28" />
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Thumbnail Skeleton - Desktop only, right side */}
+                  <div className="hidden lg:flex flex-shrink-0 items-start">
+                    <Skeleton className="w-80 h-96 rounded-lg" />
+                  </div>
                 </div>
 
-                {/* Thumbnail Skeleton - hidden on small/medium, visible on large */}
-                <div className="hidden lg:block flex-shrink-0">
-                  <Skeleton className="h-80 max-w-96 rounded-lg" />
-                </div>
-              </div>
-
-              {/* Description Skeleton */}
-              <div className="space-y-3">
-                <Skeleton className="h-6 w-32" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
+                {/* Description Skeleton */}
+                <div className="space-y-2 sm:space-y-3">
+                  <Skeleton className="h-6 sm:h-7 w-32" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-4/5" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -130,40 +137,52 @@ const CoursePage = () => {
           </div>
         ) : selectedCourse ? (
           <CardContent className="px-0 w-full overflow-hidden">
-            <div className="flex flex-col gap-6">
-              {/* Thumbnail and Course Info Row */}
-              <div className="flex flex-row md:flex-col lg:flex-row gap-6 lg:gap-8">
-                {/* Course Information */}
-                <div className="flex-1 space-y-6">
-                  {/* Title and Badges */}
-                  <div>
-                    <h1 className="text-xl sm:text-2xl lg:text-2xl xl:text-2xl font-bold tracking-tight mb-3 sm:mb-4">
-                      {selectedCourse.title}
-                    </h1>
-                    {/* Thumbnail below title on small and medium screens */}
-                    {selectedCourse.thumbnail && (
-                      <div className="relative group flex-shrink-0 block lg:hidden mb-4 w-full">
-                        <div className="relative">
-                          <img
-                            src={selectedCourse.thumbnail}
-                            alt={selectedCourse.title}
-                            className="h-auto w-full sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium bg-primary/10 text-primary border-none"
-                      >
-                        {selectedCourse.college}
-                      </Badge>
+            <div className="space-y-4 sm:space-y-6">
+              {/* Mobile-first layout: thumbnail on top for small screens */}
+              <div className="flex flex-col gap-4 sm:gap-6">
+                {/* Thumbnail - Mobile first (full width on mobile/tablet) */}
+                <div className="block lg:hidden w-full">
+                  {selectedCourse.thumbnail ? (
+                    <div className="relative group flex-shrink-0 w-full">
+                      <img
+                        src={selectedCourse.thumbnail}
+                        alt={selectedCourse.title}
+                        className="h-48 sm:h-56 md:h-64 w-full rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                      />
                     </div>
-                    {/* Enroll Button */}
-                    <div className="flex gap-2">
+                  ) : (
+                    <div className="h-48 sm:h-56 md:h-64 w-full rounded-lg bg-muted/50 flex items-center justify-center">
+                      <div className="text-center">
+                        <BookOpen className="h-12 sm:h-14 w-12 sm:w-14 mx-auto mb-2 text-muted-foreground opacity-75" />
+                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">No cover image</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Main Content and Desktop Thumbnail Row */}
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
+                  {/* Main Content Section - Full width on mobile, flex-1 on desktop */}
+                  <div className="flex-1 space-y-4 sm:space-y-6">
+                    {/* Title and Badges */}
+                    <div className="space-y-2 sm:space-y-4">
+                      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                        {selectedCourse.title}
+                      </h1>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium bg-primary/10 text-primary border-none"
+                        >
+                          {selectedCourse.college}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Enroll Button - Full width on mobile, auto on larger screens */}
+                    <div className="flex gap-2 pt-1">
                       <Button 
-                        className="w-full sm:w-auto h-10 text-sm md:text-base font-medium"
+                        className="w-full sm:w-auto h-10 sm:h-11 text-sm sm:text-base font-medium"
                         onClick={handleEnrollment}
                         disabled={isUnenrollingLocally || isUnenrollingCourse || isEnrollmentStatusLoading}
                         variant={enrollmentStatus?.isEnrolled ? "destructive" : "default"}
@@ -177,76 +196,83 @@ const CoursePage = () => {
                         )}
                       </Button>
                     </div>
+
+                    {/* Instructor and Last Updated - Responsive grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 pt-2">
+                      {/* Instructor */}
+                      <div className="flex items-start gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground font-medium mb-1">Instructor</p>
+                          {selectedCourse.managedBy ? (
+                            <div className="flex items-center gap-2">
+                              {selectedCourse.managedBy?.imageUrl && (
+                                <img
+                                  src={selectedCourse.managedBy.imageUrl}
+                                  alt={selectedCourse.managedBy.fullName}
+                                  className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+                                />
+                              )}
+                              <span className="text-sm font-medium truncate">{selectedCourse.managedBy?.fullName}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Not assigned</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Last Updated */}
+                      <div className="flex items-start gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Calendar className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground font-medium mb-1">Last Updated</p>
+                          <p className="text-sm font-medium">
+                            {new Date(selectedCourse.updatedAt).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Instructor and Last Updated */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    {/* Instructor */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Users className="h-5 w-5 text-primary" />
+                  {/* Thumbnail - Desktop only, positioned below content */}
+                  <div className="hidden lg:flex flex-col items-center flex-shrink-0">
+                    {selectedCourse.thumbnail ? (
+                      <div className="relative group flex-shrink-0">
+                        <img
+                          src={selectedCourse.thumbnail}
+                          alt={selectedCourse.title}
+                          className="h-64 w-auto rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
+                        />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground font-medium mb-1">Instructor</p>
-                        {selectedCourse.managedBy ? (
-                          <div className="flex items-center gap-2">
-                            {selectedCourse.managedBy?.imageUrl && (
-                              <img
-                                src={selectedCourse.managedBy.imageUrl}
-                                alt={selectedCourse.managedBy.fullName}
-                                className="h-6 w-6 rounded-full object-cover flex-shrink-0"
-                              />
-                            )}
-                            <span className="text-sm font-medium truncate">{selectedCourse.managedBy?.fullName}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Not assigned</span>
-                        )}
+                    ) : (
+                      <div className="w-64 h-64 rounded-lg bg-muted/50 flex items-center justify-center">
+                        <div className="text-center">
+                          <BookOpen className="h-16 w-16 mx-auto mb-3 text-muted-foreground opacity-75" />
+                          <p className="text-sm text-muted-foreground font-medium">No cover image</p>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Last Updated */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Calendar className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground font-medium mb-1">Last Updated</p>
-                        <p className="text-sm font-medium">
-                          {new Date(selectedCourse.updatedAt).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Thumbnail with Interactive Border */}
-                {selectedCourse.thumbnail && (
-                  <div className="relative group flex-shrink-0 hidden lg:block">
-                    <div className="relative">
-                      <img
-                        src={selectedCourse.thumbnail}
-                        alt={selectedCourse.title}
-                        className="h-auto max-w-48 sm:max-w-64 md:max-w-80 lg:max-w-96 rounded-lg object-cover shadow-md transition-all duration-300 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] group-hover:scale-[1.02]"
-                      />
-                    </div>
+                {/* Description */}
+                {selectedCourse.description && (
+                  <div className="space-y-2 sm:space-y-3 pt-2">
+                    <h2 className="text-base sm:text-lg font-semibold text-foreground">Description</h2>
+                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      {selectedCourse.description}
+                    </p>
                   </div>
                 )}
               </div>
-
-              {/* Description */}
-              {selectedCourse.description && (
-                <div className="space-y-3">
-                  <h2 className="text-lg font-semibold text-foreground">Description</h2>
-                  <p className="text-base text-muted-foreground leading-relaxed">
-                    {selectedCourse.description}
-                  </p>
-                </div>
-              )}
 
               {/* Course Content - Only show if enrolled */}
               {!isEnrollmentStatusLoading && enrollmentStatus?.isEnrolled && (

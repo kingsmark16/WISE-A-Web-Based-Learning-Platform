@@ -390,7 +390,7 @@ export default function VideoPlayer({
       <div
         ref={containerRef}
         className="w-full max-w-4xl sm:max-w-2xl lg:max-w-4xl bg-black rounded-md shadow-2xl overflow-hidden relative"
-        style={isMobile ? { height: "calc(100vh - 2rem)" } : { aspectRatio: "16/9", maxHeight: "90vh" }}
+        style={isMobile ? { height: "calc(100vh - 8rem)" } : { aspectRatio: "16/9", maxHeight: "90vh" }}
       >
         <div
           className={`absolute sm:top-2 top-4 left-2 right-2 z-40 flex items-center justify-between gap-2 transition-opacity duration-200 ${

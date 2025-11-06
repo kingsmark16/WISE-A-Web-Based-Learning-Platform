@@ -1,6 +1,7 @@
 import { useArchivedCourses } from '@/hooks/student/useArchivedCourses';
 import { CourseCard } from '@/components/student/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ArchivedCourseGridSkeleton } from '@/components/skeletons';
 import { Archive, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -17,10 +18,8 @@ const ArchivedCoursesPage = () => {
         </div>
 
         {/* Grid skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-96" />
-          ))}
+        <div className="px-4 sm:px-6">
+          <ArchivedCourseGridSkeleton count={6} />
         </div>
       </div>
     );

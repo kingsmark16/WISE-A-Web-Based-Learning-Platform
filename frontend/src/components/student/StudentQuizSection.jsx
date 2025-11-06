@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { HelpCircle, Loader2, CheckCircle2, Clock, Zap, AlertCircle, ArrowRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import {
 import { useStartStudentQuiz } from '@/hooks/student/useStudentQuiz';
 import StudentQuizComponent from '@/components/student/StudentQuizComponent';
 import StudentQuizHistory from '@/components/student/StudentQuizHistory';
+import QuizModal from '@/components/student/QuizModal';
+import { toast } from 'react-toastify';
 
 /**
  * Quiz component - memoized for performance
@@ -20,9 +22,18 @@ import StudentQuizHistory from '@/components/student/StudentQuizHistory';
 const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }) => {
   const [isQuizActive, setIsQuizActive] = useState(false);
   const [quizData, setQuizData] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // TanStack Query hooks
   const startQuizMutation = useStartStudentQuiz();
+
+  // Reset state when quiz changes or component mounts
+  useEffect(() => {
+    setIsQuizActive(false);
+    setQuizData(null);
+    setShowConfetti(false);
+  }, [quiz?.id]);
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
@@ -68,19 +79,29 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
       setQuizData(result.quiz);
       setIsQuizActive(true);
     } catch (error) {
-      // Error is handled by the mutation
+      // Show error in toast and ensure quiz is not active
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to start quiz';
+      toast.error(errorMessage);
+      setIsQuizActive(false);
+      setQuizData(null);
       console.error('Failed to start quiz:', error);
     }
   };
 
-  const handleQuizComplete = () => {
+  const handleQuizComplete = (result) => {
     setIsQuizActive(false);
     setQuizData(null);
-  };
-
-  const handleQuizCancel = () => {
-    setIsQuizActive(false);
-    setQuizData(null);
+    
+    // Show success message with score
+    if (result?.submission) {
+      const { score, totalPoints } = result.submission;
+      const percentage = totalPoints > 0 ? ((score / totalPoints) * 100).toFixed(1) : 0;
+      toast.success(`Quiz submitted successfully! Score: ${score}/${totalPoints} (${percentage}%)`, {
+        autoClose: 5000
+      });
+    } else {
+      toast.success('Quiz submitted successfully!');
+    }
   };
 
   const questionCount = quiz._count?.questions || 0;
@@ -183,7 +204,7 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
           {/* Start Button */}
           <Button
             className="w-full h-10 text-base"
-            disabled={!isPublished || isLoading || startQuizMutation.isPending}
+            disabled={!isPublished || isLoading || startQuizMutation.isPending || isQuizActive}
             onClick={handleStartQuiz}
           >
             {startQuizMutation.isPending ? (
@@ -201,38 +222,34 @@ const StudentQuizSection = memo(({ quiz, courseId, moduleId, isLoading = false }
         </CardContent>
       </Card>
 
-      {/* Error Alert */}
-      {startQuizMutation.error && (
-        <Alert variant="destructive" className="py-3">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            {startQuizMutation.error?.response?.data?.message ||
-             startQuizMutation.error?.message ||
-             'Failed to start quiz'}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => startQuizMutation.reset()}
-              className="ml-2 h-auto p-1 text-sm"
-            >
-              ×
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Active Quiz Component */}
-      {isQuizActive && quizData && (
-        <div className="mt-4">
+      {/* Active Quiz Component in Modal */}
+      <QuizModal
+        isOpen={isQuizActive && quizData !== null}
+        onClose={() => {
+          // Prevent closing while submitting
+          if (!quizData) return;
+          
+          const confirmClose = window.confirm(
+            'Are you sure you want to exit the quiz? Your progress will be lost.'
+          );
+          if (confirmClose) {
+            setIsQuizActive(false);
+            setQuizData(null);
+          }
+        }}
+        title={quizData?.title || 'Quiz'}
+        showConfetti={showConfetti}
+      >
+        {quizData && (
           <StudentQuizComponent
             quiz={quizData}
             courseId={courseId}
             moduleId={moduleId}
             onQuizComplete={handleQuizComplete}
-            onQuizCancel={handleQuizCancel}
+            onConfettiChange={setShowConfetti}
           />
-        </div>
-      )}
+        )}
+      </QuizModal>
 
       {/* Quiz History */}
       {!isQuizActive && quiz && (

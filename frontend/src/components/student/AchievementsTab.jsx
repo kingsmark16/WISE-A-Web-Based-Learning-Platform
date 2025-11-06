@@ -58,12 +58,35 @@ const AchievementsTab = () => {
       <div className="p-4 md:p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="overflow-hidden">
-              <div className="h-40 bg-muted" />
-              <CardContent className="p-4 space-y-3">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-                <Skeleton className="h-8 w-full" />
+            <Card key={i} className="overflow-hidden flex flex-col p-0">
+              {/* PDF Preview Skeleton */}
+              <div className="w-full h-48 bg-muted" />
+
+              <CardContent className="p-2 space-y-2">
+                {/* Course Title Skeleton */}
+                <div className="text-center">
+                  <Skeleton className="h-4 sm:h-5 w-3/4 mx-auto" />
+                </div>
+
+                {/* College Badge Skeleton */}
+                <div className="flex justify-center">
+                  <Skeleton className="h-5 w-20" />
+                </div>
+
+                {/* Certificate Details Skeleton */}
+                <div className="space-y-2 text-xs border-t pt-3">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+
+                {/* Download Button Skeleton */}
+                <Skeleton className="h-10 w-full mt-3" />
               </CardContent>
             </Card>
           ))}
@@ -121,7 +144,7 @@ const AchievementsTab = () => {
             <CardContent className="p-2 space-y-2">
               {/* Course Title */}
               <div className="text-center">
-                <p className="font-semibold text-primary line-clamp-2 text-sm md:text-base">
+                <p className="font-semibold text-primary line-clamp-1 text-sm md:text-base truncate">
                   {cert.courseTitle}
                 </p>
               </div>

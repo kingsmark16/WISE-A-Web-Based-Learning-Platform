@@ -26,33 +26,24 @@ const CourseAnalytics = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-6">
-        {/* Header Skeleton */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-4">
-            <Skeleton className="h-9 w-32" />
-            <Skeleton className="h-9 w-96" />
-            <Skeleton className="h-5 w-64" />
+      <div className="space-y-6 px-3 sm:px-6 md:px-8 lg:px-12 py-6">
+        {/* Header Skeleton - stacked on mobile */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="w-full sm:w-auto space-y-3">
+            <Skeleton className="h-8 w-3/4 sm:w-64" />
+            <Skeleton className="h-6 w-5/6 sm:w-96" />
+            <Skeleton className="h-4 w-3/4 sm:w-64" />
+          </div>
+          <div className="w-full sm:w-auto flex gap-3">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-9 w-20" />
           </div>
         </div>
 
         {/* Key Metrics Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="p-4 border rounded-lg space-y-3">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-              <Skeleton className="h-8 w-16" />
-            </div>
-          ))}
-        </div>
-
-        {/* Community & Completion Metrics Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="p-4 border rounded-lg space-y-3">
+            <div key={i} className="p-3 border rounded-lg space-y-3">
               <div className="flex items-center gap-3">
                 <Skeleton className="h-5 w-5 rounded" />
                 <Skeleton className="h-4 w-24" />
@@ -62,39 +53,52 @@ const CourseAnalytics = () => {
           ))}
         </div>
 
-        {/* Charts Skeleton */}
+        {/* Community Metrics Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-3 border rounded-lg space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Skeleton - smaller on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="border rounded-lg p-6 space-y-4">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-64 w-full" />
+          <div className="border rounded-lg p-4 space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-48 sm:h-64 w-full" />
           </div>
-          <div className="border rounded-lg p-6 space-y-4">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-64 w-full" />
+          <div className="border rounded-lg p-4 space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-48 sm:h-64 w-full" />
           </div>
         </div>
 
         {/* Top Students & Recent Activity Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="border rounded-lg p-6 space-y-4">
-            <Skeleton className="h-6 w-32" />
+          <div className="border rounded-lg p-4 space-y-4">
+            <Skeleton className="h-6 w-36" />
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
-                  <Skeleton className="h-10 w-10 rounded-full" />
+                <div key={i} className="flex items-center gap-3 p-2 border rounded-lg">
+                  <Skeleton className="h-8 w-8 rounded-full" />
                   <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-28" />
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="border rounded-lg p-6 space-y-4">
-            <Skeleton className="h-6 w-32" />
+          <div className="border rounded-lg p-4 space-y-4">
+            <Skeleton className="h-6 w-36" />
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="p-3 border rounded-lg space-y-2">
+                <div key={i} className="p-2 border rounded-lg space-y-2">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-24" />
                 </div>
@@ -147,7 +151,7 @@ const CourseAnalytics = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 px-3 sm:px-6 md:px-8 lg:px-12 py-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -312,7 +316,7 @@ const CourseAnalytics = () => {
                   analyticsData.lessons.map((lesson) => (
                     <tr key={lesson.id} className="hover:bg-muted/50">
                       <td className="px-4 py-3 text-sm">{lesson.title}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{lesson.moduleName}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{lesson.moduleName}</td>
                       <td className="px-4 py-3 text-sm font-semibold">
                         <span className="text-blue-600">{lesson.totalViews}</span>
                       </td>
@@ -364,7 +368,7 @@ const CourseAnalytics = () => {
                           {index + 1}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium">
+                      <td className="px-4 py-3 text-sm font-medium max-w-[220px] truncate min-w-0">
                         {student.studentName}
                       </td>
                       <td className="px-4 py-3 text-sm">{student.lessonViews}</td>

@@ -414,7 +414,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-full sm:max-w-[95vw] md:max-w-6xl h-[100dvh] sm:h-[95vh] flex flex-col overflow-hidden pt-2 pb-2 sm:pt-4 sm:pb-6 px-2 sm:px-6 gap-1">
+  <DialogContent className="max-w-full sm:max-w-[95vw] md:max-w-6xl h-[100dvh] sm:h-[95vh] flex flex-col overflow-hidden pt-2 pb-2 sm:pt-4 sm:pb-6 px-2 sm:px-6 gap-1 border-2">
   <DialogHeader className="px-2 sm:px-6 pt-2 sm:pt-0 pb-2 sm:pb-4 flex-shrink-0">
           <DialogTitle className="sr-only">View Post</DialogTitle>
         </DialogHeader>
