@@ -5,6 +5,7 @@ import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Oval } from 'react-loading-icons'
+import { BookOpen, Award, Target, Zap, Globe, Users, Sparkles, GraduationCap } from "lucide-react"
 
 
 
@@ -122,17 +123,38 @@ const SignIn = () => {
                      resendMutation.isPending;
 
     return (
-        <div className="w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-6 min-h-screen md:min-h-screen lg:h-screen lg:overflow-hidden">
-          {/* Floating background elements for visual interest */}
-          <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-            <div className="absolute top-10 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl opacity-50"></div>
-            <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-50"></div>
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden transition-colors duration-700 w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          {/* Floating Background Elements - Same as LandingPage */}
+          <div className="fixed inset-0 pointer-events-none z-0">
+            <div className="floating-element absolute top-26 left-4 sm:top-29 sm:left-10 lg:top-35 lg:left-16 opacity-20 sm:opacity-25 lg:opacity-30 transition-all duration-700">
+              <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 text-primary" />
+            </div>
+            <div className="floating-element absolute top-24 right-4 sm:top-32 sm:right-12 md:top-40 md:right-16 lg:top-40 lg:right-20 opacity-15 sm:opacity-20 lg:opacity-25 transition-all duration-700">
+              <Award className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-primary" />
+            </div>
+            <div className="floating-element absolute bottom-32 left-4 sm:bottom-36 sm:left-8 md:bottom-40 md:left-12 lg:bottom-40 lg:left-20 opacity-20 sm:opacity-25 lg:opacity-30 transition-all duration-700">
+              <Target className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 text-primary" />
+            </div>
+            <div className="floating-element absolute bottom-16 right-4 sm:bottom-20 sm:right-8 md:bottom-24 md:right-12 lg:bottom-20 lg:right-10 opacity-15 sm:opacity-20 lg:opacity-25 transition-all duration-700">
+              <Zap className="h-6 w-6 sm:h-8 sm:w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 text-primary" />
+            </div>
+            <div className="floating-element absolute top-1/2 left-1/6 hidden sm:block md:left-1/5 lg:left-1/4 opacity-10 sm:opacity-15 lg:opacity-20 transition-all duration-700">
+              <Globe className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 text-primary" />
+            </div>
+            <div className="floating-element absolute top-1/3 right-1/6 hidden sm:block md:right-1/5 lg:right-1/4 opacity-10 sm:opacity-15 lg:opacity-20 transition-all duration-700">
+              <Users className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 xl:h-18 xl:w-18 text-primary" />
+            </div>
+            <div className="floating-element absolute top-3/4 left-1/3 hidden lg:block opacity-10 transition-all duration-700">
+              <Sparkles className="h-8 w-8 lg:h-10 lg:w-10 text-primary" />
+            </div>
+            <div className="floating-element absolute top-1/6 right-1/3 hidden lg:block opacity-10 transition-all duration-700">
+              <GraduationCap className="h-10 w-10 lg:h-12 lg:w-12 text-primary" />
+            </div>
           </div>
-
           {/* Main Container */}
           <div className="relative z-10 w-full max-w-sm md:max-w-md lg:max-w-lg">
             {/* Card */}
-            <div className="bg-background/50 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 lg:p-10 space-y-5 sm:space-y-6">
+            <div className="bg-background/50 backdrop-blur-xl rounded-2xl p-6 sm:p-8 lg:p-10 space-y-5 sm:space-y-6">
               
               {/* Header */}
               <header className="text-center space-y-2">

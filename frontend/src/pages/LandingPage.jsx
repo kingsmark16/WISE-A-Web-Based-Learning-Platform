@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import RandomCourse from "../components/RandomCourse"
 import { useRef } from "react"
 import { ArrowRight, GraduationCap, Sparkles, Users, BookOpen, Award, Target, Zap, Globe, Youtube, Facebook, UserCheck, Lightbulb, Clock } from "lucide-react"
+import ThemeToggle from "../components/ThemeToggle"
 
 const LandingPage = () => {
   const heroRef = useRef(null);
@@ -94,7 +95,8 @@ const LandingPage = () => {
             </span>
           </NavLink>
           {/* Navigation */}
-          <nav className="flex items-center">
+          <nav className="flex items-center gap-2">
+            <ThemeToggle />
             <Button
               asChild
               className="relative overflow-hidden font-semibold transition-all duration-200 rounded-lg px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg active:scale-95"
