@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import gsap from "gsap"
 import { UserButton, useUser } from "@clerk/clerk-react"
 import { useNavigate } from "react-router-dom"
-import { Search, X, Menu, BookOpen, Users, GraduationCap, Loader2 } from "lucide-react"
+import { Search, X, Menu, BookOpen, Users, GraduationCap, Loader2, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAdminSearch } from "@/hooks/useAdminSearch"
@@ -11,6 +11,8 @@ import { useStudentSearch } from "@/hooks/student/useStudentSearch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "./ThemeToggle"
+import { useCurrentUserProfile } from "@/hooks/auth/useCurrentUserProfile"
+import { useMode } from "@/hooks/useMode"
 
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const { user } = useUser()
@@ -24,10 +26,17 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const logoRef = useRef(null)
   const dotRef = useRef(null)
 
+  // Get profile data and mode
+  const { data: profileData } = useCurrentUserProfile()
+  const { mode, switchToInstructor, switchToAdmin } = useMode()
+
   // Check if user is admin, faculty, or student
   const isAdmin = user?.publicMetadata?.role === "ADMIN"
   const isFaculty = user?.publicMetadata?.role === "FACULTY"
   const isStudent = user?.publicMetadata?.role === "STUDENT"
+
+  // Check if admin has managed courses
+  const hasManagedCourses = isAdmin && profileData?.user?.totalManagedCourses > 0
 
   // Animate logo on mount and hover
   useEffect(() => {
@@ -491,6 +500,18 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             className="md:hidden"
           >
             {isSearchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+          </Button>
+        )}
+        
+        {/* Mode Switch Button (Admin only with managed courses) */}
+        {isAdmin && hasManagedCourses && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden md:flex border-border/50 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+            onClick={() => mode === 'admin' ? switchToInstructor() : switchToAdmin()}
+          >
+            <span className="text-xs">{mode === 'instructor' ? 'Instructor' : 'Admin'}</span>
           </Button>
         )}
         

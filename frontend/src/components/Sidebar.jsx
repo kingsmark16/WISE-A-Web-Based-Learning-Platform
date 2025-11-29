@@ -4,6 +4,7 @@ import { useUser } from '@clerk/clerk-react';
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
 import { useState } from 'react';
 import { useCurrentUserProfile } from '../hooks/auth/useCurrentUserProfile';
 import { useMode } from '../hooks/useMode';
@@ -247,31 +248,6 @@ const Sidebar = ({ isOpen, onClose}) => {
               </nav>
             )}
           </ScrollArea>
-
-          {/* Mode Switch Section */}
-          {role === 'ADMIN' && hasManagedCourses && (
-            <div className="px-3 py-3 border-t border-border/50">
-              {mode === 'admin' ? (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2 h-9 text-sm font-medium border-border/50 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                  onClick={() => _switchToInstructor()}
-                >
-                  <GraduationCap className="h-4 w-4" />
-                  <span>Instructor Mode</span>
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2 h-9 text-sm font-medium border-primary/30 bg-primary/5 hover:bg-primary/15 text-primary transition-all duration-200"
-                  onClick={() => _switchToAdmin()}
-                >
-                  <Shield className="h-4 w-4" />
-                  <span>Back to Admin</span>
-                </Button>
-              )}
-            </div>
-          )}
 
           {/* Footer Section */}
           <div className="px-3 py-4 border-t border-border/50 bg-gradient-to-t from-muted/30 to-transparent space-y-4">
