@@ -254,16 +254,23 @@ export const getSelectedCourse = async (req, res) => {
 export const enrollInCourse = async (req, res) => {
     try {
 
-        const { courseId, courseCode } = req.body;
+        const { courseId: providedCourseId, courseCode } = req.body;
         const userId = req.auth().userId;
 
-        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
         if (!courseCode) return res.status(400).json({ message: "Course code is required" });
         if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
-        const course = await prisma.course.findUnique({
-            where: { id: courseId, status: 'PUBLISHED' }
-        });
+        let course;
+
+        if (providedCourseId) {
+            course = await prisma.course.findUnique({
+                where: { id: providedCourseId, status: 'PUBLISHED' }
+            });
+        } else {
+            course = await prisma.course.findUnique({
+                where: { code: courseCode.trim(), status: 'PUBLISHED' }
+            });
+        }
 
         const user = await prisma.user.findUnique({
             where: {
@@ -286,6 +293,8 @@ export const enrollInCourse = async (req, res) => {
         if (course.code !== courseCode.trim()) {
             return res.status(403).json({ message: "Invalid course code. Please check and try again." });
         }
+
+        const courseId = course.id;
 
         const studentId = user.id;
 

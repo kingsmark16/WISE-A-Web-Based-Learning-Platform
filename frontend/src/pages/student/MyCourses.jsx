@@ -1,4 +1,5 @@
 import { useEnrolledCourses } from '@/hooks/student/useEnrolledCourses';
+import { useEnrollInCourse } from '@/hooks/courses/useCourses';
 import { CourseCard } from '@/components/student/CourseCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,8 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MyCourseGridSkeleton } from '@/components/skeletons';
-import { BookOpen, Search, AlertCircle } from 'lucide-react';
+import { BookOpen, Search, AlertCircle, Plus } from 'lucide-react';
+import CourseEnrollDialog from '@/components/CourseEnrollDialog';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -137,6 +139,24 @@ export const MyCourses = () => {
     );
   }
 
+  // Join Course Logic
+  const { mutate: enrollCourse, isPending: isEnrolling } = useEnrollInCourse();
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+
+  const handleJoinCourse = (courseCode) => {
+    enrollCourse({ courseCode }, {
+      onSuccess: () => {
+        setIsJoinDialogOpen(false);
+        // Ideally we should refetch courses here, but useEnrolledCourses should auto-refetch on window focus or we can invalidate query
+        // Assuming react-query handles invalidation if set up correctly
+      },
+      onError: (error) => {
+        // Error handling is done in the hook usually, or we can show toast here
+        console.error("Enrollment failed", error);
+      }
+    });
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 px-0">
       {/* Header */}
@@ -144,6 +164,10 @@ export const MyCourses = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My Courses</h1>
         </div>
+        <Button onClick={() => setIsJoinDialogOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Join Course
+        </Button>
       </div>
 
       {/* Filters and Search */}
@@ -215,6 +239,14 @@ export const MyCourses = () => {
           ))}
         </div>
       )}
+
+      <CourseEnrollDialog 
+        open={isJoinDialogOpen} 
+        onOpenChange={setIsJoinDialogOpen}
+        onConfirm={handleJoinCourse}
+        isLoading={isEnrolling}
+        courseName="a new course"
+      />
     </div>
   );
 };

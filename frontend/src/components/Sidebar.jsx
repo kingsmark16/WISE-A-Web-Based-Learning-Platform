@@ -46,7 +46,6 @@ const menuConfig = {
     ];
   },
   STUDENT: () => [
-    { name: 'Home', path: '/student/student-homepage' },
     { name: 'My Courses', path: '/student/my-courses' },
     { name: 'Archived Courses', path: '/student/archived-courses' },
     { name: 'Achievements', path: '/student/achievements' },

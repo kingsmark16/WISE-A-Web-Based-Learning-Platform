@@ -1,51 +1,40 @@
-import { useParams } from "react-router-dom";
-import { useCheckEnrollmentStatus, useEnrollInCourse, useGetSelectedCourse, useUnenrollInCourse } from "../../../hooks/courses/useCourses";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useParams, useNavigate } from "react-router-dom";
+import { useCheckEnrollmentStatus, useGetSelectedCourse, useUnenrollInCourse } from "../../../hooks/courses/useCourses";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Calendar, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
-import CourseEnrollDialog from "@/components/CourseEnrollDialog";
 import UnenrollConfirmationDialog from "@/components/UnenrollConfirmationDialog";
 import CourseTabs from "@/components/CourseTabs";
+import toast from "react-hot-toast";
 
 const CoursePage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data: course, isLoading, error } = useGetSelectedCourse(id);
   const {data: enrollmentStatus, isLoading: isEnrollmentStatusLoading} = useCheckEnrollmentStatus(id);
-  const {mutate: enrollCourse, isPending: isEnrollingCourse} = useEnrollInCourse();
   const {mutate: unenrollCourse, isPending: isUnenrollingCourse} = useUnenrollInCourse();
 
   const selectedCourse = course?.data;
-  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [unenrollDialogOpen, setUnenrollDialogOpen] = useState(false);
   const [isUnenrollingLocally, setIsUnenrollingLocally] = useState(false);
 
-  const handleEnrollment = () => {
-    if(enrollmentStatus?.isEnrolled){
-        // Open the confirmation dialog for unenrollment
-        setUnenrollDialogOpen(true);
-    }else{
-        // Open the dialog for course code entry
-        setEnrollDialogOpen(true);
+  useEffect(() => {
+    if (!isEnrollmentStatusLoading && enrollmentStatus && !enrollmentStatus.isEnrolled) {
+      navigate('/student/my-courses');
+      toast.error("You must be enrolled to view this course.");
     }
-  }
-
-  const handleEnrollConfirm = (courseCode) => {
-    enrollCourse({ courseId: id, courseCode }, {
-      onSuccess: () => {
-        setEnrollDialogOpen(false);
-      },
-      onError: () => {
-        // Dialog stays open on error so user can try again
-      }
-    });
-  };
+  }, [isEnrollmentStatusLoading, enrollmentStatus, navigate]);
 
   const handleUnenrollConfirm = () => {
     setIsUnenrollingLocally(true);
-    unenrollCourse(id);
+    unenrollCourse(id, {
+        onSuccess: () => {
+            navigate('/student/my-courses');
+        }
+    });
     setUnenrollDialogOpen(false);
   };
 
@@ -54,6 +43,18 @@ const CoursePage = () => {
       setIsUnenrollingLocally(false);
     }
   }, [isUnenrollingCourse]);
+
+  if (isEnrollmentStatusLoading || (enrollmentStatus && !enrollmentStatus.isEnrolled)) {
+      return (
+        <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
+             <Skeleton className="h-64 w-full rounded-lg" />
+             <div className="space-y-4">
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-4 w-full" />
+             </div>
+        </div>
+      )
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6 px-0 w-full overflow-hidden">
@@ -78,11 +79,6 @@ const CoursePage = () => {
                       <div className="flex flex-wrap gap-2">
                         <Skeleton className="h-7 sm:h-8 w-24 rounded-full" />
                       </div>
-                    </div>
-
-                    {/* Enroll Button Skeleton - Responsive width */}
-                    <div className="flex gap-2">
-                      <Skeleton className="h-10 sm:h-11 w-full sm:w-32 rounded-md" />
                     </div>
 
                     {/* Instructor and Last Updated Info Skeleton - Responsive grid */}
@@ -179,21 +175,15 @@ const CoursePage = () => {
                       </div>
                     </div>
 
-                    {/* Enroll Button - Full width on mobile, auto on larger screens */}
+                    {/* Unenroll Button - Only if enrolled */}
                     <div className="flex gap-2 pt-1">
                       <Button 
                         className="w-full sm:w-auto h-10 sm:h-11 text-sm sm:text-base font-medium"
-                        onClick={handleEnrollment}
-                        disabled={isUnenrollingLocally || isUnenrollingCourse || isEnrollmentStatusLoading}
-                        variant={enrollmentStatus?.isEnrolled ? "destructive" : "default"}
+                        onClick={() => setUnenrollDialogOpen(true)}
+                        disabled={isUnenrollingLocally || isUnenrollingCourse}
+                        variant="destructive"
                       >
-                        {(isUnenrollingLocally || isUnenrollingCourse) ? (
-                            "Processing..."
-                        ): enrollmentStatus?.isEnrolled ? (
-                            "Unenroll"
-                        ): (
-                            "Enroll Now"
-                        )}
+                        {isUnenrollingLocally || isUnenrollingCourse ? "Processing..." : "Unenroll"}
                       </Button>
                     </div>
 
@@ -274,10 +264,8 @@ const CoursePage = () => {
                 )}
               </div>
 
-              {/* Course Content - Only show if enrolled */}
-              {!isEnrollmentStatusLoading && enrollmentStatus?.isEnrolled && (
-                <CourseTabs courseId={id} courseTitle={selectedCourse?.title} certificateEnabled={selectedCourse?.certificateEnabled} />
-              )}
+              {/* Course Content - Always show since we redirect if not enrolled */}
+              <CourseTabs courseId={id} courseTitle={selectedCourse?.title} certificateEnabled={selectedCourse?.certificateEnabled} />
             </div>
           </CardContent>
         ) : (
@@ -289,34 +277,6 @@ const CoursePage = () => {
           </div>
         )}
       </Card>
-
-      {/* Locked Course Content */}
-      {!isEnrollmentStatusLoading && !enrollmentStatus?.isEnrolled && selectedCourse && (
-        <Card className="shadow-lg border-none bg-muted/20">
-          <CardContent className="p-8 md:p-12">
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                <BookOpen className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Course Content Locked</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  You need to enroll in this course to access the modules, forum, and other course content.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Course Enrollment Dialog */}
-      <CourseEnrollDialog
-        open={enrollDialogOpen}
-        onOpenChange={setEnrollDialogOpen}
-        onConfirm={handleEnrollConfirm}
-        isLoading={isEnrollingCourse}
-        courseName={selectedCourse?.title || "this course"}
-      />
 
       {/* Course Unenrollment Confirmation Dialog */}
       <UnenrollConfirmationDialog
