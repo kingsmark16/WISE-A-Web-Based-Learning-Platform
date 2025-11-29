@@ -82,7 +82,7 @@ const EditCourse = () => {
                 thumbnail: data.course.thumbnail || "",
                 facultyId: data.course.managedBy?.id || "",
                 assignSelfAsInstructor: false,
-                certificateEnabled: data.course.certificateEnabled || false
+                certificateEnabled: data.course.certificateEnabled ?? false
             });
 
             setThumbnailPreview(data.course.thumbnail || "");

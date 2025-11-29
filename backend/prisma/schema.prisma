@@ -63,7 +63,7 @@ model Course {
   code        String?   @unique
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  certificateEnable Boolean @default(false)
+  certificateEnabled Boolean @default(false)
 
   createdById String
   createdBy   User      @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Cascade)

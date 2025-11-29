@@ -276,7 +276,7 @@ const CoursePage = () => {
 
               {/* Course Content - Only show if enrolled */}
               {!isEnrollmentStatusLoading && enrollmentStatus?.isEnrolled && (
-                <CourseTabs courseId={id} courseTitle={selectedCourse?.title} />
+                <CourseTabs courseId={id} courseTitle={selectedCourse?.title} certificateEnabled={selectedCourse?.certificateEnabled} />
               )}
             </div>
           </CardContent>

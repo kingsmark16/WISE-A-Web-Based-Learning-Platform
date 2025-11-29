@@ -15,8 +15,8 @@ export const getCourseCategories = async (req, res) => {
         });
 
         const categoryList = categories.map(course => course.college).filter(Boolean);
-        
-        res.status(200).json({data: categoryList});
+
+        res.status(200).json({ data: categoryList });
 
     } catch (error) {
         console.error('Error fetching course categories:', error);
@@ -187,10 +187,10 @@ export const getRecommendedCourses = async (req, res) => {
 
 export const getSelectedCourse = async (req, res) => {
     try {
-        
-        const {id} = req.params;
 
-        if(!id) return res.status(404).json({message: "Invalid Course ID"});
+        const { id } = req.params;
+
+        if (!id) return res.status(404).json({ message: "Invalid Course ID" });
 
         const course = await prisma.course.findUnique({
             where: {
@@ -201,6 +201,7 @@ export const getSelectedCourse = async (req, res) => {
                 description: true,
                 thumbnail: true,
                 college: true,
+                certificateEnabled: true,
                 updatedAt: true,
                 managedBy: {
                     select: {
@@ -226,7 +227,7 @@ export const getSelectedCourse = async (req, res) => {
             }
         });
 
-        if(!course) return res.status(404).json({message: "Course Not Found"});
+        if (!course) return res.status(404).json({ message: "Course Not Found" });
 
         // Calculate total lessons from all modules
         const totalLessons = course.modules?.reduce((total, module) => total + (module._count?.lessons || 0), 0) || 0;
@@ -238,7 +239,7 @@ export const getSelectedCourse = async (req, res) => {
             totalLessons
         };
 
-        res.status(200).json({data: responseData});
+        res.status(200).json({ data: responseData });
 
     } catch (error) {
         console.error('Error fetching course details:', error);
@@ -253,15 +254,15 @@ export const getSelectedCourse = async (req, res) => {
 export const enrollInCourse = async (req, res) => {
     try {
 
-        const {courseId, courseCode} = req.body;
+        const { courseId, courseCode } = req.body;
         const userId = req.auth().userId;
 
-        if(!courseId) return res.status(400).json({message: "Course ID is required"});
-        if(!courseCode) return res.status(400).json({message: "Course code is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!courseCode) return res.status(400).json({ message: "Course code is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const course = await prisma.course.findUnique({
-            where: {id: courseId, status: 'PUBLISHED'}
+            where: { id: courseId, status: 'PUBLISHED' }
         });
 
         const user = await prisma.user.findUnique({
@@ -273,17 +274,17 @@ export const enrollInCourse = async (req, res) => {
             }
         })
 
-        if(!user) return res.status(404).json({message: "User not found in database"});
+        if (!user) return res.status(404).json({ message: "User not found in database" });
 
-        if(!course) return res.status(404).json({message: "Course not found or not published"});
+        if (!course) return res.status(404).json({ message: "Course not found or not published" });
 
         // Verify course code
-        if(!course.code) {
-            return res.status(400).json({message: "This course does not have an enrollment code"});
+        if (!course.code) {
+            return res.status(400).json({ message: "This course does not have an enrollment code" });
         }
 
-        if(course.code !== courseCode.trim()) {
-            return res.status(403).json({message: "Invalid course code. Please check and try again."});
+        if (course.code !== courseCode.trim()) {
+            return res.status(403).json({ message: "Invalid course code. Please check and try again." });
         }
 
         const studentId = user.id;
@@ -297,8 +298,8 @@ export const enrollInCourse = async (req, res) => {
             }
         });
 
-        if(existingEnrollment) {
-            return res.status(409).json({message: "You are already enrolled in this course"});
+        if (existingEnrollment) {
+            return res.status(409).json({ message: "You are already enrolled in this course" });
         }
 
         // Enroll the student in the course
@@ -335,10 +336,10 @@ export const enrollInCourse = async (req, res) => {
 export const checkEnrollmentStatus = async (req, res) => {
     try {
 
-        const {courseId} = req.params;
+        const { courseId } = req.params;
         const userId = req.auth().userId;
 
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: {
@@ -349,10 +350,10 @@ export const checkEnrollmentStatus = async (req, res) => {
             }
         })
 
-        if(!user) return res.status(404).json({message: "User not found in database"});
+        if (!user) return res.status(404).json({ message: "User not found in database" });
 
         const studentId = user.id;
-        
+
 
         const enrollment = await prisma.enrollment.findUnique({
             where: {
@@ -368,7 +369,7 @@ export const checkEnrollmentStatus = async (req, res) => {
             enrollmentDate: enrollment?.enrolledAt || null
         });
 
-        
+
     } catch (error) {
         console.error('Error checking enrollment status:', error);
         res.status(500).json({
@@ -381,11 +382,11 @@ export const checkEnrollmentStatus = async (req, res) => {
 export const unenrollInCourse = async (req, res) => {
     try {
 
-        const {courseId} = req.body;
+        const { courseId } = req.body;
         const userId = req.auth().userId;
 
-        if(!courseId) return res.status(400).json({message: "Course ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: {
@@ -396,7 +397,7 @@ export const unenrollInCourse = async (req, res) => {
             }
         })
 
-        if(!user) return res.status(404).json({message: "User not found in database"});
+        if (!user) return res.status(404).json({ message: "User not found in database" });
 
         const studentId = user.id;
 
@@ -409,8 +410,8 @@ export const unenrollInCourse = async (req, res) => {
             }
         });
 
-        if(!existingEnrollment) {
-            return res.status(404).json({message: "Enrollment not found"});
+        if (!existingEnrollment) {
+            return res.status(404).json({ message: "Enrollment not found" });
         }
 
         // Delete the enrollment
@@ -439,11 +440,11 @@ export const unenrollInCourse = async (req, res) => {
 export const getCourseModules = async (req, res) => {
     try {
 
-        const {courseId} = req.params;
+        const { courseId } = req.params;
         const userId = req.auth().userId;
 
-        if(!courseId) return res.status(400).json({message: "Course ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: {
@@ -454,7 +455,7 @@ export const getCourseModules = async (req, res) => {
             }
         })
 
-        if(!user) return res.status(404).json({message: "User not found in database"});
+        if (!user) return res.status(404).json({ message: "User not found in database" });
 
         const studentId = user.id;
 
@@ -468,8 +469,8 @@ export const getCourseModules = async (req, res) => {
             }
         });
 
-        if(!enrollment) {
-            return res.status(403).json({message: "You are not enrolled in this course"});
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
         }
 
         // Fetch modules with lesson count and progress
@@ -556,7 +557,7 @@ export const getCourseModules = async (req, res) => {
             };
         });
 
-        res.status(200).json({data: formattedModules});
+        res.status(200).json({ data: formattedModules });
 
     } catch (error) {
         console.error('Error fetching course modules:', error);
@@ -750,15 +751,15 @@ export const markLessonComplete = async (req, res) => {
         const { lessonId } = req.body;
         const userId = req.auth().userId;
 
-        if(!lessonId) return res.status(400).json({message: "Lesson ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!lessonId) return res.status(400).json({ message: "Lesson ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true }
         });
 
-        if(!user) return res.status(404).json({message: "User not found"});
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         // Use the progress service to mark lesson complete
         const lessonProgress = await ProgressService.markLessonCompleted(user.id, lessonId);
@@ -783,15 +784,15 @@ export const getStudentCourseProgress = async (req, res) => {
         const { courseId } = req.params;
         const userId = req.auth().userId;
 
-        if(!courseId) return res.status(400).json({message: "Course ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true }
         });
 
-        if(!user) return res.status(404).json({message: "User not found"});
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         // Check enrollment
         const enrollment = await prisma.enrollment.findUnique({
@@ -803,8 +804,8 @@ export const getStudentCourseProgress = async (req, res) => {
             }
         });
 
-        if(!enrollment) {
-            return res.status(403).json({message: "You are not enrolled in this course"});
+        if (!enrollment) {
+            return res.status(403).json({ message: "You are not enrolled in this course" });
         }
 
         // Use the progress service to get comprehensive course progress
@@ -827,15 +828,15 @@ export const getStudentLessonProgress = async (req, res) => {
         const { courseId } = req.params;
         const userId = req.auth().userId;
 
-        if(!courseId) return res.status(400).json({message: "Course ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!courseId) return res.status(400).json({ message: "Course ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true }
         });
 
-        if(!user) return res.status(404).json({message: "User not found"});
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         // Get all lessons progress for the course
         const lessonProgressList = await prisma.lessonProgress.findMany({
@@ -877,14 +878,14 @@ export const getStudentLessonProgress = async (req, res) => {
 
 // Helper to hide correct answers for students
 const sanitizeQuestionsForStudent = (questions) => {
-  return questions.map((q) => ({
-    id: q.id,
-    question: q.question,
-    type: q.type,
-    options: q.options,
-    points: q.points,
-    position: q.position,
-  }));
+    return questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        type: q.type,
+        options: q.options,
+        points: q.points,
+        position: q.position,
+    }));
 };
 
 // Start a quiz for a student
@@ -1214,15 +1215,15 @@ export const trackLessonAccess = async (req, res) => {
         const { lessonId } = req.body;
         const userId = req.auth().userId;
 
-        if(!lessonId) return res.status(400).json({message: "Lesson ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!lessonId) return res.status(400).json({ message: "Lesson ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true }
         });
 
-        if(!user) return res.status(404).json({message: "User not found"});
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         // Check if the lesson's module is locked
         const lesson = await prisma.lesson.findUnique({
@@ -1238,7 +1239,7 @@ export const trackLessonAccess = async (req, res) => {
             }
         });
 
-        if (!lesson) return res.status(404).json({message: "Lesson not found"});
+        if (!lesson) return res.status(404).json({ message: "Lesson not found" });
 
         const moduleData = lesson.module;
 
@@ -1311,15 +1312,15 @@ export const getStudentModuleProgress = async (req, res) => {
         const { moduleId } = req.params;
         const userId = req.auth().userId;
 
-        if(!moduleId) return res.status(400).json({message: "Module ID is required"});
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!moduleId) return res.status(400).json({ message: "Module ID is required" });
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true }
         });
 
-        if(!user) return res.status(404).json({message: "User not found"});
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         // Get module progress with detailed lesson and quiz information
         const moduleProgress = await prisma.moduleProgress.findUnique({
@@ -1355,7 +1356,7 @@ export const getStudentModuleProgress = async (req, res) => {
         });
 
         if (!moduleProgress) {
-            return res.status(404).json({message: "Module progress not found"});
+            return res.status(404).json({ message: "Module progress not found" });
         }
 
         res.status(200).json({ data: moduleProgress });
@@ -1374,14 +1375,14 @@ export const getStudentProgressSummary = async (req, res) => {
     try {
         const userId = req.auth().userId;
 
-        if(!userId) return res.status(401).json({message: "User not authenticated"});
+        if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true }
         });
 
-        if(!user) return res.status(404).json({message: "User not found"});
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         // Get all enrolled courses with progress
         const enrollments = await prisma.enrollment.findMany({
@@ -1614,7 +1615,7 @@ export const getCourseCompletion = async (req, res) => {
         if (enrollment && completion.completedAt) {
             const timeSpentMs = new Date(completion.completedAt) - new Date(enrollment.enrolledAt);
             const totalSeconds = Math.floor(timeSpentMs / 1000);
-            
+
             if (totalSeconds < 60) {
                 timeSpent = { value: totalSeconds, unit: 'second', display: `${totalSeconds}s` };
             } else if (totalSeconds < 3600) {
