@@ -16,7 +16,7 @@ import { BookOpen, Search, AlertCircle, Plus } from 'lucide-react';
 import CourseEnrollDialog from '@/components/CourseEnrollDialog';
 import { useState, useMemo } from 'react';
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+
 
 /**
  * MyCourses Page - Display all enrolled courses
@@ -39,11 +39,16 @@ export const MyCourses = () => {
       setIsJoinDialogOpen(false);
     }
   }, [isSuccess, isJoinDialogOpen]);
+  const handleJoinCourse = (courseCode) => {
+    enrollCourse({ courseCode });
+  };
+
   // Get unique colleges from courses
   const categories = useMemo(() => {
     const colleges = new Set(courses.map(course => course.college).filter(Boolean));
     return Array.from(colleges).sort();
   }, [courses]);
+
   // Filter and sort courses
   const filteredAndSortedCourses = useMemo(() => {
     let filtered = courses;
@@ -77,6 +82,7 @@ export const MyCourses = () => {
     });
     return sorted;
   }, [courses, searchQuery, selectedCategory, sortBy]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -130,21 +136,24 @@ export const MyCourses = () => {
           <div className="space-y-2">
             <h2 className="text-2xl font-bold">No Courses Yet</h2>
             <p className="text-muted-foreground">
-              You haven't enrolled in any courses yet. Start exploring and enroll in a course today!
+              You haven't enrolled in any courses yet. Join a course with a code to get started!
             </p>
           </div>
-          <Link to="/student/explore">
-            <Button size="lg">Explore Courses</Button>
-          </Link>
+          <Button size="lg" onClick={() => setIsJoinDialogOpen(true)}>
+            Join Course
+          </Button>
+          
+          <CourseEnrollDialog 
+            open={isJoinDialogOpen} 
+            onOpenChange={setIsJoinDialogOpen}
+            onConfirm={handleJoinCourse}
+            isLoading={isEnrolling}
+            courseName="a new course"
+          />
         </div>
       </div>
     );
   }
-
-  // ...existing code...
-  const handleJoinCourse = (courseCode) => {
-    enrollCourse({ courseCode });
-  };
 
   return (
     <div className="space-y-4 sm:space-y-6 px-0">

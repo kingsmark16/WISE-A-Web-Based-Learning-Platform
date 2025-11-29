@@ -32,7 +32,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
     } else if (userRole === 'FACULTY') {
       return <Navigate to="/faculty/faculty-dashboard" replace />;
     } else if (userRole === 'STUDENT') {
-      return <Navigate to="/student/student-homepage" replace />;
+      return <Navigate to="/student/my-courses" replace />;
     }
     
     // If no role, redirect to sign in

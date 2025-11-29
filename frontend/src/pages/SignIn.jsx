@@ -123,42 +123,42 @@ const SignIn = () => {
                      resendMutation.isPending;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-x-hidden transition-colors duration-700 w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          {/* Floating Background Elements - Same as LandingPage */}
-          <div className="fixed inset-0 pointer-events-none z-0">
-            <div className="floating-element absolute top-26 left-4 sm:top-29 sm:left-10 lg:top-35 lg:left-16 opacity-20 sm:opacity-25 lg:opacity-30 transition-all duration-700">
-              <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 text-primary" />
+        <div className="h-screen w-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden relative flex items-center justify-center">
+          {/* Floating Background Elements */}
+          <div className="absolute inset-0 pointer-events-none z-0">
+            <div className="absolute top-[10%] left-[5%] sm:left-[10%] opacity-20">
+              <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
             </div>
-            <div className="floating-element absolute top-24 right-4 sm:top-32 sm:right-12 md:top-40 md:right-16 lg:top-40 lg:right-20 opacity-15 sm:opacity-20 lg:opacity-25 transition-all duration-700">
-              <Award className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-primary" />
+            <div className="absolute top-[15%] right-[10%] opacity-15">
+              <Award className="h-10 w-10 sm:h-14 sm:w-14 text-primary" />
             </div>
-            <div className="floating-element absolute bottom-32 left-4 sm:bottom-36 sm:left-8 md:bottom-40 md:left-12 lg:bottom-40 lg:left-20 opacity-20 sm:opacity-25 lg:opacity-30 transition-all duration-700">
-              <Target className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 text-primary" />
+            <div className="absolute bottom-[20%] left-[8%] opacity-20">
+              <Target className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
             </div>
-            <div className="floating-element absolute bottom-16 right-4 sm:bottom-20 sm:right-8 md:bottom-24 md:right-12 lg:bottom-20 lg:right-10 opacity-15 sm:opacity-20 lg:opacity-25 transition-all duration-700">
-              <Zap className="h-6 w-6 sm:h-8 sm:w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 text-primary" />
+            <div className="absolute bottom-[15%] right-[12%] opacity-15">
+              <Zap className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
             </div>
-            <div className="floating-element absolute top-1/2 left-1/6 hidden sm:block md:left-1/5 lg:left-1/4 opacity-10 sm:opacity-15 lg:opacity-20 transition-all duration-700">
-              <Globe className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 text-primary" />
+            <div className="absolute top-1/2 left-[15%] hidden md:block opacity-10">
+              <Globe className="h-20 w-20 text-primary" />
             </div>
-            <div className="floating-element absolute top-1/3 right-1/6 hidden sm:block md:right-1/5 lg:right-1/4 opacity-10 sm:opacity-15 lg:opacity-20 transition-all duration-700">
-              <Users className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 xl:h-18 xl:w-18 text-primary" />
+            <div className="absolute top-[30%] right-[20%] hidden md:block opacity-10">
+              <Users className="h-16 w-16 text-primary" />
             </div>
-            <div className="floating-element absolute top-3/4 left-1/3 hidden lg:block opacity-10 transition-all duration-700">
-              <Sparkles className="h-8 w-8 lg:h-10 lg:w-10 text-primary" />
+            <div className="absolute bottom-[10%] left-[30%] hidden lg:block opacity-10">
+              <Sparkles className="h-12 w-12 text-primary" />
             </div>
-            <div className="floating-element absolute top-1/6 right-1/3 hidden lg:block opacity-10 transition-all duration-700">
-              <GraduationCap className="h-10 w-10 lg:h-12 lg:w-12 text-primary" />
+            <div className="absolute top-[10%] right-[30%] hidden lg:block opacity-10">
+              <GraduationCap className="h-14 w-14 text-primary" />
             </div>
           </div>
-          {/* Main Container */}
-          <div className="relative z-10 w-full max-w-sm md:max-w-md lg:max-w-lg">
-            {/* Card */}
-            <div className="bg-background/50 backdrop-blur-xl rounded-2xl p-6 sm:p-8 lg:p-10 space-y-5 sm:space-y-6">
+
+          {/* Main Card */}
+          <div className="relative z-10 w-full max-w-[400px] sm:max-w-[440px] px-4 animate-in fade-in zoom-in-95 duration-500">
+            <div className="bg-background/60 dark:bg-background/40 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/20 dark:border-white/10 p-6 sm:p-8 max-h-[90vh] overflow-y-auto scrollbar-hide flex flex-col gap-5 transition-all duration-300">
               
               {/* Header */}
-              <header className="text-center space-y-2">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+              <header className="text-center space-y-1.5">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                   {pendingVerification 
                     ? "Verify Email" 
                     : isSignUp 
@@ -166,24 +166,19 @@ const SignIn = () => {
                       : "Welcome Back"
                   }
                 </h1>
-                {pendingVerification && (
-                  <p className="text-sm sm:text-base text-muted-foreground pt-2">
-                    We sent a code to <span className="font-medium text-foreground">{email}</span>
-                  </p>
-                )}
-                {!pendingVerification && (
-                  <p className="text-sm sm:text-base text-muted-foreground pt-2">
-                    {isSignUp 
-                      ? "Join thousands of learners today" 
-                      : "Sign in to your account"
-                    }
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  {pendingVerification 
+                    ? <span className="block truncate">Code sent to <span className="font-medium text-foreground">{email}</span></span>
+                    : isSignUp 
+                      ? "Enter your details to get started" 
+                      : "Enter your credentials to access your account"
+                  }
+                </p>
               </header>
 
               {/* Error Message */}
               {errorMessage && (
-                <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm sm:text-base p-3 sm:p-4 rounded-lg">
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-3 rounded-xl text-center animate-in slide-in-from-top-2">
                   {errorMessage}
                 </div>
               )}
@@ -191,11 +186,8 @@ const SignIn = () => {
               {/* Forms */}
               {pendingVerification ? (
                 // Verification Form
-                <form onSubmit={handleVerifyEmail} className="space-y-6">
+                <form onSubmit={handleVerifyEmail} className="space-y-5">
                   <div className="space-y-3">
-                    <label htmlFor="verificationCode" className="block text-sm font-medium text-foreground">
-                      Verification Code
-                    </label>
                     <div className="flex justify-center">
                       <InputOTP
                         maxLength={6}
@@ -203,124 +195,106 @@ const SignIn = () => {
                         value={verificationCode}
                         onChange={(value) => setVerificationCode(value)}
                       >
-                        <InputOTPGroup className="gap-2 sm:gap-3">
-                          <InputOTPSlot index={0} className="h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl" />
-                          <InputOTPSlot index={1} className="h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl" />
-                          <InputOTPSlot index={2} className="h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl" />
-                          <InputOTPSlot index={3} className="h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl" />
-                          <InputOTPSlot index={4} className="h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl" />
-                          <InputOTPSlot index={5} className="h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl" />
+                        <InputOTPGroup className="gap-2">
+                          <InputOTPSlot index={0} className="h-10 w-10 sm:h-12 sm:w-12 text-lg rounded-lg border-primary/20 bg-background/50" />
+                          <InputOTPSlot index={1} className="h-10 w-10 sm:h-12 sm:w-12 text-lg rounded-lg border-primary/20 bg-background/50" />
+                          <InputOTPSlot index={2} className="h-10 w-10 sm:h-12 sm:w-12 text-lg rounded-lg border-primary/20 bg-background/50" />
+                          <InputOTPSlot index={3} className="h-10 w-10 sm:h-12 sm:w-12 text-lg rounded-lg border-primary/20 bg-background/50" />
+                          <InputOTPSlot index={4} className="h-10 w-10 sm:h-12 sm:w-12 text-lg rounded-lg border-primary/20 bg-background/50" />
+                          <InputOTPSlot index={5} className="h-10 w-10 sm:h-12 sm:w-12 text-lg rounded-lg border-primary/20 bg-background/50" />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
-                    <p className="text-center text-xs sm:text-sm text-muted-foreground pt-2">
-                      Enter the 6-digit code sent to your email
-                    </p>
                   </div>
 
                   <Button
                     type="submit"
                     disabled={isLoading || verificationCode.length !== 6}
-                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    className="w-full h-11 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all duration-300"
                   >
                     {verifyMutation.isPending ? (
-                      <><Oval className="size-5" /></>
+                      <Oval className="size-5" stroke="currentColor" />
                     ) : (
                       "Verify Email"
                     )}
                   </Button>
 
-                  {/* Action Buttons */}
-                  <div className="space-y-3 pt-2">
+                  <div className="flex flex-col gap-2 text-center pt-1">
                     <button
                       type="button"
                       onClick={() => resendMutation.mutateAsync()}
                       disabled={resendMutation.isPending}
-                      className="w-full text-sm text-primary hover:text-primary/80 underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="text-sm text-primary hover:text-primary/80 font-medium transition-colors disabled:opacity-50"
                     >
-                      {resendMutation.isPending ? "Resending..." : "Didn't get a code? Resend"}
+                      {resendMutation.isPending ? "Resending..." : "Resend Code"}
                     </button>
                     <button
                       type="button"
                       onClick={resetToSignUp}
-                      className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      ← Back to Sign Up
+                      Back to Sign Up
                     </button>
                   </div>
                 </form>
               ) : isSignUp ? (
                 // Sign Up Form
-                <form onSubmit={handleSignUpSubmit} className="space-y-4 sm:space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="firstName" className="block text-sm font-medium text-foreground">
-                        First Name
-                      </label>
+                <form onSubmit={handleSignUpSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground ml-1">First Name</label>
                       <Input
-                        id="firstName"
                         type="text"
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="h-10 sm:h-11 text-sm sm:text-base rounded-lg border-border/50"
+                        className="h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="lastName" className="block text-sm font-medium text-foreground">
-                        Last Name
-                      </label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground ml-1">Last Name</label>
                       <Input
-                        id="lastName"
                         type="text"
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="h-10 sm:h-11 text-sm sm:text-base rounded-lg border-border/50"
+                        className="h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                      Email Address
-                    </label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground ml-1">Email</label>
                     <Input
-                      id="email"
                       type="email"
                       required
                       autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="h-10 sm:h-11 text-sm sm:text-base rounded-lg border-border/50"
+                      className="h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                      Password
-                    </label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground ml-1">Password</label>
                     <Input
-                      id="password"
                       type="password"
                       required
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-10 sm:h-11 text-sm sm:text-base rounded-lg border-border/50"
+                      className="h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Must be at least 8 characters
-                    </p>
+                    <p className="text-[10px] text-muted-foreground ml-1">Min. 8 characters</p>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 mt-6"
+                    className="w-full h-11 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all duration-300 mt-2"
                     disabled={isLoading}
                   >
                     {signUpMutation.isPending ? (
-                      <Oval className="size-5" />
+                      <Oval className="size-5" stroke="currentColor" />
                     ) : (
                       "Create Account"
                     )}
@@ -328,44 +302,40 @@ const SignIn = () => {
                 </form>
               ) : (
                 // Sign In Form
-                <form onSubmit={handleSignInSubmit} className="space-y-4 sm:space-y-5">
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                      Email Address
-                    </label>
+                <form onSubmit={handleSignInSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground ml-1">Email</label>
                     <Input
-                      id="email"
                       type="email"
                       required
                       autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="h-10 sm:h-11 text-sm sm:text-base rounded-lg border-border/50"
+                      className="h-11 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                      Password
-                    </label>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center px-1">
+                      <label className="text-xs font-medium text-muted-foreground">Password</label>
+                    </div>
                     <Input
-                      id="password"
                       type="password"
                       required
                       autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-10 sm:h-11 text-sm sm:text-base rounded-lg border-border/50"
+                      className="h-11 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                     />
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-10 sm:h-11 text-base sm:text-lg font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 mt-6"
+                    className="w-full h-11 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all duration-300 mt-2"
                     disabled={isLoading}
                   >
                     {signInMutation.isPending ? (
-                      <Oval className="size-5" />
+                      <Oval className="size-5" stroke="currentColor" />
                     ) : (
                       "Sign In"
                     )}
@@ -374,24 +344,24 @@ const SignIn = () => {
               )}
 
               {!pendingVerification && (
-                <>
-                  {/* Divider */}
+                <div className="space-y-4">
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-border/30"></div>
+                      <div className="w-full border-t border-border/40"></div>
                     </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-background text-muted-foreground">Or continue with</span>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-transparent px-2 text-muted-foreground backdrop-blur-xl">Or continue with</span>
                     </div>
                   </div>
 
-                  {/* Social Login */}
                   <Button
+                    type="button"
+                    variant="outline"
                     onClick={isSignUp ? handleGoogleSignUp : handleGoogleSignIn}
                     disabled={isLoading}
-                    className="w-full h-10 sm:h-11 text-sm sm:text-base font-medium rounded-lg bg-background/50 border border-border/50 text-foreground hover:bg-background/80 hover:border-border disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    className="w-full h-11 rounded-xl border border-border/50 bg-card hover:bg-accent/50 hover:border-border transition-all duration-300 flex items-center justify-center gap-2 font-medium"
                   >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24">
                       <path
                         fill="currentColor"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -409,23 +379,21 @@ const SignIn = () => {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                       />
                     </svg>
-                    Sign {isSignUp ? "up" : "in"} with Google
+                    Continue with Google
                   </Button>
 
-                  {/* Toggle Mode */}
-                  <p className="text-center text-sm sm:text-base text-muted-foreground">
+                  <p className="text-center text-sm text-muted-foreground">
                     {isSignUp ? "Already have an account?" : "Don't have an account?"}{' '}
                     <button
                       onClick={switchMode}
-                      className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                      className="text-primary hover:text-primary/80 font-semibold transition-colors hover:underline"
                     >
                       {isSignUp ? "Sign in" : "Sign up"}
                     </button>
                   </p>
-                </>
+                </div>
               )}
             </div>
-
           </div>
         </div>
     )
