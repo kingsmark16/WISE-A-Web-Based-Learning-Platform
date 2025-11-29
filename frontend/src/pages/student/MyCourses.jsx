@@ -1,4 +1,5 @@
 import { useEnrolledCourses } from '@/hooks/student/useEnrolledCourses';
+import { useEnrollInCourse } from '@/hooks/courses/useCourses';
 import { CourseCard } from '@/components/student/CourseCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,10 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MyCourseGridSkeleton } from '@/components/skeletons';
-import { BookOpen, Search, AlertCircle } from 'lucide-react';
+import { BookOpen, Search, AlertCircle, Plus } from 'lucide-react';
+import CourseEnrollDialog from '@/components/CourseEnrollDialog';
 import { useState, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -24,21 +27,26 @@ import { Link } from 'react-router-dom';
  * - Responsive grid layout
  */
 export const MyCourses = () => {
+  // All hooks must be called before any return
   const { data: courses = [], isLoading, error } = useEnrolledCourses();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
-
+  const { mutate: enrollCourse, isPending: isEnrolling, isSuccess } = useEnrollInCourse();
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+  useEffect(() => {
+    if (isSuccess && isJoinDialogOpen) {
+      setIsJoinDialogOpen(false);
+    }
+  }, [isSuccess, isJoinDialogOpen]);
   // Get unique colleges from courses
   const categories = useMemo(() => {
     const colleges = new Set(courses.map(course => course.college).filter(Boolean));
     return Array.from(colleges).sort();
   }, [courses]);
-
   // Filter and sort courses
   const filteredAndSortedCourses = useMemo(() => {
     let filtered = courses;
-
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -47,12 +55,10 @@ export const MyCourses = () => {
         course.description?.toLowerCase().includes(query)
       );
     }
-
     // Apply college filter
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(course => course.college === selectedCategory);
     }
-
     // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -69,10 +75,8 @@ export const MyCourses = () => {
           return new Date(b.enrolledAt) - new Date(a.enrolledAt);
       }
     });
-
     return sorted;
   }, [courses, searchQuery, selectedCategory, sortBy]);
-
   // Loading state
   if (isLoading) {
     return (
@@ -137,6 +141,11 @@ export const MyCourses = () => {
     );
   }
 
+  // ...existing code...
+  const handleJoinCourse = (courseCode) => {
+    enrollCourse({ courseCode });
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 px-0">
       {/* Header */}
@@ -144,6 +153,10 @@ export const MyCourses = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My Courses</h1>
         </div>
+        <Button onClick={() => setIsJoinDialogOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Join Course
+        </Button>
       </div>
 
       {/* Filters and Search */}
@@ -215,6 +228,14 @@ export const MyCourses = () => {
           ))}
         </div>
       )}
+
+      <CourseEnrollDialog 
+        open={isJoinDialogOpen} 
+        onOpenChange={setIsJoinDialogOpen}
+        onConfirm={handleJoinCourse}
+        isLoading={isEnrolling}
+        courseName="a new course"
+      />
     </div>
   );
 };
