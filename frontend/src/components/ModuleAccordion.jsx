@@ -33,9 +33,12 @@ const ModulesSkeleton = () => (
 
 // Empty state component
 const EmptyState = () => (
-  <div className="px-3 sm:px-4 md:px-6 py-4 md:py-6 text-center text-muted-foreground">
-    <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-    <p>No modules available yet.</p>
+  <div className="p-8 md:p-12 text-center">
+    <div className="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-muted mb-4">
+      <BookOpen className="h-6 w-6 text-muted-foreground" />
+    </div>
+    <p className="text-lg font-medium text-foreground mb-1">No modules available</p>
+    <p className="text-sm text-muted-foreground">Modules will appear here as they are added</p>
   </div>
 );
 

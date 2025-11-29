@@ -294,7 +294,7 @@ export const archiveCourse = async (req, res) => {
 export const updateCourse = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, college, thumbnail, facultyId, assignSelfAsInstructor } = req.body;
+        const { title, description, college, thumbnail, facultyId, assignSelfAsInstructor, certificateEnabled } = req.body;
 
         const auth = req.auth();
         const userId = auth.userId;
@@ -336,6 +336,11 @@ export const updateCourse = async (req, res) => {
             thumbnail
         };
 
+        // Add certificateEnabled if provided
+        if (certificateEnabled !== undefined) {
+            updateData.certificateEnabled = certificateEnabled;
+        }
+
         // Only update facultyId if it's explicitly provided or assignSelfAsInstructor is true
         if (assignSelfAsInstructor && user.role === 'ADMIN') {
             updateData.facultyId = user.id;
@@ -366,6 +371,7 @@ export const updateCourse = async (req, res) => {
                 description: true,
                 college: true,
                 thumbnail: true,
+                certificateEnabled: true,
                 facultyId: true,
                 updatedAt: true
             }

@@ -61,7 +61,8 @@ const EditCourse = () => {
         college: "",
         thumbnail: "",
         facultyId: "",
-        assignSelfAsInstructor: false
+        assignSelfAsInstructor: false,
+        certificateEnabled: false
     });
 
     const [thumbnailPreview, setThumbnailPreview] = useState("");
@@ -80,7 +81,8 @@ const EditCourse = () => {
                 college: data.course.college || "",
                 thumbnail: data.course.thumbnail || "",
                 facultyId: data.course.managedBy?.id || "",
-                assignSelfAsInstructor: false
+                assignSelfAsInstructor: false,
+                certificateEnabled: data.course.certificateEnabled || false
             });
 
             setThumbnailPreview(data.course.thumbnail || "");
@@ -185,6 +187,7 @@ const EditCourse = () => {
             description: formData.description,
             college: formData.college,
             thumbnail: formData.thumbnail,
+            certificateEnabled: formData.certificateEnabled
         };
 
         // Only include facultyId if instructor was changed or self-assignment was toggled
@@ -346,6 +349,27 @@ const EditCourse = () => {
                                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                                     className="px-4 py-3 h-32 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200 text-foreground resize-none"
                                 />
+                            </div>
+
+                            {/* Enable Certificate Generation */}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3 p-3 bg-accent rounded-lg border border-border/50">
+                                    <Checkbox
+                                        id="certificateEnabled"
+                                        checked={formData.certificateEnabled}
+                                        onCheckedChange={(checked) => setFormData({...formData, certificateEnabled: checked})}
+                                        className="h-5 w-5"
+                                    />
+                                    <label 
+                                        htmlFor="certificateEnabled"
+                                        className="text-sm font-semibold text-foreground cursor-pointer flex-1"
+                                    >
+                                        Allow Students to Generate Certificates
+                                    </label>
+                                </div>
+                                <p className="text-xs text-muted-foreground px-1">
+                                    Students will be able to download certificates when enabled
+                                </p>
                             </div>
                         </div>
 
