@@ -3,65 +3,65 @@ import { generateCourseCode } from "../utils/generateCourseCode.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const createCourse = async (req, res) => {
-   try {
-      const {title, description, college, facultyId, thumbnail} = req.body;
-      const code = generateCourseCode();
+    try {
+        const { title, description, college, facultyId, thumbnail } = req.body;
+        const code = generateCourseCode();
 
-      if(!title || !college){
-         return res.status(400).json({message: "Please provide title and college"});
-      }
+        if (!title || !college) {
+            return res.status(400).json({ message: "Please provide title and college" });
+        }
 
-      const auth = req.auth();
-      const userId = auth.userId;
+        const auth = req.auth();
+        const userId = auth.userId;
 
-      const user = await prisma.user.findUnique({
-         where: {
-            clerkId: userId
-         },
-         select: {
-            id: true,
-            role: true
-         }
-      })
+        const user = await prisma.user.findUnique({
+            where: {
+                clerkId: userId
+            },
+            select: {
+                id: true,
+                role: true
+            }
+        })
 
-      const createdById = user.id;
-      
-      // Determine facultyId based on user role
-      let assignedFacultyId = null;
-      
-      if (user.role === 'FACULTY') {
-         // Faculty creating course: automatically assign themselves as instructor
-         assignedFacultyId = user.id;
-      } else if (user.role === 'ADMIN') {
-         // Admin can either assign themselves or assign another faculty
-         if (facultyId) {
-            // Admin is explicitly assigning a specific faculty
-            assignedFacultyId = facultyId;
-         } else {
-            // Admin is assigning themselves as instructor
+        const createdById = user.id;
+
+        // Determine facultyId based on user role
+        let assignedFacultyId = null;
+
+        if (user.role === 'FACULTY') {
+            // Faculty creating course: automatically assign themselves as instructor
             assignedFacultyId = user.id;
-         }
-      }
+        } else if (user.role === 'ADMIN') {
+            // Admin can either assign themselves or assign another faculty
+            if (facultyId) {
+                // Admin is explicitly assigning a specific faculty
+                assignedFacultyId = facultyId;
+            } else {
+                // Admin is assigning themselves as instructor
+                assignedFacultyId = user.id;
+            }
+        }
 
-      const newCourse = await prisma.course.create({
-         data: {
-            title,
-            description,
-            thumbnail,
-            college,
-            code,
-            status: 'DRAFT',
-            createdById,
-            facultyId: assignedFacultyId
-         }
-      })
+        const newCourse = await prisma.course.create({
+            data: {
+                title,
+                description,
+                thumbnail,
+                college,
+                code,
+                status: 'DRAFT',
+                createdById,
+                facultyId: assignedFacultyId
+            }
+        })
 
-      res.status(201).json({message: 'Course created successfully', newCourse})
+        res.status(201).json({ message: 'Course created successfully', newCourse })
 
-   } catch (error) {
-      console.log("Error in createCourse controller", error);
-      res.status(500).json({message: "Internal server error"});
-   }
+    } catch (error) {
+        console.log("Error in createCourse controller", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 }
 
 export const getCourses = async (req, res) => {
@@ -138,7 +138,7 @@ export const getCourses = async (req, res) => {
 
         const totalPages = Math.ceil(totalCourses / limit);
 
-        res.status(200).json({ 
+        res.status(200).json({
             courses,
             pagination: {
                 currentPage: page,
@@ -159,9 +159,9 @@ export const getCourses = async (req, res) => {
 
 export const getCourse = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
 
-        if(!id) return res.status(404).json({message: "Course not found"});
+        if (!id) return res.status(404).json({ message: "Course not found" });
 
         const course = await prisma.course.findUnique({
             where: {
@@ -176,6 +176,7 @@ export const getCourse = async (req, res) => {
                 status: true,
                 code: true,
                 facultyId: true,
+                certificateEnabled: true,
                 updatedAt: true,
                 createdBy: {
                     select: {
@@ -214,22 +215,22 @@ export const getCourse = async (req, res) => {
             }
         })
 
-        if(!course) {
-            return res.status(404).json({message: "Course not found"});
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
         }
 
-        res.status(200).json({course});
+        res.status(200).json({ course });
 
     } catch (error) {
         console.log("Error in getCourse controller");
-        res.status(500).json({message: "Internal Server Error"});
+        res.status(500).json({ message: "Internal Server Error" });
     }
 }
 
 
 export const archiveCourse = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
 
         const course = await prisma.course.findUnique({
             where: {
@@ -243,8 +244,8 @@ export const archiveCourse = async (req, res) => {
             }
         });
 
-        if(!course){
-            return res.status(404).json({message: "Course not found"});
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
         }
 
         // Authorization: only course creator, assigned faculty, or admin can archive
@@ -258,9 +259,9 @@ export const archiveCourse = async (req, res) => {
 
         // Authorization: If faculty is assigned, only they can archive
         // If no faculty is assigned, only creator can archive
-        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
-                            (!course.facultyId && user.id === course.createdById);
-        
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) ||
+            (!course.facultyId && user.id === course.createdById);
+
         if (!isAuthorized) {
             return res.status(403).json({ message: 'Not authorized to archive this course' });
         }
@@ -285,7 +286,7 @@ export const archiveCourse = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in archiveCourse controller:", error);
-        res.status(500).json({message: "Failed to archive course"});
+        res.status(500).json({ message: "Failed to archive course" });
     }
 }
 
@@ -321,9 +322,9 @@ export const updateCourse = async (req, res) => {
 
         // Authorization: If faculty is assigned, only they can update
         // If no faculty is assigned, only creator can update
-        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
-                            (!course.facultyId && user.id === course.createdById);
-        
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) ||
+            (!course.facultyId && user.id === course.createdById);
+
         if (!isAuthorized) {
             return res.status(403).json({ message: 'Not authorized to update this course' });
         }
@@ -387,19 +388,19 @@ export const updateCourse = async (req, res) => {
 
 export const publishCourse = async (req, res) => {
     try {
-        
-        const {id} = req.params;
-        const {status} = req.body;
+
+        const { id } = req.params;
+        const { status } = req.body;
 
         // Validate status is one of the allowed values
         const validStatuses = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
-        if(!id || !validStatuses.includes(status)) {
-            return res.status(400).json({message: "Invalid request. Status must be DRAFT, PUBLISHED, or ARCHIVED"});
+        if (!id || !validStatuses.includes(status)) {
+            return res.status(400).json({ message: "Invalid request. Status must be DRAFT, PUBLISHED, or ARCHIVED" });
         }
 
         // Check if course is archived
         const course = await prisma.course.findUnique({
-            where: {id},
+            where: { id },
             select: {
                 id: true,
                 status: true,
@@ -408,8 +409,8 @@ export const publishCourse = async (req, res) => {
             }
         });
 
-        if(!course) {
-            return res.status(404).json({message: "Course not found"});
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
         }
 
         // Authorization: Check if user is course creator, assigned faculty, or admin
@@ -423,21 +424,21 @@ export const publishCourse = async (req, res) => {
 
         // Authorization: If faculty is assigned, only they can publish
         // If no faculty is assigned, only creator can publish
-        const isAuthorized = (course.facultyId && user.id === course.facultyId) || 
-                            (!course.facultyId && user.id === course.createdById);
-        
+        const isAuthorized = (course.facultyId && user.id === course.facultyId) ||
+            (!course.facultyId && user.id === course.createdById);
+
         if (!isAuthorized) {
             return res.status(403).json({ message: "Not authorized to update course status" });
         }
 
         // Prevent publishing archived courses
-        if(course.status === 'ARCHIVED' && status === 'PUBLISHED') {
-            return res.status(403).json({message: "Archived courses cannot be published. Please restore the course first."});
+        if (course.status === 'ARCHIVED' && status === 'PUBLISHED') {
+            return res.status(403).json({ message: "Archived courses cannot be published. Please restore the course first." });
         }
 
         const updatedCourse = await prisma.course.update({
-            where: {id},
-            data: {status},
+            where: { id },
+            data: { status },
             select: {
                 id: true,
                 title: true,
@@ -446,7 +447,7 @@ export const publishCourse = async (req, res) => {
             }
         });
 
-        res.status(200).json({message: "Course status updated", course: updatedCourse});
+        res.status(200).json({ message: "Course status updated", course: updatedCourse });
 
     } catch (error) {
         console.log("Error in publishCourse controller", error);
