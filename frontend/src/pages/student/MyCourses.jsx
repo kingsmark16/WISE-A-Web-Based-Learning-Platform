@@ -15,6 +15,7 @@ import { MyCourseGridSkeleton } from '@/components/skeletons';
 import { BookOpen, Search, AlertCircle, Plus } from 'lucide-react';
 import CourseEnrollDialog from '@/components/CourseEnrollDialog';
 import { useState, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -26,21 +27,26 @@ import { Link } from 'react-router-dom';
  * - Responsive grid layout
  */
 export const MyCourses = () => {
+  // All hooks must be called before any return
   const { data: courses = [], isLoading, error } = useEnrolledCourses();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
-
+  const { mutate: enrollCourse, isPending: isEnrolling, isSuccess } = useEnrollInCourse();
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+  useEffect(() => {
+    if (isSuccess && isJoinDialogOpen) {
+      setIsJoinDialogOpen(false);
+    }
+  }, [isSuccess, isJoinDialogOpen]);
   // Get unique colleges from courses
   const categories = useMemo(() => {
     const colleges = new Set(courses.map(course => course.college).filter(Boolean));
     return Array.from(colleges).sort();
   }, [courses]);
-
   // Filter and sort courses
   const filteredAndSortedCourses = useMemo(() => {
     let filtered = courses;
-
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -49,12 +55,10 @@ export const MyCourses = () => {
         course.description?.toLowerCase().includes(query)
       );
     }
-
     // Apply college filter
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(course => course.college === selectedCategory);
     }
-
     // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -71,10 +75,8 @@ export const MyCourses = () => {
           return new Date(b.enrolledAt) - new Date(a.enrolledAt);
       }
     });
-
     return sorted;
   }, [courses, searchQuery, selectedCategory, sortBy]);
-
   // Loading state
   if (isLoading) {
     return (
@@ -139,22 +141,9 @@ export const MyCourses = () => {
     );
   }
 
-  // Join Course Logic
-  const { mutate: enrollCourse, isPending: isEnrolling } = useEnrollInCourse();
-  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
-
+  // ...existing code...
   const handleJoinCourse = (courseCode) => {
-    enrollCourse({ courseCode }, {
-      onSuccess: () => {
-        setIsJoinDialogOpen(false);
-        // Ideally we should refetch courses here, but useEnrolledCourses should auto-refetch on window focus or we can invalidate query
-        // Assuming react-query handles invalidation if set up correctly
-      },
-      onError: (error) => {
-        // Error handling is done in the hook usually, or we can show toast here
-        console.error("Enrollment failed", error);
-      }
-    });
+    enrollCourse({ courseCode });
   };
 
   return (
