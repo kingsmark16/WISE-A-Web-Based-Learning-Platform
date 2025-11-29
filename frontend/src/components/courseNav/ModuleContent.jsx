@@ -99,7 +99,13 @@ const ModuleContent = ({ isAdminView = false }) => {
         ) : fetchError ? (
           <div className="text-sm text-destructive">Failed to load modules</div>
         ) : localModules.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No modules yet. Add one to get started.</div>
+          <div className="p-8 md:p-12 text-center">
+            <div className="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-muted mb-4">
+              <BookOpen className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-lg font-medium text-foreground mb-1">No modules available</p>
+            <p className="text-sm text-muted-foreground">Modules will appear here as they are added</p>
+          </div>
         ) : (
           <DndContext
             sensors={isAdminView ? [] : sensors}
