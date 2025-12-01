@@ -3,20 +3,12 @@ import { useGetCourse, useUpdateCourse } from "../../hooks/courses/useCourses"
 import { useNavigate, useParams } from "react-router-dom";
 import { useUploadImage } from "../../hooks/courseThumbnails/useUploadImage";
 import { useDeleteImage } from "../../hooks/courseThumbnails/useDeleteImage";
-import { useGetFacultyId } from "../../hooks/analytics/adminAnalytics/useGetFaculty";
-import { ArrowLeft, Upload, X, Check, Search, User, Image as ImageIcon, Edit } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
+import { X, Check, Image as ImageIcon, Loader2, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -26,6 +18,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUser } from "@clerk/clerk-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 
 const categories = [
   "College of Education",
@@ -48,9 +46,8 @@ const EditCourse = () => {
     const {mutate: updateCourse, isPending: isUpdating} = useUpdateCourse();
     const {mutate: uploadImage, isPending: isUploading, error: uploadError} = useUploadImage();
     const {mutate: deleteImage, isPending: isDeleting} = useDeleteImage();
-    const { data: facultyList = [], isLoading: facultyLoading, error: facultyError } = useGetFacultyId();
     const { user } = useUser();
-    
+
     // Get user role from Clerk metadata or localStorage
     const userRole = user?.publicMetadata?.role || localStorage.getItem('userRole') || 'STUDENT';
     const isFaculty = userRole === 'FACULTY';
@@ -60,18 +57,13 @@ const EditCourse = () => {
         description: "",
         college: "",
         thumbnail: "",
-        facultyId: "",
-        assignSelfAsInstructor: false,
         certificateEnabled: false
     });
 
     const [thumbnailPreview, setThumbnailPreview] = useState("");
     const [thumbnailPublicId, setThumbnailPublicId] = useState("");
     const [newImageSelected, setNewImageSelected] = useState(false);
-    const [facultySearch, setFacultySearch] = useState("");
-    const [showInstructorList, setShowInstructorList] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
-    const [instructorChanged, setInstructorChanged] = useState(false); // Add this state to track changes
 
     useEffect(() => {
         if(data?.course) {
@@ -80,8 +72,6 @@ const EditCourse = () => {
                 description: data.course.description || "",
                 college: data.course.college || "",
                 thumbnail: data.course.thumbnail || "",
-                facultyId: data.course.managedBy?.id || "",
-                assignSelfAsInstructor: false,
                 certificateEnabled: data.course.certificateEnabled ?? false
             });
 
@@ -91,9 +81,6 @@ const EditCourse = () => {
                 const publicId = extractPublicIdFromUrl(data.course.thumbnail);
                 setThumbnailPublicId(publicId);
             }
-            
-            // Reset instructor changed flag when loading course data
-            setInstructorChanged(false);
         }
     }, [data]);
 
@@ -109,10 +96,6 @@ const EditCourse = () => {
             return "";
         }
     }
-
-    const filteredFaculty = (facultyList.faculty || []).filter(f =>
-        f.fullName.toLowerCase().includes(facultySearch.toLowerCase())
-    );
 
     const handleImageUpload = (e) => {
         const file = e.target.files?.[0];
@@ -166,13 +149,6 @@ const EditCourse = () => {
         }
     };
 
-    const handleInstructorSelect = (instructorId) => {
-        setFormData(prev => ({...prev, facultyId: instructorId}));
-        setShowInstructorList(false);
-        setFacultySearch("");
-        setInstructorChanged(true); // Mark that instructor was changed
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -190,15 +166,6 @@ const EditCourse = () => {
             certificateEnabled: formData.certificateEnabled
         };
 
-        // Only include facultyId if instructor was changed or self-assignment was toggled
-        if (formData.assignSelfAsInstructor) {
-            updateData.assignSelfAsInstructor = true;
-            updateData.facultyId = ""; // Backend will use current user's ID
-        } else if (instructorChanged) {
-            updateData.facultyId = formData.facultyId;
-        }
-        // If instructor wasn't changed, don't include facultyId in update
-
         updateCourse({id, courseData: updateData}, {
             onSuccess: () => {
                 // Navigate to course details page based on user role
@@ -210,434 +177,264 @@ const EditCourse = () => {
         });
     };
 
-    // Include the current category in the options if not already present
-
     if(isLoading) return (
-        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-            {/* Header Skeleton */}
-            <div className="flex items-center gap-3 mb-2">
-                <Skeleton className="h-10 w-10 rounded-lg" />
-                <Skeleton className="h-6 w-32" />
-            </div>
-            <Skeleton className="h-4 w-64" />
-
-            {/* Form Container Skeleton */}
-            <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-                <div className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column Skeleton */}
-                        <div className="space-y-6">
-                            {/* Course Title Skeleton */}
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-20" />
-                                <Skeleton className="h-10 w-full" />
-                            </div>
-
-                            {/* Category Skeleton */}
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-16" />
-                                <Skeleton className="h-10 w-full" />
-                            </div>
-
-                            {/* Description Skeleton */}
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-32 w-full" />
-                            </div>
-                        </div>
-
-                        {/* Right Column Skeleton */}
-                        <div className="space-y-6">
-                            {/* Thumbnail Skeleton */}
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-28" />
-                                <Skeleton className="h-36 w-full rounded-lg" />
-                            </div>
-
-                            {/* Instructor Selection Skeleton */}
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-32" />
-                                <div className="space-y-3">
-                                    <Skeleton className="h-4 w-48" />
-                                    <Skeleton className="h-10 w-full" />
-                                    <Skeleton className="h-10 w-24" />
-                                </div>
-                            </div>
-                        </div>
+        <div className="min-h-screen bg-muted/40 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+             <Card className="w-full max-w-5xl border-none shadow-none bg-transparent">
+                <CardHeader className="space-y-2 px-0">
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-1/4" />
+                </CardHeader>
+                <CardContent className="grid gap-8 md:grid-cols-2 px-0">
+                    <div className="space-y-6">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-32 w-full" />
                     </div>
-
-                    {/* Form Actions Skeleton */}
-                    <div className="flex items-center justify-end gap-4 pt-8 border-t border-border mt-8">
-                        <Skeleton className="h-10 w-20" />
-                        <Skeleton className="h-10 w-28" />
+                    <div className="space-y-6">
+                        <Skeleton className="h-48 w-full rounded-lg" />
                     </div>
-                </div>
-            </div>
+                </CardContent>
+             </Card>
         </div>
     );
     
     if(error) return (
-        <div className="text-red-600 text-center p-4 bg-destructive rounded-lg">
-            Error loading course: {error.message}
+        <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
+            <div className="text-center space-y-4">
+                <div className="text-destructive font-semibold text-lg">Error loading course</div>
+                <p className="text-muted-foreground">{error.message}</p>
+                <Button onClick={() => navigate(-1)} variant="outline">Go Back</Button>
+            </div>
         </div>
     );
 
     return (
-        <div className="space-y-4 sm:space-y-6 px-2 md:px-4 py-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Edit Course
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Update course information and settings
-                    </p>
-                </div>
-            </div>
-
-            {/* Form Container */}
-            <div>
-                <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column */}
-                        <div className="space-y-6">
-                            {/* Course Title */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    Course Title *
-                                </label>
-                                <Input
-                                    placeholder="Enter course title"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                    required
-                                    className="px-4 py-3 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none text-foreground"
-                                />
-                            </div>
-
-                            {/* College */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    College *
-                                </label>
-                                <Select
-                                    key={formData.college}
-                                    value={formData.college}
-                                    onValueChange={(value) => setFormData({...formData, college: value})}
-                                >
-                                    <SelectTrigger className="w-full px-4 py-3 text-foreground bg-accent rounded-lg border focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none">
-                                        <SelectValue placeholder="Select a college" />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none">
-                                        {categories.map((cat) => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Description */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    Description
-                                </label>
-                                <Textarea
-                                    placeholder="Enter course description"
-                                    rows={6}
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                    className="px-4 py-3 h-32 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200 text-foreground resize-none"
-                                />
-                            </div>
-
-                            {/* Enable Certificate Generation */}
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3 p-3 bg-accent rounded-lg border border-border/50">
-                                    <Checkbox
-                                        id="certificateEnabled"
-                                        checked={formData.certificateEnabled}
-                                        onCheckedChange={(checked) => setFormData({...formData, certificateEnabled: checked})}
-                                        className="h-5 w-5"
-                                    />
-                                    <label 
-                                        htmlFor="certificateEnabled"
-                                        className="text-sm font-semibold text-foreground cursor-pointer flex-1"
-                                    >
-                                        Allow Students to Generate Certificates
-                                    </label>
-                                </div>
-                                <p className="text-xs text-muted-foreground px-1">
-                                    Students will be able to download certificates when enabled
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="space-y-6">
-                        {/* Thumbnail Upload */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-foreground">
-                                Course Thumbnail <span className="italic font-light">(Optional)</span>
-                            </label>
-                            <div className="w-full sm:w-64 mx-auto sm:mx-0">
-                                {!thumbnailPreview ? (
-                                    <label 
-                                        className={`flex flex-col items-center justify-center w-full h-36 sm:h-40 border-2 border-dashed rounded-lg cursor-pointer bg-accent hover:bg-accent/70 transition-colors ${
-                                            isDragOver ? "border-primary bg-primary/5" : "border-border"
-                                        }`}
-                                        onDragOver={(e) => {
-                                            e.preventDefault();
-                                            setIsDragOver(true);
-                                        }}
-                                        onDragLeave={(e) => {
-                                            e.preventDefault();
-                                            setIsDragOver(false);
-                                        }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            setIsDragOver(false);
-                                            const file = e.dataTransfer.files[0];
-                                            if (file) {
-                                                handleImageUpload({ target: { files: [file] } });
-                                            }
-                                        }}
-                                    >
-                                        <div className="flex flex-col items-center justify-center pt-5 pb-6 px-2">
-                                            <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 mb-4 text-foreground/70" />
-                                            <p className="mb-2 text-xs sm:text-sm text-center text-foreground/50">
-                                                <span className="font-semibold">Click to upload</span> or drag and drop
-                                            </p>
-                                            <p className="text-xs text-foreground/50">PNG, JPG or JPEG (MAX. 5MB)</p>
-                                        </div>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleImageUpload}
-                                            disabled={isUploading}
-                                        />
-                                    </label>
-                                ) : (
-                                    <div className="relative">
-                                        <img 
-                                            src={thumbnailPreview}
-                                            alt="Thumbnail preview"
-                                            className="w-full h-36 sm:h-40 object-contain rounded-lg border border-border"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleImageDelete}
-                                            disabled={isDeleting}
-                                            className="absolute top-2 right-2 p-1 bg-destructive text-foreground rounded-full hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isDeleting ? (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-border"></div>
-                                            ) : (
-                                                <X className="h-4 w-4" />
-                                            )}
-                                        </button>
-                                        {formData.thumbnail && !newImageSelected && !isUploading && (
-                                            <div className="absolute bottom-2 left-2">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500 text-foreground text-xs rounded-full">
-                                                    <Check className="h-3 w-3" />
-                                                    Current
-                                                </span>
-                                            </div>
-                                        )}
-                                        {formData.thumbnail && !isDeleting && newImageSelected && (
-                                            <div className="absolute bottom-2 left-2">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary text-foreground text-xs rounded-full">
-                                                    <Check className="h-3 w-3" />
-                                                    Updated
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            {isUploading && (
-                                <div className="flex items-center gap-2 text-primary">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                    <span className="text-sm">Uploading image...</span>
-                                </div>
-                            )}
-                            {isDeleting && (
-                                <div className="flex items-center gap-2 text-destructive">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive"></div>
-                                    <span className="text-sm">Removing image...</span>
-                                </div>
-                            )}
-                            {uploadError && (
-                                <p className="text-destructive text-sm">Upload failed: {uploadError.message}</p>
-                            )}
-                        </div>
-
-                        {/* Instructor Selection - Only for Admins */}
-                        {!isFaculty && (
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-foreground">
-                                    Course Instructor
-                                </label>
-                                
-                                {/* Self-Assign Checkbox */}
-                                <div className="flex items-center space-x-2 mb-3">
-                                    <Checkbox
-                                        id="assignSelf"
-                                        checked={formData.assignSelfAsInstructor}
-                                        onCheckedChange={(checked) => {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                assignSelfAsInstructor: checked,
-                                                facultyId: checked ? "" : prev.facultyId
-                                            }));
-                                        }}
-                                        className="border-2"
-                                    />
-                                    <label htmlFor="assignSelf" className="text-sm text-foreground cursor-pointer">
-                                        Assign myself as instructor
-                                    </label>
-                                </div>
-
-                                <div className="relative">
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                        <div className="flex-1 relative">
-                                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/60" />
-                                            <Input
-                                                className="pl-10 pr-4 py-3 border border-border rounded-lg bg-accent text-foreground focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200 w-full"
-                                                value={
-                                                    formData.assignSelfAsInstructor 
-                                                        ? user?.fullName || "You (Admin)" 
-                                                        : (filteredFaculty.find(f => f.id === formData.facultyId)?.fullName || data?.course?.managedBy?.fullName || "")
-                                                }
-                                                readOnly
-                                                placeholder="No instructor assigned"
-                                                disabled={formData.assignSelfAsInstructor}
-                                            />
-                                        </div>
-                                        
-                                        <Dialog open={showInstructorList} onOpenChange={setShowInstructorList}>
-                                            <DialogTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    className="flex items-center gap-2 w-full sm:w-auto"
-                                                    disabled={formData.assignSelfAsInstructor}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                    {formData.facultyId ? "Change" : "Assign"}
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent className="max-w-sm mx-2">
-                                                <DialogHeader>
-                                                    <DialogTitle>
-                                                        {formData.facultyId ? "Change Instructor" : "Assign Instructor"}
-                                                    </DialogTitle>
-                                                    <DialogDescription>
-                                                        Select an instructor to assign to this course
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                
-
-                                                <div className="space-y-4">
-                                                    <div className="relative">
-                                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search instructors..."
-                                                            value={facultySearch}
-                                                            onChange={e => setFacultySearch(e.target.value)}
-                                                            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none bg-background text-foreground text-sm"
-                                                        />
-                                                    </div>
-
-                                                    <div className="max-h-64 overflow-y-auto space-y-1">
-                                                        {facultyLoading ? (
-                                                            <div className="space-y-2 py-2">
-                                                                {[...Array(5)].map((_, index) => (
-                                                                    <div key={index} className="flex items-center gap-3 px-3 py-3">
-                                                                        <Skeleton className="h-10 w-10 rounded-full" />
-                                                                        <div className="flex-1 space-y-2">
-                                                                            <Skeleton className="h-4 w-[60%]" />
-                                                                            <Skeleton className="h-3 w-[40%]" />
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-
-                                                            </div>
-                                                        ) : facultyError ? (
-                                                            <div className="text-destructive text-center py-8">
-                                                                <p>Error loading faculty</p>
-                                                            </div>
-                                                        ) : filteredFaculty.length === 0 ? (
-                                                            <div className="text-muted-foreground text-center py-8">
-                                                                <p>No matching instructors found</p>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                {formData.facultyId && (
-                                                                    <div
-                                                                        className="cursor-pointer px-3 py-3 rounded-lg hover:bg-accent transition-colors border text-sm"
-                                                                        onClick={() => handleInstructorSelect("")}
-                                                                    >
-                                                                        <div className="font-medium text-red-600">Remove current instructor</div>
-                                                                    </div>
-                                                                )}
-                                                                {filteredFaculty.map(fac => (
-                                                                    <div
-                                                                        key={fac.id}
-                                                                        className={`cursor-pointer px-3 py-3 rounded-lg hover:bg-accent transition-colors text-sm ${
-                                                                            formData.facultyId === fac.id ? "bg-accent border border-primary" : ""
-                                                                        }`}
-                                                                        onClick={() => handleInstructorSelect(fac.id)}
-                                                                    >
-                                                                        <div className="font-medium text-foreground">{fac.fullName}</div>
-                                                                        {formData.facultyId === fac.id && (
-                                                                            <div className="text-xs text-primary mt-1">Currently assigned</div>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+        <div className="min-h-screen bg-muted/40 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-5xl mx-auto space-y-6">
+                
+                {/* Back Button & Header */}
+                <div className="flex items-center gap-4">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => navigate(-1)}
+                        className="rounded-full hover:bg-background/80"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground">Edit Course</h1>
+                        <p className="text-muted-foreground text-sm">Update the course details and settings.</p>
                     </div>
                 </div>
 
-                {/* Form Actions */}
-                <div className="flex items-center justify-end gap-4 pt-6">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => navigate(-1)}
-                        className="border-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors"
-                    >
-                        <X className="mr-2 h-4 w-4" />
-                        Cancel
-                    </Button>
-                    <Button
-                        disabled={isUpdating || isUploading || isDeleting}
-                        className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow"
-                    >
-                        {isUpdating ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-                                Updating...
-                            </>
-                        ) : (
-                            <>
-                                <Check className="w-4 h-4" />
-                                Update Course
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </form>
+                <Card className="border-none shadow-md bg-card">
+                    <form onSubmit={handleSubmit}>
+                        <CardContent className="p-6 sm:p-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+                                
+                                {/* Left Column: Main Info */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title" className="text-base">Course Title</Label>
+                                        <Input
+                                            id="title"
+                                            placeholder="e.g. Introduction to Computer Science"
+                                            value={formData.title}
+                                            onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                            required
+                                            className="h-12 text-base"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="college" className="text-base">College / Department</Label>
+                                        <Select
+                                            key={formData.college}
+                                            value={formData.college}
+                                            onValueChange={(value) => setFormData({...formData, college: value})}
+                                        >
+                                            <SelectTrigger id="college" className="h-12 text-base">
+                                                <SelectValue placeholder="Select a college" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categories.map((cat) => (
+                                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description" className="text-base">Description</Label>
+                                        <Textarea
+                                            id="description"
+                                            placeholder="Provide a detailed description of the course..."
+                                            rows={8}
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                            className="resize-none text-base leading-relaxed"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-start space-x-3 p-4 rounded-lg border-2 border-primary/20 bg-muted/10 hover:bg-muted/20 transition-colors">
+                                        <Checkbox
+                                            id="certificateEnabled"
+                                            checked={formData.certificateEnabled}
+                                            onCheckedChange={(checked) => setFormData({...formData, certificateEnabled: checked})}
+                                            className="mt-1 h-5 w-5 border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                        />
+                                        <div className="space-y-1">
+                                            <Label 
+                                                htmlFor="certificateEnabled"
+                                                className="text-base font-medium cursor-pointer"
+                                            >
+                                                Enable Certificate Generation
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Allow students to automatically generate and download a certificate upon course completion.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Thumbnail & Media */}
+                                <div className="space-y-6">
+                                    <div className="space-y-4">
+                                        <Label className="text-base">Course Thumbnail</Label>
+                                        
+                                        <div className="w-full">
+                                            {!thumbnailPreview ? (
+                                                <label 
+                                                    className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ease-in-out
+                                                        ${isDragOver 
+                                                            ? "border-primary bg-primary/5 scale-[1.02]" 
+                                                            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+                                                        }`}
+                                                    onDragOver={(e) => {
+                                                        e.preventDefault();
+                                                        setIsDragOver(true);
+                                                    }}
+                                                    onDragLeave={(e) => {
+                                                        e.preventDefault();
+                                                        setIsDragOver(false);
+                                                    }}
+                                                    onDrop={(e) => {
+                                                        e.preventDefault();
+                                                        setIsDragOver(false);
+                                                        const file = e.dataTransfer.files[0];
+                                                        if (file) {
+                                                            handleImageUpload({ target: { files: [file] } });
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex flex-col items-center justify-center p-6 text-center">
+                                                        <div className="p-4 rounded-full bg-primary/10 mb-4">
+                                                            <ImageIcon className="w-8 h-8 text-primary" />
+                                                        </div>
+                                                        <p className="mb-2 text-sm font-medium text-foreground">
+                                                            Drop your image here, or click to browse
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Supports PNG, JPG, JPEG (Max 5MB)
+                                                        </p>
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleImageUpload}
+                                                        disabled={isUploading}
+                                                    />
+                                                </label>
+                                            ) : (
+                                                <div className="relative group rounded-xl overflow-hidden border bg-muted/10">
+                                                    <img 
+                                                        src={thumbnailPreview}
+                                                        alt="Thumbnail preview"
+                                                        className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <Button
+                                                            type="button"
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={handleImageDelete}
+                                                            disabled={isDeleting}
+                                                            className="shadow-lg"
+                                                        >
+                                                            {isDeleting ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                            ) : (
+                                                                <X className="h-4 w-4 mr-2" />
+                                                            )}
+                                                            Remove Image
+                                                        </Button>
+                                                    </div>
+                                                    
+                                                    {/* Status Badges */}
+                                                    <div className="absolute top-3 left-3 flex gap-2">
+                                                        {formData.thumbnail && !newImageSelected && !isUploading && (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/90 text-white text-xs font-medium rounded-full backdrop-blur-sm shadow-sm">
+                                                                <Check className="h-3 w-3" />
+                                                                Current
+                                                            </span>
+                                                        )}
+                                                        {formData.thumbnail && !isDeleting && newImageSelected && (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/90 text-white text-xs font-medium rounded-full backdrop-blur-sm shadow-sm">
+                                                                <Check className="h-3 w-3" />
+                                                                New
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {isUploading && (
+                                            <div className="flex items-center gap-2 text-sm text-primary animate-pulse">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>Uploading image...</span>
+                                            </div>
+                                        )}
+                                        {uploadError && (
+                                            <p className="text-destructive text-sm bg-destructive/10 p-2 rounded">
+                                                Upload failed: {uploadError.message}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                        
+                        <CardFooter className="flex items-center justify-end gap-4 p-6 sm:p-8 border-t bg-muted/5">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => navigate(-1)}
+                                className="h-11 px-8"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isUpdating || isUploading || isDeleting}
+                                className="h-11 px-8 min-w-[140px]"
+                            >
+                                {isUpdating ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    <>
+                                        Save Changes
+                                    </>
+                                )}
+                            </Button>
+                        </CardFooter>
+                    </form>
+                </Card>
             </div>
         </div>
     )

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCreateCourse } from "../../hooks/courses/useCourses";
 import { useUploadImage } from "../../hooks/courseThumbnails/useUploadImage";
 import { useDeleteImage } from "../../hooks/courseThumbnails/useDeleteImage";
-import { X, Check, Image as ImageIcon } from "lucide-react";
+import { X, Check, Image as ImageIcon, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -16,6 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 const categories = [
   "College of Education",
@@ -136,189 +138,231 @@ const CreateCourse = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Create New Course
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Fill in the details below to create a new course
-          </p>
-        </div>
-      </div>
-
-      {/* Form Container */}
-      <div className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column */}
-            <div className="space-y-6 lg:col-span-2">
-              {/* Course Title */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-foreground">
-                  Course Title *
-                </label>
-                {errors.title && <p className="text-destructive text-sm">{errors.title}</p>}
-                <Input
-                  type="text"
-                  className="px-4 py-3 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200 text-foreground"
-                  placeholder="Enter course title"
-                  value={title}
-                  onChange={e => {
-                    setTitle(e.target.value);
-                    setErrors(prev => ({ ...prev, title: "" }));
-                  }}
-                />
-              </div>
-
-              {/* College */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-foreground">
-                  College *
-                </label>
-                {errors.college && <p className="text-destructive text-sm">{errors.college}</p>}
-                <Select 
-                  value={college} 
-                  onValueChange={(value) => {
-                    setCollege(value);
-                    setErrors(prev => ({ ...prev, college: "" }));
-                  }}
-                >
-                  <SelectTrigger className="w-full px-4 py-3 text-foreground bg-accent rounded-lg border focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none">
-                    <SelectValue placeholder="Select a college" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(col => (
-                      <SelectItem key={col} value={col}>{col}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-foreground">
-                  Description <span className="italic font-light">(Optional)</span>
-                </label>
-                <Textarea
-                  className="px-4 py-3 h-32 bg-accent border rounded-lg focus:ring-2 focus:ring-input focus:border-transparent focus:outline-none transition-all duration-200 text-foreground resize-none"
-                  placeholder="Enter course description"
-                  rows={6}
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  
-                />
-              </div>
+    <div className="min-h-screen bg-muted/40 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <div className="flex items-center gap-4">
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate(-1)}
+                className="rounded-full hover:bg-background/80"
+            >
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">Create New Course</h1>
+                <p className="text-muted-foreground text-sm">Fill in the details below to create a new course.</p>
             </div>
-          </div>
+        </div>
 
-          {/* Thumbnail Upload - Full Width */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-foreground">
-              Course Thumbnail <span className="italic font-light">(Optional)</span>
-            </label>
-            <div className="w-64">
-                  {!thumbnailPreview ? (
-                    <label 
-                      className={`flex flex-col items-center justify-center w-full h-auto border-2 border-dashed rounded-lg cursor-pointer bg-accent hover:bg-accent/70 transition-colors aspect-video ${
-                        isDragOver ? "border-primary bg-primary/5" : "border-border"
-                      }`}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setIsDragOver(true);
+        <Card className="border-none shadow-md bg-card">
+          <form onSubmit={handleSubmit}>
+            <CardContent className="p-6 sm:p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+                
+                {/* Left Column: Main Info */}
+                <div className="lg:col-span-2 space-y-6">
+                  
+                  {/* Course Title */}
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="text-base">
+                        Course Title <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="title"
+                      type="text"
+                      className="h-12 text-base border-gray-300"
+                      value={title}
+                      onChange={e => {
+                        setTitle(e.target.value);
+                        setErrors(prev => ({ ...prev, title: "" }));
                       }}
-                      onDragLeave={(e) => {
-                        e.preventDefault();
-                        setIsDragOver(false);
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        setIsDragOver(false);
-                        const file = e.dataTransfer.files[0];
-                        if (file) {
-                          handleImageUpload({ target: { files: [file] } });
-                        }
+                    />
+                    {errors.title && <p className="text-destructive text-sm">{errors.title}</p>}
+                  </div>
+
+                  {/* College */}
+                  <div className="space-y-2">
+                    <Label htmlFor="college" className="text-base">
+                        College / Department <span className="text-destructive">*</span>
+                    </Label>
+                    <Select 
+                      value={college} 
+                      onValueChange={(value) => {
+                        setCollege(value);
+                        setErrors(prev => ({ ...prev, college: "" }));
                       }}
                     >
-                      <div className="flex flex-col items-center justify-center">
-                        <ImageIcon className="w-8 h-8 mb-4 text-foreground/70" />
-                        <p className="mb-2 text-sm text-foreground/50">
-                          <span className="font-semibold">Click to upload</span> or drag and drop
-                        </p>
-                        <p className="text-xs text-foreground/50">PNG, JPG or JPEG (MAX. 5MB)</p>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                        disabled={isUploading}
-                      />
-                    </label>
-                  ) : (
-                    <div className="relative">
-                      <img 
-                        src={thumbnailPreview}
-                        alt="Thumbnail preview"
-                        className="w-full h-auto object-cover rounded-lg border border-border"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleImageDelete}
-                        disabled={isDeleting}
-                        className="absolute top-2 right-2 p-1 bg-destructive text-foreground rounded-full hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isDeleting ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-border"></div>
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  )}
+                      <SelectTrigger id="college" className="h-12 text-base border-gray-300">
+                        <SelectValue placeholder="Select a college" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(col => (
+                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.college && <p className="text-destructive text-sm">{errors.college}</p>}
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-base">
+                        Description <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+                    </Label>
+                    <Textarea
+                      id="description"
+                      className="resize-none text-base leading-relaxed border-gray-300"
+                      rows={8}
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                    />
+                  </div>
                 </div>
-                {(isUploading || isDeleting) && (
-                  <p className="text-sm text-muted-foreground">{isUploading ? 'Uploading...' : 'Deleting...'}</p>
-                )}
-                {uploadError && <p className="text-destructive text-sm">{uploadError.message}</p>}
-            </div>
 
-          {/* Error Message */}
-          {createCourseError && (
-            <div className="mt-6 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-destructive text-sm">{createCourseError.message}</p>
-            </div>
-          )}
+                {/* Right Column: Thumbnail */}
+                <div className="space-y-6">
+                  
+                  {/* Thumbnail Upload */}
+                  <div className="space-y-4">
+                    <Label className="text-base">
+                        Course Thumbnail <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+                    </Label>
+                    
+                    <div className="w-full">
+                      {!thumbnailPreview ? (
+                        <label 
+                          className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ease-in-out
+                            ${isDragOver 
+                                ? "border-primary bg-primary/5 scale-[1.02]" 
+                                : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+                            }`}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDragOver(true);
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault();
+                            setIsDragOver(false);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setIsDragOver(false);
+                            const file = e.dataTransfer.files[0];
+                            if (file) {
+                              handleImageUpload({ target: { files: [file] } });
+                            }
+                          }}
+                        >
+                          <div className="flex flex-col items-center justify-center p-6 text-center">
+                            <div className="p-4 rounded-full bg-primary/10 mb-4">
+                                <ImageIcon className="w-8 h-8 text-primary" />
+                            </div>
+                            <p className="mb-2 text-sm font-medium text-foreground">
+                                Drop your image here, or click to browse
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Supports PNG, JPG, JPEG (Max 5MB)
+                            </p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                            disabled={isUploading}
+                          />
+                        </label>
+                      ) : (
+                        <div className="relative group rounded-xl overflow-hidden border bg-muted/10">
+                          <img 
+                            src={thumbnailPreview}
+                            alt="Thumbnail preview"
+                            className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={handleImageDelete}
+                              disabled={isDeleting}
+                              className="shadow-lg"
+                            >
+                              {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                <X className="h-4 w-4 mr-2" />
+                              )}
+                              Remove Image
+                            </Button>
+                          </div>
+                          
+                          {thumbnailUrl && !isDeleting && (
+                            <div className="absolute top-3 left-3">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/90 text-white text-xs font-medium rounded-full backdrop-blur-sm shadow-sm">
+                                <Check className="h-3 w-3" />
+                                Uploaded
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-          {/* Submit Button */}
-          <div className="mt-8 flex gap-4 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => navigate(-1)}
-              type="button"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={isCreating || isUploading || isDeleting}
-              className="gap-2"
-            >
-              {isCreating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background"></div>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  Create Course
-                </>
+                    {isUploading && (
+                        <div className="flex items-center gap-2 text-sm text-primary animate-pulse">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Uploading image...</span>
+                        </div>
+                    )}
+                    {uploadError && (
+                        <p className="text-destructive text-sm bg-destructive/10 p-2 rounded">
+                            Upload failed: {uploadError.message}
+                        </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {createCourseError && (
+                <div className="mt-8 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3 text-destructive">
+                    <X className="h-5 w-5 flex-shrink-0" />
+                    <p className="text-sm font-medium">{createCourseError.message}</p>
+                </div>
               )}
-            </Button>
-          </div>
-        </form>
+
+            </CardContent>
+
+            <CardFooter className="flex items-center justify-end gap-4 p-6 sm:p-8 border-t bg-muted/5">
+                <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => navigate(-1)}
+                    className="h-11 px-8"
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    type="submit"
+                    className="h-11 px-8 min-w-[140px]"
+                    disabled={isCreating || isUploading || isDeleting}
+                >
+                    {isCreating ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                    </>
+                    ) : (
+                        "Create Course"
+                    )}
+                </Button>
+            </CardFooter>
+          </form>
+        </Card>
       </div>
     </div>
   );

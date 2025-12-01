@@ -46,9 +46,8 @@ const menuConfig = {
     ];
   },
   STUDENT: () => [
-    { name: 'My Courses', path: '/student/my-courses' },
-    { name: 'Archived Courses', path: '/student/archived-courses' },
-    { name: 'Achievements', path: '/student/achievements' },
+    { name: 'My Courses', path: '/student/my-courses', icon: Library },
+    { name: 'Achievements', path: '/student/achievements', icon: GraduationCap },
   ],
   FACULTY: () => [
     { name: 'Dashboard', path: '/faculty/faculty-dashboard', icon: BarChart3 },

@@ -30,7 +30,7 @@ import { useCreateQuiz } from "@/hooks/useQuizAPI";
 const QUESTION_TYPES = [
   { value: "MULTIPLE_CHOICE", label: "Multiple Choice" },
   { value: "TRUE_FALSE", label: "True/False" },
-  { value: "ENUMERATION", label: "Enumeration" },
+  { value: "ENUMERATION", label: "Identification" },
 ];
 
 // Validate a single question and return errors

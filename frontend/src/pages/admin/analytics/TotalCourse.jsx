@@ -56,12 +56,12 @@ export function TotalCoursesChart({ totalCourses, coursesPerCollege }) {
       </CardHeader>
       
       <CardContent className="flex-1 pb-2 sm:pb-4">
-        <div className="flex justify-center items-center h-64 sm:h-80">
+        <div className="flex justify-center items-center h-48 sm:h-56">
           <ChartContainer
             config={chartConfig}
             className="w-full h-full flex items-center justify-center"
           >
-            <PieChart width={280} height={280}>
+            <PieChart width={220} height={220}>
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
@@ -70,8 +70,8 @@ export function TotalCoursesChart({ totalCourses, coursesPerCollege }) {
                 data={chartData}
                 dataKey="count"
                 nameKey="college"
-                innerRadius={50}
-                outerRadius={100}
+                innerRadius={40}
+                outerRadius={80}
                 strokeWidth={2}
                 isAnimationActive={true}
               >
