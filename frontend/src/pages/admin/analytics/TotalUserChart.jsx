@@ -45,18 +45,18 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
     chartData.reduce((acc, curr) => acc + (curr.count || 0), 0);
 
   return (
-    <Card className="flex flex-col w-full h-full">
-      <CardHeader className="pb-3 sm:pb-4">
-        <CardTitle className="text-base sm:text-lg font-semibold">Users</CardTitle>
+    <Card className="flex flex-col w-full">
+      <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
+        <CardTitle className="text-sm sm:text-base font-semibold">Users</CardTitle>
       </CardHeader>
       
-      <CardContent className="flex-1 pb-2 sm:pb-4">
-        <div className="flex justify-center items-center h-48 sm:h-56">
+      <CardContent className="flex-1 pb-2 px-3 sm:px-4">
+        <div className="flex justify-center items-center h-32 sm:h-36">
           <ChartContainer
             config={chartConfig}
             className="w-full h-full flex items-center justify-center"
           >
-            <PieChart width={220} height={220}>
+            <PieChart width={180} height={180}>
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent hideLabel />}
@@ -65,8 +65,8 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
                 data={chartData}
                 dataKey="count"
                 nameKey="role"
-                innerRadius={40}
-                outerRadius={80}
+                innerRadius={32}
+                outerRadius={65}
                 strokeWidth={2}
                 isAnimationActive={true}
               >
@@ -86,14 +86,14 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
                           <tspan
                             x={viewBox.cx}
                             y={viewBox.cy}
-                            className="fill-foreground text-2xl sm:text-3xl font-bold"
+                            className="fill-foreground text-xl sm:text-2xl font-bold"
                           >
                             {total.toLocaleString()}
                           </tspan>
                           <tspan
                             x={viewBox.cx}
-                            y={(viewBox.cy || 0) + 20}
-                            className="fill-muted-foreground text-xs sm:text-sm"
+                            y={(viewBox.cy || 0) + 18}
+                            className="fill-muted-foreground text-xs"
                           >
                             Users
                           </tspan>
@@ -108,10 +108,10 @@ export function TotalUserChart({ totalUsers, totalAdmins, totalFaculty, totalStu
         </div>
       </CardContent>
       
-      <CardFooter className="flex-col gap-2 text-xs sm:text-sm pt-2 sm:pt-4 border-t">
+      <CardFooter className="flex-col gap-1 text-xs pt-2 pb-3 px-3 sm:px-4 border-t">
         <div className="flex items-center gap-2 leading-none font-medium text-muted-foreground">
           <span>Total User</span>
-          <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
         </div>
       </CardFooter>
     </Card>

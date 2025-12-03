@@ -254,7 +254,7 @@ const EditCourse = () => {
                                             value={formData.college}
                                             onValueChange={(value) => setFormData({...formData, college: value})}
                                         >
-                                            <SelectTrigger id="college" className="h-12 text-base">
+                                            <SelectTrigger id="college" className="h-12 text-base w-full min-w-0 [&>span]:truncate [&>span]:block">
                                                 <SelectValue placeholder="Select a college" />
                                             </SelectTrigger>
                                             <SelectContent>

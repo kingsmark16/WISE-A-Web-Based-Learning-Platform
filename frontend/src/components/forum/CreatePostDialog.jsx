@@ -84,6 +84,7 @@ const CreatePostDialog = ({ open, onOpenChange, categories, courseId }) => {
               value={newPost.title}
               onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
               disabled={createPostMutation.isPending}
+              className="border-foreground/30 focus:border-primary"
             />
           </div>
           <div className="space-y-2">
@@ -112,7 +113,7 @@ const CreatePostDialog = ({ open, onOpenChange, categories, courseId }) => {
               
               id="content"
               placeholder="Write your post content..."
-              className="h-24 resize-none"
+              className="h-24 resize-none border-foreground/30 focus:border-primary"
               value={newPost.content}
               onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
               disabled={createPostMutation.isPending}

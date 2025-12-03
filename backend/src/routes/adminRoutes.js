@@ -7,12 +7,14 @@ import {
     getSingleFaculty,
     getStudents,
     getSingleStudent,
-    adminSearch
+    adminSearch,
+    createFaculty
 } from "../controllers/adminController.js";
 
 const router = Router();
 
 router.get('/dashboard', requireRole(['ADMIN']), getAdminInfo);
+router.post('/create-faculty', requireRole(['ADMIN']), createFaculty);
 router.get('/facname', requireRole(['ADMIN']), getAllFacultyByName);
 router.get('/display-faculty', requireRole(['ADMIN']), getAllFaculty);
 router.get('/display-faculty/:id', requireRole(['ADMIN']), getSingleFaculty);

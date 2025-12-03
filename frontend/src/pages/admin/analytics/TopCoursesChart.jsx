@@ -104,7 +104,7 @@ export function TopCoursesChart({ data, isLoading, error }) {
                   tick={{ fontSize: 11 }}
                   interval={0}
                 />
-                <YAxis tick={{ fontSize: 12 }} width={40} />
+                <YAxis tick={{ fontSize: 12 }} width={40} allowDecimals={false} />
                 <Tooltip 
                   content={<CustomTooltip data={chartData} />}
                   cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}

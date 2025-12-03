@@ -159,33 +159,15 @@ const ManageCourse = () => {
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-        {/* Hero Content */}
-        <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Badge className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border-none px-3 py-1 text-sm font-medium">
-              {course.college || "No College"}
-            </Badge>
-            <Badge
-                className={`px-3 py-1 text-sm font-medium border-none ${
-                  course.status === 'PUBLISHED'
-                    ? "bg-green-500/80 text-white"
-                    : course.status === 'DRAFT'
-                    ? "bg-yellow-500/80 text-white"
-                    : "bg-gray-500/80 text-white"
-                }`}
-              >
-                {course.status === 'PUBLISHED' ? (
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Published
-                  </span>
-                ) : course.status === 'DRAFT' ? (
-                  "Draft"
-                ) : (
-                  "Archived"
-                )}
-            </Badge>
-          </div>
+        {/* Top Badge - College */}
+        <div className="absolute top-0 left-0 w-full p-6 md:p-8">
+          <Badge className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border-none px-3 py-1 text-sm font-medium whitespace-normal break-words">
+            {course.college || "No College"}
+          </Badge>
+        </div>
+
+        {/* Hero Content - Title at Bottom */}
+        <div className="absolute bottom-0 left-0 w-full p-6 md:p-8">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight max-w-4xl shadow-sm">
             {course.title || "Untitled Course"}
           </h1>
@@ -201,7 +183,7 @@ const ManageCourse = () => {
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Instructor</p>
+              <p className="text-xs text-muted-foreground font-medium mb-1">Instructor</p>
               {course.managedBy ? (
                 <div className="flex items-center gap-2">
                   <Avatar className="h-5 w-5 flex-shrink-0">
@@ -224,7 +206,7 @@ const ManageCourse = () => {
               <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Last Updated</p>
+              <p className="text-xs text-muted-foreground font-medium mb-1">Last Updated</p>
               <p className="text-sm font-semibold">
                 {course.updatedAt
                   ? new Date(course.updatedAt).toLocaleDateString("en-US", {
@@ -244,7 +226,7 @@ const ManageCourse = () => {
                   <BookOpen className="h-5 w-5 text-primary" />
                </div>
                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Course Code</p>
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Course Code</p>
                   <div className="flex items-center gap-2">
                     <code className="text-sm font-semibold font-mono">{course.code}</code>
                     <Button

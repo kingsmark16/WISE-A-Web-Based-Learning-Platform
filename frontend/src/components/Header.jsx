@@ -469,7 +469,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => debouncedQuery && setShowSuggestions(true)}
                 placeholder={isStudent ? "Search courses..." : isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
-                className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
+                className="w-full pl-10 pr-10 h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
               />
               {searchQuery && (
                 <Button
@@ -508,7 +508,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           <Button
             variant="outline"
             size="sm"
-            className="hidden md:flex border-border/50 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+            className="flex border-border/50 hover:bg-primary/10 hover:text-primary transition-all duration-200"
             onClick={() => mode === 'admin' ? switchToInstructor() : switchToAdmin()}
           >
             <span className="text-xs">{mode === 'instructor' ? 'Instructor' : 'Admin'}</span>
@@ -532,7 +532,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => debouncedQuery && setShowSuggestions(true)}
                   placeholder={isStudent ? "Search courses..." : isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
-                  className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
+                  className="w-full pl-10 pr-10 h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                   autoFocus
                 />
                 {searchQuery && (

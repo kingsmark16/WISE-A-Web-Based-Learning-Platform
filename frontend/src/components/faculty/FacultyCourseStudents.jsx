@@ -1,8 +1,7 @@
-import { useFacultyCourseStudents } from "@/hooks/faculty/useFacultyCourseStudents";
-import { useClearCourseSubmissions, useClearStudentSubmissions } from "@/hooks/faculty/useClearCourseSubmissions";
+import { useFacultyCourseStudents, useRemoveStudentFromCourse } from "@/hooks/faculty/useFacultyCourseStudents";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, AlertCircle, Eye, Trash2, MoreVertical } from "lucide-react";
+import { Users, AlertCircle, Eye, MoreVertical, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
 import StudentQuizResultsModal from "@/components/faculty/StudentQuizResultsModal";
@@ -33,38 +32,28 @@ import {
 
 const FacultyCourseStudents = ({ courseId }) => {
   const { data: students, isLoading, error } = useFacultyCourseStudents(courseId);
-  const { mutate: clearSubmissions, isLoading: isClearing } = useClearCourseSubmissions();
-  const { mutate: clearStudentSubmissions } = useClearStudentSubmissions();
+  const removeStudentMutation = useRemoveStudentFromCourse();
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [showClearStudentConfirm, setShowClearStudentConfirm] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [studentToRemove, setStudentToRemove] = useState(null);
+  const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
 
   const handleViewQuizzes = (studentId, studentName) => {
     setSelectedStudent({ id: studentId, name: studentName });
     setIsModalOpen(true);
   };
 
-  const handleClearSubmissions = () => {
-    clearSubmissions(courseId);
-    setShowClearConfirm(false);
+  const handleRemoveStudent = (studentId, studentName) => {
+    setStudentToRemove({ id: studentId, name: studentName });
+    setIsRemoveDialogOpen(true);
   };
 
-  const handleClearStudentSubmissions = () => {
-    if (studentToDelete) {
-      clearStudentSubmissions({ 
-        courseId, 
-        studentId: studentToDelete.id 
-      });
-      setShowClearStudentConfirm(false);
-      setStudentToDelete(null);
+  const confirmRemoveStudent = () => {
+    if (studentToRemove) {
+      removeStudentMutation.mutate({ courseId, studentId: studentToRemove.id });
+      setIsRemoveDialogOpen(false);
+      setStudentToRemove(null);
     }
-  };
-
-  const openClearStudentDialog = (studentId, studentName) => {
-    setStudentToDelete({ id: studentId, name: studentName });
-    setShowClearStudentConfirm(true);
   };
 
   if (isLoading) {
@@ -126,19 +115,6 @@ const FacultyCourseStudents = ({ courseId }) => {
           <Users className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Enrolled Students ({students.length})</h2>
         </div>
-        
-        {students.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setShowClearConfirm(true)}
-            disabled={isClearing}
-            className="flex items-center gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Clear All Submissions</span>
-          </Button>
-        )}
       </div>
         <div className="overflow-x-auto">
           <Table>
@@ -179,11 +155,11 @@ const FacultyCourseStudents = ({ courseId }) => {
                           View Quiz Results
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => openClearStudentDialog(student.id, student.fullName)}
+                          onClick={() => handleRemoveStudent(student.id, student.fullName)}
                           className="cursor-pointer text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Clear Submissions
+                          Remove from Course
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -215,49 +191,29 @@ const FacultyCourseStudents = ({ courseId }) => {
         />
       )}
 
-      {/* Clear All Submissions Confirmation Dialog */}
-      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+      {/* Remove Student Confirmation Dialog */}
+      <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Clear All Quiz Submissions?</AlertDialogTitle>
+            <AlertDialogTitle>Remove Student from Course</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all quiz submissions for all {students.length} enrolled student{students.length !== 1 ? 's' : ''} in this course.
-              This action cannot be undone.
+              Are you sure you want to remove <span className="font-semibold">{studentToRemove?.name}</span> from this course? 
+              This will remove their enrollment and all associated progress data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setStudentToRemove(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleClearSubmissions}
+              onClick={confirmRemoveStudent}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeStudentMutation.isPending}
             >
-              Clear All Submissions
+              {removeStudentMutation.isPending ? "Removing..." : "Remove Student"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clear Student Submissions Confirmation Dialog */}
-      <AlertDialog open={showClearStudentConfirm} onOpenChange={setShowClearStudentConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear Student Quiz Submissions?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete all quiz submissions for <strong>{studentToDelete?.name}</strong> in this course.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setStudentToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleClearStudentSubmissions}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Clear Submissions
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

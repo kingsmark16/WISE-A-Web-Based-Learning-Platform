@@ -215,7 +215,7 @@ const CreateCourse = () => {
                         setErrors(prev => ({ ...prev, college: "" }));
                       }}
                     >
-                      <SelectTrigger id="college" className="h-12 text-base border-gray-300">
+                      <SelectTrigger id="college" className="h-12 text-base border-gray-300 w-full min-w-0 [&>span]:truncate [&>span]:block">
                         <SelectValue placeholder="Select a college" />
                       </SelectTrigger>
                       <SelectContent>

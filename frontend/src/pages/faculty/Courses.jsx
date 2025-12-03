@@ -3,7 +3,7 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useFacultyCourseList } from '@/hooks/faculty/useFacultyCourseList';
 import { useDraftCourses } from '@/hooks/faculty/useDraftCourses';
-import { Loader, Plus, Eye, Trash2, Archive } from 'lucide-react';
+import { Loader, Plus, Trash2, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -284,8 +284,7 @@ const CourseCard = ({ course, isDraft = false }) => {
             onClick={() => navigate(`/faculty/courses/${course.id}/analytics`)}
             className="flex-1 px-3 py-2 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
           >
-            <Eye className="w-4 h-4" />
-            View
+            Analytics
           </button>
           {isDraft && (
             <button className="px-3 py-2 text-sm border rounded hover:bg-muted transition-colors flex items-center justify-center gap-1">

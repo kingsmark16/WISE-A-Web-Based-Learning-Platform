@@ -158,7 +158,7 @@ export const MyCourses = () => {
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-card border rounded-xl p-4 mb-8 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between sticky top-4 z-10 backdrop-blur-sm bg-card/95 supports-[backdrop-filter]:bg-card/60">
+        <div className="border rounded-xl p-4 mb-8 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between sticky top-4 z-10 backdrop-blur-sm bg-card/95 supports-[backdrop-filter]:bg-card/60">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground w-full sm:w-auto">
             <LayoutGrid className="h-4 w-4" />
             <span>{filteredAndSortedCourses.length} {filteredAndSortedCourses.length === 1 ? 'Course' : 'Courses'}</span>

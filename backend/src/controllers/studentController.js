@@ -1060,7 +1060,7 @@ export const submitStudentQuiz = async (req, res) => {
             if (!question) return null;
 
             const isCorrect = (() => {
-                if (question.type === 'MULTIPLE_CHOICE' || question.type === 'ENUMERATION' || question.type === 'TRUE_FALSE') {
+                if (question.type === 'MULTIPLE_CHOICE' || question.type === 'IDENTIFICATION' || question.type === 'TRUE_FALSE') {
                     // Compare as strings with trimming
                     return String(answer.answer).trim() === String(question.correctAnswer).trim();
                 }
@@ -2013,15 +2013,40 @@ export const getArchivedCourses = async (req, res) => {
 
 export const studentSearch = async (req, res) => {
     try {
+        const userId = req.auth().userId;
         const query = req.query.q || "";
         const college = req.query.college || "";
         const limit = parseInt(req.query.limit) || 10;
+
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found in database" });
+        }
+
+        // Base where clause - only enrolled courses
+        const baseWhere = {
+            status: 'PUBLISHED',
+            enrollments: {
+                some: {
+                    studentId: user.id
+                }
+            }
+        };
 
         // If college filter is provided, filter by college only
         if (college && college.trim() !== "") {
             const courses = await prisma.course.findMany({
                 where: {
-                    status: 'PUBLISHED',
+                    ...baseWhere,
                     college: college
                 },
                 select: {
@@ -2074,10 +2099,10 @@ export const studentSearch = async (req, res) => {
             });
         }
 
-        // Search for published courses only
+        // Search for enrolled courses only
         const courses = await prisma.course.findMany({
             where: {
-                status: 'PUBLISHED',
+                ...baseWhere,
                 OR: [
                     {
                         title: {

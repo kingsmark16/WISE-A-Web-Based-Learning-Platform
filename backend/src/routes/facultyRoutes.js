@@ -11,7 +11,8 @@ import {
   getStudentQuizAttempts,
   searchFacultyCourses,
   clearAllCourseSubmissions,
-  clearStudentCourseSubmissions
+  clearStudentCourseSubmissions,
+  removeStudentFromCourse
 } from '../controllers/facultyController.js';
 
 const router = Router();
@@ -38,6 +39,9 @@ router.delete('/courses/:courseId/clear-submissions', allowFacultyOrAdmin, clear
 
 // Clear all quiz submissions for a specific student in a course
 router.delete('/courses/:courseId/students/:studentId/clear-submissions', allowFacultyOrAdmin, clearStudentCourseSubmissions);
+
+// Remove a student from a course (unenroll)
+router.delete('/courses/:courseId/students/:studentId', allowFacultyOrAdmin, removeStudentFromCourse);
 
 // Get student quiz attempts for a course
 router.get('/courses/:courseId/students/:studentId/quiz-attempts', getStudentQuizAttempts);

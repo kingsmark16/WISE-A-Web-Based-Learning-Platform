@@ -168,13 +168,12 @@ const Sidebar = ({ isOpen, onClose}) => {
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start gap-3 h-8 px-2 text-xs font-medium transition-all duration-200",
+                      "w-full justify-start h-8 px-3 text-sm font-medium transition-all duration-200",
                       isActive 
                         ? "bg-accent/60 text-accent-foreground" 
                         : "text-foreground/60 hover:text-foreground hover:bg-accent/40"
                     )}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
                     <span>{subItem.name}</span>
                   </Button>
                 )}

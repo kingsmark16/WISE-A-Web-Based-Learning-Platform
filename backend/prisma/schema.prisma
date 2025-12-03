@@ -413,7 +413,7 @@ enum Role {
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
-  ENUMERATION
+  IDENTIFICATION
 }
 
 enum LessonType {

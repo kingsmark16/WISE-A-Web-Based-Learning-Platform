@@ -280,7 +280,7 @@ const CourseAnalytics = () => {
                   strokeWidth={2}
                   dot={{ fill: '#3b82f6', r: 5 }}
                   activeDot={{ r: 7 }}
-                  name="Progress %"
+                  name="Students"
                 />
               </LineChart>
             </ResponsiveContainer>

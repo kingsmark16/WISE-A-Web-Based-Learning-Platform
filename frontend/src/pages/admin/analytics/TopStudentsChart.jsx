@@ -111,7 +111,7 @@ export function TopStudentsChart({ data, isLoading, error }) {
                   dataKey="name"
                   tick={{ fontSize: 11 }}
                 />
-                <YAxis tick={{ fontSize: 12 }} width={40} />
+                <YAxis tick={{ fontSize: 12 }} width={40} allowDecimals={false} />
                 <Tooltip 
                   content={<CustomTooltip data={chartData} />}
                   cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}

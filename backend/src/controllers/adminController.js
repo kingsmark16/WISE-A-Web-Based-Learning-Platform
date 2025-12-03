@@ -1,4 +1,95 @@
 import prisma from '../lib/prisma.js';
+import { clerkClient } from '@clerk/express';
+
+export const createFaculty = async (req, res) => {
+    try {
+        const { firstName, lastName, email, password } = req.body;
+
+        // Validate required fields
+        if (!firstName || !lastName || !email || !password) {
+            return res.status(400).json({ 
+                message: 'All fields are required: firstName, lastName, email, password' 
+            });
+        }
+
+        // Trim all fields
+        const trimmedFirstName = firstName.trim();
+        const trimmedLastName = lastName.trim();
+        const trimmedEmail = email.toLowerCase().trim();
+
+        // Validate password length (Clerk requires at least 8 characters)
+        if (password.length < 8) {
+            return res.status(400).json({ 
+                message: 'Password must be at least 8 characters long' 
+            });
+        }
+
+        // Create user in Clerk with FACULTY role
+        const clerkUser = await clerkClient.users.createUser({
+            firstName: trimmedFirstName,
+            lastName: trimmedLastName,
+            emailAddress: [trimmedEmail],
+            password: password,
+            publicMetadata: {
+                role: 'FACULTY'
+            }
+        });
+
+        // Create user in database
+        const fullName = `${trimmedFirstName} ${trimmedLastName}`;
+        const dbUser = await prisma.user.create({
+            data: {
+                clerkId: clerkUser.id,
+                fullName: fullName,
+                emailAddress: trimmedEmail,
+                role: 'FACULTY',
+                imageUrl: clerkUser.imageUrl || null
+            }
+        });
+
+        return res.status(201).json({
+            message: 'Faculty created successfully',
+            user: {
+                id: dbUser.id,
+                clerkId: clerkUser.id,
+                firstName: clerkUser.firstName,
+                lastName: clerkUser.lastName,
+                fullName: fullName,
+                email: trimmedEmail,
+                role: 'FACULTY'
+            }
+        });
+    } catch (error) {
+        console.log("Error in createFaculty:", error);
+        
+        // Handle Clerk-specific errors
+        if (error.errors) {
+            const clerkError = error.errors[0];
+            if (clerkError.code === 'form_identifier_exists') {
+                return res.status(409).json({ 
+                    message: 'A user with this email already exists' 
+                });
+            }
+            if (clerkError.code === 'form_password_pwned') {
+                return res.status(400).json({ 
+                    message: 'This password has been found in a data breach. Please use a different password.' 
+                });
+            }
+            return res.status(400).json({ 
+                message: clerkError.message || 'Failed to create faculty' 
+            });
+        }
+
+        // Handle Prisma unique constraint error
+        if (error.code === 'P2002') {
+            return res.status(409).json({ 
+                message: 'A user with this email already exists in the database' 
+            });
+        }
+        
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 export const getAdminInfo = async (req, res) => {
 

@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-// Format relative time like in StudentManagement
+
 const formatRelativeTime = (date) => {
   if (!date) return "Never";
 

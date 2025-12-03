@@ -1045,8 +1045,8 @@ const SortableModule = ({
                               return 'Multiple Choice';
                             case 'TRUE_FALSE':
                               return 'True/False';
-                            case 'ENUMERATION':
-                              return 'Enumeration';
+                            case 'IDENTIFICATION':
+                              return 'Identification';
                             default:
                               return String(t).replace(/_/g, ' ');
                           }

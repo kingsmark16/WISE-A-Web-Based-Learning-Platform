@@ -1,5 +1,20 @@
 import { useState, useEffect } from "react";
-import { Plus, Loader2, Trash2, ChevronDown, ChevronUp, BookOpen, Check, X } from "lucide-react";
+import { 
+  Plus, 
+  Loader2, 
+  Trash2, 
+  ChevronDown, 
+  BookOpen, 
+  Clock, 
+  Target, 
+  HelpCircle,
+  CheckCircle2, 
+  AlertCircle,
+  FileText,
+  ToggleLeft,
+  ListChecks,
+  RefreshCw
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,20 +35,56 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "react-toastify";
 import { useUpdateQuiz } from "@/hooks/useQuizAPI";
 
 const QUESTION_TYPES = [
-  { value: "MULTIPLE_CHOICE", label: "Multiple Choice" },
-  { value: "TRUE_FALSE", label: "True/False" },
-  { value: "ENUMERATION", label: "Enumeration" },
+  { value: "MULTIPLE_CHOICE", label: "Multiple Choice", icon: ListChecks, color: "text-blue-500" },
+  { value: "TRUE_FALSE", label: "True/False", icon: ToggleLeft, color: "text-green-500" },
+  { value: "IDENTIFICATION", label: "Identification", icon: FileText, color: "text-purple-500" },
 ];
 
-const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, questionNumber }) => {
+// Validate a single question and return errors
+const validateQuestion = (question) => {
+  const errors = [];
+  
+  if (!question.question?.trim()) {
+    errors.push("Question text is required");
+  }
+  
+  if (!question.correctAnswer) {
+    errors.push("Correct answer is required");
+  }
+  
+  if (question.type === "MULTIPLE_CHOICE") {
+    const validOptions = (question.options || []).filter((o) => o.trim());
+    if (validOptions.length < 2) {
+      errors.push("At least 2 options required");
+    }
+    
+    const duplicates = (question.options || []).filter((o) => o.trim()).some((o, idx, arr) => arr.indexOf(o) !== idx);
+    if (duplicates) {
+      errors.push("Duplicate options not allowed");
+    }
+    
+    if (!validOptions.includes(question.correctAnswer)) {
+      errors.push("Correct answer must be one of the options");
+    }
+  }
+  
+  return errors;
+};
+
+const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, questionNumber, isSubmitting }) => {
+  const errors = validateQuestion(question);
+  const hasErrors = errors.length > 0;
+  const questionType = QUESTION_TYPES.find(t => t.value === question.type);
+  const TypeIcon = questionType?.icon || HelpCircle;
+  
   const handleOptionAdd = () => {
     const newOptions = [...(question.options || []), ""];
     onUpdate({ ...question, options: newOptions });
@@ -50,176 +101,295 @@ const QuestionBuilder = ({ question, onUpdate, onRemove, onExpand, isExpanded, q
     onUpdate({ ...question, options: newOptions });
   };
 
+  const setCorrectAnswer = (answer) => {
+    onUpdate({ ...question, correctAnswer: answer });
+  };
+
   return (
-    <Card className="relative rounded-lg border-2 bg-card shadow-sm hover:shadow-lg border-input transition-all duration-200 hover:border-primary/30 cursor-pointer" onClick={() => onExpand(question.id)}>
-      <div className="flex items-center justify-between px-3">
-        <div className="flex-1">
-          <p className="font-semibold text-sm">
-            <span className="text-muted-foreground mr-2">{questionNumber}.</span>
-            {question.question || "Untitled Question"}
-          </p>
-          <p className="text-xs text-muted-foreground">{question.type || "No type selected"}</p>
+    <Card className={`group relative overflow-hidden rounded-xl border-2 bg-card transition-all duration-300 ${
+      hasErrors 
+        ? 'border-destructive/40 bg-destructive/5 shadow-destructive/10' 
+        : isExpanded 
+          ? 'border-primary/40 shadow-lg shadow-primary/10' 
+          : 'border-border/60 hover:border-primary/30 hover:shadow-md'
+    }`}>
+      {/* Collapsed Header */}
+      <div 
+        className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer select-none"
+        onClick={() => onExpand(question.id)}
+      >
+        {/* Drag Handle & Number */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm transition-colors ${
+            hasErrors 
+              ? 'bg-destructive/10 text-destructive' 
+              : 'bg-primary/10 text-primary'
+          }`}>
+            {questionNumber}
+          </div>
         </div>
-        <div className="flex gap-2 items-center">
+
+        {/* Question Preview */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <TypeIcon className={`h-4 w-4 flex-shrink-0 ${questionType?.color || 'text-muted-foreground'}`} />
+            <span className="text-xs font-medium text-muted-foreground">
+              {questionType?.label || "Select type"}
+            </span>
+            {question.points > 1 && (
+              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                {question.points} pts
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm font-medium truncate text-foreground/90">
+            {question.question || "Click to add question..."}
+          </p>
+        </div>
+
+        {/* Status & Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {hasErrors ? (
+            <div className="flex items-center gap-1 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-xs hidden sm:inline">{errors.length} issue{errors.length > 1 ? 's' : ''}</span>
+            </div>
+          ) : question.question && question.correctAnswer ? (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          ) : null}
+          
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
             }}
-            className="text-destructive hover:bg-destructive/10"
+            disabled={isSubmitting}
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
         </div>
       </div>
 
+      {/* Expanded Content */}
       {isExpanded && (
-        <>
-          <Separator />
-          <CardContent className="" onClick={(e) => e.stopPropagation()}>
-            <div className="grid gap-4">
-              {/* Question Text */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-text-${question.id}`} className="text-sm font-medium">
-                  Question
-                </Label>
-                <Textarea
-                  id={`q-text-${question.id}`}
-                  value={question.question || ""}
-                  onChange={(e) => onUpdate({ ...question, question: e.target.value })}
-                  placeholder="Enter your question here"
-                  className="min-h-20 resize-none border-border/80"
-                />
-              </div>
+        <div className="border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+          {/* Error Alert */}
+          {hasErrors && (
+            <div className="px-4 pt-4">
+              <Alert className="border-destructive/30 bg-destructive/5">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-destructive text-sm">
+                  {errors.map((error, idx) => (
+                    <span key={idx} className="block">{error}</span>
+                  ))}
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
 
-              {/* Question Type */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-type-${question.id}`} className="text-sm font-medium">
-                  Question Type
-                </Label>
-                <Select value={question.type || ""} onValueChange={(val) => onUpdate({ ...question, type: val })}>
-                  <SelectTrigger id={`q-type-${question.id}`} className="border-border/80">
-                    <SelectValue placeholder="Select question type" />
+          <CardContent className="p-4 space-y-5">
+            {/* Question Text */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                Question Text
+              </Label>
+              <Textarea
+                value={question.question || ""}
+                onChange={(e) => onUpdate({ ...question, question: e.target.value })}
+                placeholder="Type your question here..."
+                disabled={isSubmitting}
+                className="min-h-[80px] resize-none text-sm border-border/60 focus:border-primary/50 transition-colors"
+              />
+            </div>
+
+            {/* Type & Points Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Question Type</Label>
+                <Select 
+                  value={question.type || ""} 
+                  onValueChange={(val) => {
+                    const updates = { ...question, type: val };
+                    if (val === "TRUE_FALSE") {
+                      updates.options = [];
+                      updates.correctAnswer = "";
+                    } else if (val === "MULTIPLE_CHOICE" && (!question.options || question.options.length < 2)) {
+                      updates.options = ["", "", ""];
+                    }
+                    onUpdate(updates);
+                  }} 
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger className="h-10 border-border/60">
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {QUESTION_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
+                    {QUESTION_TYPES.map((t) => {
+                      const Icon = t.icon;
+                      return (
+                        <SelectItem key={t.value} value={t.value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${t.color}`} />
+                            {t.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Points */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-points-${question.id}`} className="text-sm font-medium">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Target className="h-4 w-4 text-muted-foreground" />
                   Points
                 </Label>
                 <Input
-                  id={`q-points-${question.id}`}
                   type="number"
                   min="1"
+                  max="100"
                   value={question.points || 1}
-                  onChange={(e) => onUpdate({ ...question, points: Math.max(1, parseInt(e.target.value) || 1) })}
-                  placeholder="1"
-                  className="border-border/80"
+                  onChange={(e) => onUpdate({ ...question, points: Math.max(1, Math.min(100, parseInt(e.target.value) || 1)) })}
+                  disabled={isSubmitting}
+                  className="h-10 border-border/60"
                 />
               </div>
+            </div>
 
-              {/* Options */}
-              {question.type === "MULTIPLE_CHOICE" && (
-                <div className="grid gap-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    Options <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="space-y-2">
-                    {(question.options || []).map((opt, idx) => {
-                      const isDuplicate = opt.trim() && (question.options || []).filter((o) => o.trim() === opt.trim()).length > 1;
-                      const isCorrectAnswer = opt.trim() === question.correctAnswer;
-                      return (
-                        <div key={idx} className="flex gap-2">
-                          <Input
-                            value={opt}
-                            onChange={(e) => handleOptionUpdate(idx, e.target.value)}
-                            placeholder={`Option ${idx + 1}`}
-                            className={`flex-1 border-border/80 ${isDuplicate ? 'border-destructive/50 bg-destructive/5' : ''} ${isCorrectAnswer ? 'border-green-500/50 bg-green-500/5' : ''}`}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOptionRemove(idx)}
-                            disabled={(question.options || []).length <= 2}
-                            className="text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {(question.options || []).length < 4 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleOptionAdd}
-                      className="w-full border-border/80"
-                    >
-                      <Plus className="h-3 w-3 mr-2" />
-                      Add Option
-                    </Button>
-                  )}
-                  <div className="text-xs space-y-1">
-                    {(question.options || []).length < 2 && (
-                      <p className="text-destructive">Minimum 2 options required</p>
-                    )}
-                    {(question.options || []).some((opt) => opt.trim() && (question.options || []).filter((o) => o.trim() === opt.trim()).length > 1) && (
-                      <p className="text-destructive">Duplicate options are not allowed</p>
-                    )}
-                    {!question.correctAnswer ? (
-                      <p className="text-destructive">Correct answer is required</p>
-                    ) : !(question.options || []).includes(question.correctAnswer) ? (
-                      <p className="text-destructive">Correct answer must be one of the options</p>
-                    ) : (question.options || []).filter((o) => o.trim() === question.correctAnswer.trim()).length > 1 ? (
-                      <p className="text-destructive">Correct answer appears multiple times in options</p>
-                    ) : (
-                      <p className="text-green-600">Valid configuration</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Correct Answer */}
-              <div className="grid gap-1">
-                <Label htmlFor={`q-answer-${question.id}`} className="text-sm font-medium">
-                  Correct Answer
+            {/* Multiple Choice Options */}
+            {question.type === "MULTIPLE_CHOICE" && (
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <ListChecks className="h-4 w-4 text-muted-foreground" />
+                  Answer Options
+                  <span className="text-xs text-muted-foreground font-normal">(Click to set correct answer)</span>
                 </Label>
-                {question.type === "TRUE_FALSE" ? (
-                  <Select value={question.correctAnswer || ""} onValueChange={(val) => onUpdate({ ...question, correctAnswer: val })}>
-                    <SelectTrigger id={`q-answer-${question.id}`} className="border-border/80">
-                      <SelectValue placeholder="Select correct answer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">True</SelectItem>
-                      <SelectItem value="false">False</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    id={`q-answer-${question.id}`}
-                    value={question.correctAnswer || ""}
-                    onChange={(e) => onUpdate({ ...question, correctAnswer: e.target.value })}
-                    placeholder="Enter the correct answer"
-                    className="border-border/80"
-                  />
+                
+                <div className="space-y-2">
+                  {(question.options || []).map((opt, idx) => {
+                    const isCorrect = opt.trim() && opt.trim() === question.correctAnswer?.trim();
+                    const isDuplicate = opt.trim() && (question.options || []).filter((o) => o.trim() === opt.trim()).length > 1;
+                    
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => opt.trim() && setCorrectAnswer(opt)}
+                          disabled={!opt.trim() || isSubmitting}
+                          className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isCorrect 
+                              ? 'bg-green-500 border-green-500 text-white' 
+                              : 'border-border/60 hover:border-primary/50 text-muted-foreground hover:text-primary'
+                          } ${!opt.trim() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          {isCorrect ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <span className="text-xs font-semibold">{String.fromCharCode(65 + idx)}</span>
+                          )}
+                        </button>
+                        
+                        <Input
+                          value={opt}
+                          onChange={(e) => handleOptionUpdate(idx, e.target.value)}
+                          placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                          disabled={isSubmitting}
+                          className={`flex-1 h-10 transition-colors ${
+                            isDuplicate ? 'border-destructive/50 bg-destructive/5' : 
+                            isCorrect ? 'border-green-500/50 bg-green-50 dark:bg-green-950/20' : 
+                            'border-border/60'
+                          }`}
+                        />
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOptionRemove(idx)}
+                          disabled={(question.options || []).length <= 2 || isSubmitting}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-30"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {(question.options || []).length < 6 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOptionAdd}
+                    disabled={isSubmitting}
+                    className="w-full border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Option
+                  </Button>
                 )}
               </div>
-            </div>
+            )}
+
+            {/* True/False Options */}
+            {question.type === "TRUE_FALSE" && (
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Select Correct Answer</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: 'true', label: 'True', color: 'green' },
+                    { value: 'false', label: 'False', color: 'red' }
+                  ].map(({ value, label, color }) => {
+                    const isSelected = question.correctAnswer === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setCorrectAnswer(value)}
+                        disabled={isSubmitting}
+                        className={`p-4 rounded-xl border-2 font-semibold text-lg transition-all ${
+                          isSelected 
+                            ? color === 'green'
+                              ? 'bg-green-500/10 border-green-500 text-green-700 dark:text-green-400'
+                              : 'bg-red-500/10 border-red-500 text-red-700 dark:text-red-400'
+                            : 'border-border/60 hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {isSelected && <CheckCircle2 className="h-5 w-5 mx-auto mb-1" />}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Identification Answer */}
+            {question.type === "IDENTIFICATION" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  Correct Answer
+                </Label>
+                <Input
+                  value={question.correctAnswer || ""}
+                  onChange={(e) => setCorrectAnswer(e.target.value)}
+                  placeholder="Type the correct answer..."
+                  disabled={isSubmitting}
+                  className="h-10 border-border/60"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Student answers will be compared to this (case-insensitive)
+                </p>
+              </div>
+            )}
           </CardContent>
-        </>
+        </div>
       )}
     </Card>
   );
@@ -464,15 +634,16 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
 
               <Separator />
 
-              {/* Limits Card */}
-              <Card className="bg-muted/50 border-0">
-                <CardHeader>
-                  <CardTitle className="text-base">Quiz Limits</CardTitle>
-                  <CardDescription>Configure time and attempt restrictions</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-4">
+              {/* Quiz Limits */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-semibold text-sm">Quiz Limits</h4>
+                </div>
+                
+                <div className="space-y-4 pl-6">
                   {/* Time Limit */}
-                  <div className="grid gap-3">
+                  <div className="space-y-2">
                     <Label htmlFor="time-limit" className="text-sm font-medium">
                       Time Limit <span className="text-xs text-muted-foreground font-normal">(minutes)</span>
                     </Label>
@@ -484,7 +655,7 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                       value={timeLimit}
                       onChange={(e) => setTimeLimit(e.target.value)}
                       disabled={isSubmitting}
-                      className="h-10"
+                      className="h-10 border-border/60"
                     />
                     <p className="text-xs text-muted-foreground">
                       {timeLimit ? `${timeLimit} minute${timeLimit !== '1' ? 's' : ''} (${timeLimit * 60} seconds)` : "No time limit"}
@@ -492,8 +663,9 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                   </div>
 
                   {/* Attempt Limit */}
-                  <div className="grid gap-3">
-                    <Label htmlFor="attempt-limit" className="text-sm font-medium">
+                  <div className="space-y-2">
+                    <Label htmlFor="attempt-limit" className="text-sm font-medium flex items-center gap-2">
+                      <RefreshCw className="h-3 w-3 text-muted-foreground" />
                       Attempt Limit
                     </Label>
                     <Input
@@ -504,14 +676,14 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                       value={attemptLimit}
                       onChange={(e) => setAttemptLimit(e.target.value)}
                       disabled={isSubmitting}
-                      className="h-10"
+                      className="h-10 border-border/60"
                     />
                     <p className="text-xs text-muted-foreground">
                       {attemptLimit ? `${attemptLimit} attempt(s) allowed` : "Unlimited attempts"}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </form>
           </div>
 
@@ -553,6 +725,7 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                             onExpand={handleExpandQuestion}
                             isExpanded={expandedQuestionId === q.id}
                             questionNumber={index + 1}
+                            isSubmitting={isSubmitting}
                           />
                         </div>
                       ))}
@@ -613,19 +786,22 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
 
                   <div>
                     <h4 className="font-semibold text-sm mb-3">Question Types</h4>
-                    <div className="space-y-1 text-xs">
+                    <div className="space-y-2 text-xs">
                       {QUESTION_TYPES.map((type) => {
                         const count = questions.filter((q) => q.type === type.value).length;
-                        return count > 0 ? (
-                          <div key={type.value} className="flex justify-between text-muted-foreground">
-                            <span>{type.label}:</span>
-                            <span className="font-medium">{count}</span>
+                        const Icon = type.icon;
+                        return (
+                          <div key={type.value} className="flex items-center justify-between text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-3 w-3 ${type.color}`} />
+                              <span>{type.label}</span>
+                            </div>
+                            <Badge variant={count > 0 ? "default" : "secondary"} className="text-xs px-1.5 py-0 h-5">
+                              {count}
+                            </Badge>
                           </div>
-                        ) : null;
+                        );
                       })}
-                      {questions.every((q) => !q.type) && (
-                        <p className="text-muted-foreground italic">No question types assigned yet</p>
-                      )}
                     </div>
                   </div>
 
@@ -637,11 +813,11 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                       <div className="flex items-start gap-2">
                         {title.trim() ? (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
+                            <CheckCircle2 className="h-3 w-3 text-white" />
                           </div>
                         ) : (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
+                            <AlertCircle className="h-3 w-3 text-white" />
                           </div>
                         )}
                         <span className="text-muted-foreground">{title.trim() ? 'Title provided' : 'Title required'}</span>
@@ -649,11 +825,11 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                       <div className="flex items-start gap-2">
                         {questions.length >= 5 ? (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
+                            <CheckCircle2 className="h-3 w-3 text-white" />
                           </div>
                         ) : (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
+                            <AlertCircle className="h-3 w-3 text-white" />
                           </div>
                         )}
                         <span className="text-muted-foreground">{questions.length >= 5 ? `${questions.length} question(s)` : `At least 5 questions (${questions.length}/5)`}</span>
@@ -661,11 +837,11 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                       <div className="flex items-start gap-2">
                         {questions.every((q) => q.question && q.correctAnswer) ? (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
+                            <CheckCircle2 className="h-3 w-3 text-white" />
                           </div>
                         ) : (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
+                            <AlertCircle className="h-3 w-3 text-white" />
                           </div>
                         )}
                         <span className="text-muted-foreground">All questions complete</span>
@@ -682,11 +858,11 @@ export const EditQuizDialog = ({ quiz, onSuccess, trigger }) => {
                           return q.type !== "" && q.correctAnswer;
                         }) ? (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-green-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
+                            <CheckCircle2 className="h-3 w-3 text-white" />
                           </div>
                         ) : (
                           <div className="h-4 w-4 rounded mt-0.5 flex-shrink-0 bg-red-500 flex items-center justify-center">
-                            <X className="h-3 w-3 text-white" />
+                            <AlertCircle className="h-3 w-3 text-white" />
                           </div>
                         )}
                         <span className="text-muted-foreground">All validations pass</span>
