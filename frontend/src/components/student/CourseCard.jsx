@@ -1,102 +1,108 @@
 import { Link } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, BookOpen } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
  * CourseCard Component - Display individual course with progress
- * 
- * @param {Object} course - Course data object
- * @param {string} course.id - Course ID
- * @param {string} course.title - Course title
- * @param {string} course.description - Course description
- * @param {string} course.thumbnail - Course thumbnail image URL
- * @param {string} course.college - Course college
- * @param {Object} course.managedBy - Faculty information
- * @param {string} course.managedBy.fullName - Faculty name
- * @param {string} course.managedBy.imageUrl - Faculty image URL
- * @param {number} course.totalEnrollments - Total students enrolled
- * @param {number} course.totalModules - Total modules in course
- * @param {number} course.totalLessons - Total lessons in course
- * @param {Object} course.progress - Student's progress
- * @param {number} course.progress.percentage - Progress percentage (0-100)
- * @param {number} course.progress.lessonsCompleted - Lessons completed
+ * Redesigned for modern aesthetics and responsiveness.
  */
 export const CourseCard = ({ course }) => {
-  const progressPercentage = course.progress?.percentage || 0;
+  const progress = course.progress?.percentage || 0;
+  const isCompleted = progress === 100;
 
   return (
-    <Link to={`/student/homepage/${course.id}/selected-course`}>
-      <Card className="h-96 flex flex-col hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer p-0">
-        {/* Course Thumbnail */}
-        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+    <Link 
+      to={`/student/homepage/${course.id}/selected-course`} 
+      className="group block h-full focus:outline-none"
+    >
+      <div className="flex flex-col h-full overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/50">
+        
+        {/* Image Section */}
+        <div className="relative aspect-video w-full overflow-hidden bg-muted">
           {course.thumbnail ? (
             <img
               src={course.thumbnail}
               alt={course.title}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <BookOpen className="w-12 h-12 text-slate-400" />
+            <div className="flex h-full w-full items-center justify-center bg-secondary/30">
+              <BookOpen className="h-10 w-10 text-muted-foreground/50" />
+            </div>
           )}
+          
+          {/* Overlay Gradient on Hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
 
-        <div className="flex flex-col flex-1">
-          <CardHeader className="pb-2 flex-shrink-0">
-            {/* Title */}
-            <div className="text-center">
-              <h3 className="text-md font-semibold line-clamp-1 text-primary hover:text-primary/80 transition-colors">
-                {course.title}
-              </h3>
-            </div>
-            
-            {/* College */}
-            <div className="flex justify-center">
-              <Badge variant="outline">
+        {/* Content Section */}
+        <div className="flex flex-1 flex-col p-4">
+          
+          {/* Title */}
+          <h3 
+            className="mb-1 font-semibold text-lg leading-snug tracking-tight line-clamp-2 group-hover:text-primary transition-colors" 
+            title={course.title}
+          >
+            {course.title}
+          </h3>
+
+          {/* College Badge */}
+          <div className="mb-3">
+            <Badge 
+              variant="secondary" 
+              className="max-w-full justify-start font-medium text-xs bg-secondary/50 hover:bg-secondary/70 transition-colors"
+              title={course.college}
+            >
+              <span className="truncate">
                 {course.college}
-              </Badge>
-            </div>
-          </CardHeader>
+              </span>
+            </Badge>
+          </div>
 
-          <CardContent className="flex-1 flex flex-col justify-between space-y-3 pb-4">
-            {/* Faculty Info */}
-            {course.managedBy && (
-              <div className="flex items-center gap-3 pb-2 border-b flex-shrink-0">
-                {course.managedBy.imageUrl ? (
-                  <img
-                    src={course.managedBy.imageUrl}
-                    alt={course.managedBy.fullName}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
+          {/* Instructor Info */}
+          <div className="mb-4 flex items-center gap-3">
+             <div className="relative h-8 w-8 overflow-hidden rounded-full border border-border bg-muted shrink-0">
+                {course.managedBy?.imageUrl ? (
+                   <img src={course.managedBy.imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
-                    <User className="w-4 h-4 text-slate-500" />
-                  </div>
+                   <div className="flex h-full w-full items-center justify-center bg-secondary">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {course.managedBy.fullName || 'Unknown Faculty'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Instructor</p>
-                </div>
-              </div>
-            )}
+             </div>
+             <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium truncate text-foreground/90">
+                   {course.managedBy?.fullName || 'Unknown Instructor'}
+                </span>
+                <span className="text-xs text-muted-foreground">Instructor</span>
+             </div>
+          </div>
 
-            {/* Progress Bar - Always at bottom */}
-            <div className="space-y-2 mt-auto">
-              <div className="flex justify-between items-center">
-                <p className="text-xs font-medium">Your Progress</p>
-                <p className="text-xs text-muted-foreground">{progressPercentage}%</p>
-              </div>
-              <Progress 
-                value={progressPercentage} 
-                className="h-2"
-              />
-            </div>
-          </CardContent>
+          {/* Footer / Progress */}
+          <div className="mt-auto space-y-2">
+             <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-muted-foreground">Progress</span>
+                <span className={cn(
+                  "font-bold", 
+                  isCompleted ? "text-green-600 dark:text-green-500" : "text-primary"
+                )}>
+                   {progress}%
+                </span>
+             </div>
+             <Progress 
+                value={progress} 
+                className="h-1.5 bg-secondary" 
+                indicatorClassName={cn(
+                   "transition-all duration-500",
+                   isCompleted && "bg-green-600 dark:bg-green-500"
+                )}
+             />
+          </div>
+          
         </div>
-      </Card>
+      </div>
     </Link>
   );
 };

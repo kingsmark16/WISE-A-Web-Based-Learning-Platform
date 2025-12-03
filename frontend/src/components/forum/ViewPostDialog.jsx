@@ -647,7 +647,7 @@ const ViewPostDialog = ({ open, onOpenChange, post, categories, onDeletePost }) 
                 onChange={(e) => setReplyContent(e.target.value)}
                 rows={2}
                 disabled={createReplyMutation.isPending || isSubmittingReply}
-                className="resize-none min-h-[60px] sm:min-h-[72px] max-h-[60px] sm:max-h-[72px] overflow-y-auto text-sm"
+                className="resize-none min-h-[60px] sm:min-h-[72px] max-h-[60px] sm:max-h-[72px] overflow-y-auto text-sm border-foreground/30 focus:border-primary"
               />
               <div className="flex justify-end">
                 <Button 

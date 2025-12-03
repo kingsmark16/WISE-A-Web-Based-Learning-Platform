@@ -42,7 +42,7 @@ createRoot(document.getElementById('root')).render(
         <QueryClientProvider client={queryClient}>
          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           <SocketProvider>
-            <ThemeProvider defaultTheme="dark" storageKey="wise-theme">
+            <ThemeProvider defaultTheme="light" storageKey="wise-theme">
               <ModeProvider>
                 <AuthProvider>
                   <App />

@@ -267,40 +267,38 @@ export const ButtonSkeleton = ({ width = 'w-24' }) => (
 
 // My Courses Card Skeleton - Student Version with Progress Bar
 export const MyCourseCardSkeleton = () => (
-  <div className="h-96 flex flex-col border rounded-lg overflow-hidden p-0">
+  <div className="flex flex-col h-full overflow-hidden rounded-xl border bg-card shadow-sm">
     {/* Thumbnail */}
-    <Skeleton className="w-full h-48 flex-shrink-0" />
+    <Skeleton className="aspect-video w-full" />
     
-    <div className="flex flex-col flex-1">
-      {/* Header section with title and badge */}
-      <div className="pb-1 sm:pb-2 flex-shrink-0 space-y-2 p-3 sm:p-4">
-        <div className="text-center">
-          <Skeleton className="h-5 w-3/4 mx-auto mb-2" />
-        </div>
-        <div className="flex justify-center">
-          <Skeleton className="h-5 w-24 rounded-full" />
+    <div className="flex flex-1 flex-col p-4">
+      {/* Title */}
+      <div className="mb-1 space-y-1">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-6 w-1/2" />
+      </div>
+
+      {/* College Badge */}
+      <div className="mb-3 mt-1">
+        <Skeleton className="h-5 w-24 rounded-md" />
+      </div>
+
+      {/* Instructor Info */}
+      <div className="mb-4 flex items-center gap-3">
+        <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-16" />
         </div>
       </div>
 
-      {/* Content section with faculty and progress */}
-      <div className="flex flex-col space-y-1 p-3 sm:p-4 pb-3 sm:pb-4 flex-shrink-0">
-        {/* Faculty Info with border-bottom */}
-        <div className="flex items-center gap-2 pb-1 sm:pb-2 border-b">
-          <Skeleton className="h-6 w-6 rounded-full flex-shrink-0" />
-          <div className="flex-1 min-w-0 space-y-1">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-2 w-16" />
-          </div>
+      {/* Progress Bar */}
+      <div className="mt-auto space-y-2">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-8" />
         </div>
-
-        {/* Progress Bar */}
-        <div className="space-y-0.5">
-          <div className="flex justify-between items-center">
-            <Skeleton className="h-3 w-16" />
-            <Skeleton className="h-3 w-8" />
-          </div>
-          <Skeleton className="h-1 w-full" />
-        </div>
+        <Skeleton className="h-1.5 w-full rounded-full" />
       </div>
     </div>
   </div>
@@ -340,8 +338,8 @@ export const ArchivedCourseCardSkeleton = () => (
 )
 
 // Grid Skeleton for My Courses Page
-export const MyCourseGridSkeleton = ({ count = 6 }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+export const MyCourseGridSkeleton = ({ count = 8 }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     {[...Array(count)].map((_, i) => (
       <MyCourseCardSkeleton key={i} />
     ))}

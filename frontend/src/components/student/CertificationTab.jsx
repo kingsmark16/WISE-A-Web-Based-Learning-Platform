@@ -34,7 +34,7 @@ const getMotivationalSubMessage = (percentage) => {
   return "Every step counts!";
 };
 
-const CertificationTab = ({ courseId, courseTitle }) => {
+const CertificationTab = ({ courseId, courseTitle, certificateEnabled }) => {
   const { data: completion, isLoading: isLoadingCompletion, refetch: refetchCompletion } = useCourseCompletion(courseId);
   const { data: progress, isLoading: isLoadingProgress } = useCourseProgress(courseId);
   const { mutate: completeCourse, isPending: isGenerating } = useCompleteCourse();
@@ -45,6 +45,61 @@ const CertificationTab = ({ courseId, courseTitle }) => {
 
   const completionPercentage = progress?.progressPercentage || 0;
   const isFullyCompleted = completionPercentage >= 100;
+
+  // If certificates are disabled for this course, show disabled message
+  if (certificateEnabled === false) {
+    return (
+      <div className="w-full">
+        <Card className="overflow-hidden border-0 shadow-lg">
+          <CardContent className="pt-0 pb-0">
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              {/* Left Side - Visual */}
+              <div className="p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center gap-3 sm:gap-4 md:gap-6 min-h-64 sm:min-h-80 md:min-h-96">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800/30 rounded-full blur-2xl opacity-50"></div>
+                  <div className="relative p-4 sm:p-5 md:p-6 rounded-full bg-gray-100 dark:bg-gray-800/40 border-2 border-gray-300 dark:border-gray-700">
+                    <Lock className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-gray-600 dark:text-gray-400" />
+                  </div>
+                </div>
+                <div className="text-center space-y-1 sm:space-y-2">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                    Certificates Disabled
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                    For this course
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side - Message */}
+              <div className="p-4 sm:p-6 md:p-8 space-y-3 sm:space-y-4 md:space-y-6 flex flex-col justify-center">
+                <div className="space-y-1 sm:space-y-2">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold">
+                    Certification Not Available
+                  </h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    The instructor has disabled certificate generation for this course. Certificates will not be available upon completion.
+                  </p>
+                </div>
+
+                {/* Info Box */}
+                <div className="p-3 sm:p-4 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Shield className="h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm">
+                        You can still complete all course materials and track your progress. However, you will not receive an official certificate of completion.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Handle certificate download
   const handleDownloadCertificate = async (certificateUrl, certificateNumber) => {

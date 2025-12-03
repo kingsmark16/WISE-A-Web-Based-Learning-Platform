@@ -34,7 +34,7 @@ const RedirectIfSignedIn = ({ children }) => {
           if (role === "FACULTY") {
             navigate("/faculty/faculty-dashboard", { replace: true })
           } else if (role === "STUDENT") {
-            navigate("/student/student-homepage", { replace: true })
+            navigate("/student/my-courses", { replace: true })
           } else if (role === "ADMIN") {
             navigate("/admin/analytics", { replace: true })
           }

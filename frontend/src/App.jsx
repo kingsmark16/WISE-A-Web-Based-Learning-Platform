@@ -34,7 +34,6 @@ import AdminCourseView from "./pages/admin/AdminCourseView"
 import AdminCourseAnalytics from "./pages/admin/AdminCourseAnalytics"
 import MyCourses from "./pages/student/MyCourses"
 import AchievementsPage from "./pages/student/AchievementsPage"
-import ArchivedCoursesPage from "./pages/student/ArchivedCoursesPage"
 import VerifyCertificate from "./pages/VerifyCertificate"
 
 const App = () => {
@@ -111,7 +110,6 @@ const App = () => {
           <Route path="homepage/:id/selected-course" element={<CoursePage/>}/>
           <Route path="my-courses" element={<MyCourses/>}/>
           <Route path="achievements" element={<AchievementsPage/>}/>
-          <Route path="archived-courses" element={<ArchivedCoursesPage/>}/>
         </Route>
 
         {/* Faculty Routes - Only accessible by FACULTY and ADMIN */}

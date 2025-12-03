@@ -389,7 +389,7 @@ export const submitAnswers = async (req, res) => {
       if (!q) return null;
       totalPoints += q.points ?? 1;
       const isCorrect = (() => {
-        if (q.type === 'MULTIPLE_CHOICE' || q.type === 'ENUMERATION' || q.type === 'TRUE_FALSE') {
+        if (q.type === 'MULTIPLE_CHOICE' || q.type === 'IDENTIFICATION' || q.type === 'TRUE_FALSE') {
           // compare as strings
           return String(a.answer).trim() === String(q.correctAnswer).trim();
         }

@@ -219,6 +219,7 @@ export function ActiveUserAnalytics({ activeUsersData, isLoading, error }) {
                   width={40}
                   tick={{ fontSize: 12 }}
                   padding={{ top: 12, bottom: 0 }}
+                  allowDecimals={false}
                   tickFormatter={(value) => value.toLocaleString()}
                 />
                 <ChartTooltip

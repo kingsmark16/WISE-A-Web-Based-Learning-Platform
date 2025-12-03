@@ -7,9 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight, User, X, ChevronUp, ChevronDown } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight, User, X, ChevronUp, ChevronDown, Plus, Loader2, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGetAllFaculty } from "../../../hooks/analytics/adminAnalytics/useGetFaculty";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "react-toastify";
+import { axiosInstance } from "@/lib/axios";
 
 // Updated formatRelativeTime function to show "Active now"
 const formatRelativeTime = (date) => {
@@ -91,8 +103,20 @@ const FacultyManagement = () => {
   const navigate = useNavigate();
   const searchRef = useRef(null);
 
+  // Create Faculty Dialog State
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: ""
+  });
+  const [formErrors, setFormErrors] = useState({});
+
   // API call without search filter
-  const { data, isLoading, error } = useGetAllFaculty(page, limit, "", sortBy, sortOrder);
+  const { data, isLoading, error, refetch } = useGetAllFaculty(page, limit, "", sortBy, sortOrder);
 
   // Get all faculty for suggestions
   const { data: allFacultyData } = useGetAllFaculty(1, 1000, "", "fullName", "asc");
@@ -172,6 +196,63 @@ const FacultyManagement = () => {
 
   const hasActiveFilters = search || selectedFaculty;
 
+  // Create Faculty Form Handlers
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.firstName.trim()) errors.firstName = "First name is required";
+    if (!formData.lastName.trim()) errors.lastName = "Last name is required";
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Invalid email format";
+    }
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      errors.password = "Password must be at least 8 characters";
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCreateFaculty = async (e) => {
+    if (e) e.preventDefault();
+    if (!validateForm()) return;
+
+    setIsCreating(true);
+    try {
+      const response = await axiosInstance.post('/admin/create-faculty', formData);
+
+      toast.success(response.data.message || "Faculty created successfully!");
+      setIsDialogOpen(false);
+      setFormData({ firstName: "", lastName: "", email: "", password: "" });
+      setFormErrors({});
+      refetch();
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to create faculty");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDialogClose = (open) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setFormData({ firstName: "", lastName: "", email: "", password: "" });
+      setFormErrors({});
+      setShowPassword(false);
+    }
+  };
+
   // Display filtered faculty
   const displayedFaculty = useMemo(() => {
     if (selectedFaculty) {
@@ -217,6 +298,114 @@ const FacultyManagement = () => {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Faculty Management</h1>
           <p className="text-sm sm:text-base text-muted-foreground">Manage and view faculty members</p>
         </div>
+        
+        {/* Add Faculty Button */}
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Faculty
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Faculty</DialogTitle>
+              <DialogDescription>
+                Create a new faculty account. The faculty will be able to log in with these credentials.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateFaculty} className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  placeholder="John"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className={formErrors.firstName ? "border-destructive" : ""}
+                  required
+                />
+                {formErrors.firstName && (
+                  <p className="text-xs text-destructive">{formErrors.firstName}</p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Doe"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className={formErrors.lastName ? "border-destructive" : ""}
+                  required
+                />
+                {formErrors.lastName && (
+                  <p className="text-xs text-destructive">{formErrors.lastName}</p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="john.doe@example.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={formErrors.email ? "border-destructive" : ""}
+                  required
+                />
+                {formErrors.email && (
+                  <p className="text-xs text-destructive">{formErrors.email}</p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={formErrors.password ? "border-destructive pr-10" : "pr-10"}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {formErrors.password && (
+                  <p className="text-xs text-destructive">{formErrors.password}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+              </div>
+              <DialogFooter className="pt-2">
+                <Button type="button" variant="outline" onClick={() => handleDialogClose(false)} disabled={isCreating}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Faculty"
+                )}
+              </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Error Alert */}

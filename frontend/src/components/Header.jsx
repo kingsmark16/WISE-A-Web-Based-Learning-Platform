@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import gsap from "gsap"
 import { UserButton, useUser } from "@clerk/clerk-react"
 import { useNavigate } from "react-router-dom"
-import { Search, X, Menu, BookOpen, Users, GraduationCap, Loader2 } from "lucide-react"
+import { Search, X, Menu, BookOpen, Users, GraduationCap, Loader2, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAdminSearch } from "@/hooks/useAdminSearch"
@@ -11,6 +11,8 @@ import { useStudentSearch } from "@/hooks/student/useStudentSearch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "./ThemeToggle"
+import { useCurrentUserProfile } from "@/hooks/auth/useCurrentUserProfile"
+import { useMode } from "@/hooks/useMode"
 
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const { user } = useUser()
@@ -24,10 +26,22 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const logoRef = useRef(null)
   const dotRef = useRef(null)
 
+  // Get profile data and mode
+  const { data: profileData } = useCurrentUserProfile()
+  const { mode, switchToInstructor, switchToAdmin } = useMode()
+
   // Check if user is admin, faculty, or student
   const isAdmin = user?.publicMetadata?.role === "ADMIN"
   const isFaculty = user?.publicMetadata?.role === "FACULTY"
   const isStudent = user?.publicMetadata?.role === "STUDENT"
+
+  // Check if admin has managed courses
+  const hasManagedCourses = isAdmin && profileData?.user?.totalManagedCourses > 0
+
+  // Determine effective role based on mode (for admin switching to instructor mode)
+  const isInInstructorMode = isAdmin && mode === "instructor"
+  const effectiveIsAdmin = isAdmin && mode !== "instructor"
+  const effectiveIsFaculty = isFaculty || isInInstructorMode
 
   // Animate logo on mount and hover
   useEffect(() => {
@@ -120,22 +134,22 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Fetch suggestions based on role
+  // Fetch suggestions based on role (use effective role for admin in instructor mode)
   const { data: adminSuggestions, isLoading: isAdminLoading } = useAdminSearch(debouncedQuery, {
-    enabled: isAdmin && debouncedQuery.length > 0
+    enabled: effectiveIsAdmin && debouncedQuery.length > 0
   })
 
   const { data: facultySuggestions, isLoading: isFacultyLoading } = useFacultySearch(debouncedQuery, {
-    enabled: isFaculty && debouncedQuery.length > 0
+    enabled: effectiveIsFaculty && debouncedQuery.length > 0
   })
 
   const { data: studentSuggestions, isLoading: isStudentLoading } = useStudentSearch(debouncedQuery, null, {
     enabled: isStudent && debouncedQuery.length > 0
   })
 
-  // Select appropriate suggestions based on role
-  const suggestions = isAdmin ? adminSuggestions : isFaculty ? facultySuggestions : studentSuggestions
-  const isSuggestionsLoading = isAdmin ? isAdminLoading : isFaculty ? isFacultyLoading : isStudentLoading
+  // Select appropriate suggestions based on role (use effective role)
+  const suggestions = effectiveIsAdmin ? adminSuggestions : effectiveIsFaculty ? facultySuggestions : studentSuggestions
+  const isSuggestionsLoading = effectiveIsAdmin ? isAdminLoading : effectiveIsFaculty ? isFacultyLoading : isStudentLoading
 
   // Show suggestions when there's a query and data
   useEffect(() => {
@@ -186,10 +200,10 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     e.stopPropagation() // Prevent event bubbling
     if (!searchQuery.trim()) return
     
-    // Navigate to appropriate search results page based on role
-    if (isAdmin) {
+    // Navigate to appropriate search results page based on role (use effective role)
+    if (effectiveIsAdmin) {
       navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`)
-    } else if (isFaculty) {
+    } else if (effectiveIsFaculty) {
       navigate(`/faculty/search?q=${encodeURIComponent(searchQuery)}`)
     } else if (isStudent) {
       navigate(`/student/search?q=${encodeURIComponent(searchQuery)}`)
@@ -205,16 +219,16 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     setDebouncedQuery("")
     
     if (item.type === "course") {
-      if (isAdmin) {
-        navigate(`/admin/courses/view/${item.id}`)
-      } else if (isFaculty) {
+      if (effectiveIsAdmin) {
+        navigate(`/admin/courses/${item.id}`)
+      } else if (effectiveIsFaculty) {
         navigate(`/faculty/courses/view/${item.id}`)
       } else if (isStudent) {
         navigate(`/student/homepage/${item.id}/selected-course`)
       }
-    } else if (item.type === "faculty" && isAdmin) {
+    } else if (item.type === "faculty" && effectiveIsAdmin) {
       navigate(`/admin/faculty-management/view/${item.id}`)
-    } else if (item.type === "student" && isAdmin) {
+    } else if (item.type === "student" && effectiveIsAdmin) {
       navigate(`/admin/student-management/view/${item.id}`)
     }
   }
@@ -260,7 +274,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               <div className="border-b last:border-b-0">
                 <div className="px-4 py-2 bg-muted/30 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                   <BookOpen className="h-3.5 w-3.5" />
-                  {isFaculty ? "MY COURSES" : "COURSES"}
+                  {effectiveIsFaculty ? "MY COURSES" : "COURSES"}
                   <span className="ml-auto bg-background px-2 py-0.5 rounded-full text-[10px]">
                     {courses.length}
                   </span>
@@ -303,8 +317,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               </div>
             )}
 
-            {/* Faculty - Only show for admins */}
-            {isAdmin && faculty.length > 0 && (
+            {/* Faculty - Only show for admins (not in instructor mode) */}
+            {effectiveIsAdmin && faculty.length > 0 && (
               <div className="border-b last:border-b-0">
                 <div className="px-4 py-2 bg-muted/30 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                   <Users className="h-3.5 w-3.5" />
@@ -341,8 +355,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               </div>
             )}
 
-            {/* Students - Only show for admins */}
-            {isAdmin && students.length > 0 && (
+            {/* Students - Only show for admins (not in instructor mode) */}
+            {effectiveIsAdmin && students.length > 0 && (
               <div className="border-b last:border-b-0">
                 <div className="px-4 py-2 bg-muted/30 text-xs font-semibold text-muted-foreground flex items-center gap-2">
                   <GraduationCap className="h-3.5 w-3.5" />
@@ -460,7 +474,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => debouncedQuery && setShowSuggestions(true)}
                 placeholder={isStudent ? "Search courses..." : isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
-                className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
+                className="w-full pl-10 pr-10 h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
               />
               {searchQuery && (
                 <Button
@@ -494,6 +508,18 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           </Button>
         )}
         
+        {/* Mode Switch Button (Admin only with managed courses) */}
+        {isAdmin && hasManagedCourses && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex border-border/50 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+            onClick={() => mode === 'admin' ? switchToInstructor() : switchToAdmin()}
+          >
+            <span className="text-xs">{mode === 'instructor' ? 'Instructor' : 'Admin'}</span>
+          </Button>
+        )}
+        
         <ThemeToggle />
         <UserButton />
       </div>
@@ -511,7 +537,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => debouncedQuery && setShowSuggestions(true)}
                   placeholder={isStudent ? "Search courses..." : isFaculty ? "Search courses..." : "Search courses, faculty, students..."}
-                  className={`w-full pl-10 pr-10 ${isSidebarOpen ? 'border-border/50' : ''}`}
+                  className="w-full pl-10 pr-10 h-10 rounded-xl bg-background/50 border border-foreground/30 focus:border-primary focus:bg-background transition-all"
                   autoFocus
                 />
                 {searchQuery && (

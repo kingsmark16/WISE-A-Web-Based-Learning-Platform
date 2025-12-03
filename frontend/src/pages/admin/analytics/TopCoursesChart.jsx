@@ -84,7 +84,7 @@ export function TopCoursesChart({ data, isLoading, error }) {
   return (
     <Card className="w-full">
       <CardHeader className="pb-3 sm:pb-4">
-        <CardTitle className="text-base sm:text-lg font-semibold">Top 5 Courses by Enrollments</CardTitle>
+        <CardTitle className="text-base sm:text-lg font-semibold">Top Courses by Enrollments</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-6">
         {/* Chart Container */}
@@ -104,7 +104,7 @@ export function TopCoursesChart({ data, isLoading, error }) {
                   tick={{ fontSize: 11 }}
                   interval={0}
                 />
-                <YAxis tick={{ fontSize: 12 }} width={40} />
+                <YAxis tick={{ fontSize: 12 }} width={40} allowDecimals={false} />
                 <Tooltip 
                   content={<CustomTooltip data={chartData} />}
                   cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}

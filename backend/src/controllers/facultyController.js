@@ -1336,3 +1336,133 @@ export const clearStudentCourseSubmissions = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+/**
+ * Remove a student from a course (unenroll)
+ * This will delete the enrollment and all associated progress data
+ */
+export const removeStudentFromCourse = async (req, res) => {
+  try {
+    const { courseId, studentId } = req.params;
+    const auth = req.auth();
+    const userId = auth.userId;
+
+    // Get the authenticated user
+    const currentUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true, role: true }
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get the course to verify ownership
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { 
+        id: true, 
+        facultyId: true,
+        title: true,
+        modules: {
+          select: {
+            id: true,
+            quiz: { select: { id: true } },
+            lessons: { select: { id: true } }
+          }
+        }
+      }
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Verify that the authenticated user is the course owner or an admin
+    if (course.facultyId !== currentUser.id && currentUser.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Not authorized to remove students from this course' });
+    }
+
+    // Get the enrollment
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        courseId,
+        studentId
+      },
+      include: {
+        student: { select: { fullName: true } }
+      }
+    });
+
+    if (!enrollment) {
+      return res.status(404).json({ message: 'Student is not enrolled in this course' });
+    }
+
+    const studentName = enrollment.student.fullName;
+
+    // Get all quiz IDs for this course
+    const quizIds = course.modules
+      .filter(m => m.quiz)
+      .map(m => m.quiz.id);
+
+    // Get all module IDs
+    const moduleIds = course.modules.map(m => m.id);
+
+    // Get all lesson IDs for this course
+    const lessonIds = course.modules.flatMap(m => m.lessons?.map(l => l.id) || []);
+
+    // Delete all related data in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete quiz submissions
+      if (quizIds.length > 0) {
+        await tx.quizSubmission.deleteMany({
+          where: {
+            quizId: { in: quizIds },
+            studentId
+          }
+        });
+      }
+
+      // Delete module progress
+      if (moduleIds.length > 0) {
+        await tx.moduleProgress.deleteMany({
+          where: {
+            moduleId: { in: moduleIds },
+            studentId
+          }
+        });
+      }
+
+      // Delete course progress
+      await tx.courseProgress.deleteMany({
+        where: {
+          courseId,
+          studentId
+        }
+      });
+
+      // Delete lesson progress records
+      if (lessonIds.length > 0) {
+        await tx.lessonProgress.deleteMany({
+          where: {
+            lessonId: { in: lessonIds },
+            studentId
+          }
+        });
+      }
+
+      // Delete the enrollment
+      await tx.enrollment.delete({
+        where: { id: enrollment.id }
+      });
+    });
+
+    return res.json({ 
+      message: `Successfully removed ${studentName} from the course`,
+      studentName
+    });
+  } catch (err) {
+    console.error('removeStudentFromCourse error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};

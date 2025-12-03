@@ -36,7 +36,7 @@ export const StudentQuizResultsModal = ({ courseId, studentId, studentName, isOp
     }
   }, [isOpen, onClose]);
 
-  // Group attempts by module
+  
   const groupedByModule = quizAttempts.reduce((acc, attempt) => {
     const moduleKey = attempt.moduleId;
     if (!acc[moduleKey]) {

@@ -33,9 +33,12 @@ const ModulesSkeleton = () => (
 
 // Empty state component
 const EmptyState = () => (
-  <div className="px-3 sm:px-4 md:px-6 py-4 md:py-6 text-center text-muted-foreground">
-    <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-    <p>No modules available yet.</p>
+  <div className="p-8 md:p-12 text-center">
+    <div className="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-muted mb-4">
+      <BookOpen className="h-6 w-6 text-muted-foreground" />
+    </div>
+    <p className="text-lg font-medium text-foreground mb-1">No modules available</p>
+    <p className="text-sm text-muted-foreground">Modules will appear here as they are added</p>
   </div>
 );
 
@@ -396,6 +399,17 @@ const ModuleAccordion = ({ courseId }) => {
 
   return (
     <div className="-mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 py-4 md:py-6">
+      {/* Header */}
+      <div className="flex items-start sm:items-center justify-between gap-2 mb-6 px-1">
+        <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-lg sm:text-xl truncate">Course Modules</h4>
+            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Access learning materials and track your progress</p>
+          </div>
+        </div>
+      </div>
+
       <Accordion type="single" collapsible className="w-full space-y-2">
         {safeModules.map((module, index) => (
           <ModuleItem

@@ -46,7 +46,7 @@ const QuizQuestion = ({ question, questionIndex, answer, onAnswerChange }) => {
   };
 
   const handleTextChange = (value) => {
-    if (question.type === 'ENUMERATION') {
+    if (question.type === 'IDENTIFICATION') {
       onAnswerChange(question.id, value);
     }
   };
@@ -187,7 +187,7 @@ const QuizQuestion = ({ question, questionIndex, answer, onAnswerChange }) => {
           </div>
         );
 
-      case 'ENUMERATION':
+      case 'IDENTIFICATION':
         return (
           <div className="space-y-2 sm:space-y-3 mx-auto max-w-3xl">
             <div className="relative">

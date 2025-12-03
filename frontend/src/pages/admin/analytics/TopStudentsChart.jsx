@@ -81,7 +81,7 @@ export function TopStudentsChart({ data, isLoading, error }) {
   // Transform data for chart - take top 5
   const topStudents = data.slice(0, 5);
   const chartData = topStudents.map((student, index) => ({
-    name: student.name.split(' ')[0], // First name only for chart
+    name: student.name.split(' ')[0],
     achievements: student.certificatesEarned || 0,
     enrollments: student.totalCoursesEnrolled || 0,
     fullName: student.name,
@@ -94,7 +94,7 @@ export function TopStudentsChart({ data, isLoading, error }) {
       <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
           <Award className="h-5 w-5 text-amber-500" />
-          Top 5 Students by Achievements
+          Top Students by Achievements
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-6">
@@ -111,7 +111,7 @@ export function TopStudentsChart({ data, isLoading, error }) {
                   dataKey="name"
                   tick={{ fontSize: 11 }}
                 />
-                <YAxis tick={{ fontSize: 12 }} width={40} />
+                <YAxis tick={{ fontSize: 12 }} width={40} allowDecimals={false} />
                 <Tooltip 
                   content={<CustomTooltip data={chartData} />}
                   cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}

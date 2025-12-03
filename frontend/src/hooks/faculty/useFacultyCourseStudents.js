@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
+import { toast } from "react-toastify";
 
 const FACULTY_COURSE_STUDENTS_QUERY_KEY = (courseId) => ['faculty-course-students', courseId];
 
@@ -12,16 +13,7 @@ const fetchFacultyCourseStudents = async (courseId) => {
   return response.data?.data || [];
 };
 
-/**
- * Hook to fetch all enrolled students in a course for faculty
- * Returns student information including progress and active status
- * 
- * @param {string} courseId - The ID of the course
- * @returns {Object} Query object with data, isLoading, error, and refetch
- *
- * @example
- * const { data: students, isLoading, refetch } = useFacultyCourseStudents(courseId);
- */
+
 export const useFacultyCourseStudents = (courseId) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: FACULTY_COURSE_STUDENTS_QUERY_KEY(courseId),
@@ -41,6 +33,29 @@ export const useFacultyCourseStudents = (courseId) => {
     error,
     refetch, // Expose refetch for manual updates
   };
+};
+
+
+export const useRemoveStudentFromCourse = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ courseId, studentId }) => {
+      const response = await axiosInstance.delete(`/faculty/courses/${courseId}/students/${studentId}`);
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      toast.success(data.message || 'Student removed from course successfully');
+      // Invalidate the students list to refetch
+      queryClient.invalidateQueries({ 
+        queryKey: FACULTY_COURSE_STUDENTS_QUERY_KEY(variables.courseId) 
+      });
+    },
+    onError: (error) => {
+      const errorMessage = error?.response?.data?.message || 'Failed to remove student from course';
+      toast.error(errorMessage);
+    }
+  });
 };
 
 export default useFacultyCourseStudents;
