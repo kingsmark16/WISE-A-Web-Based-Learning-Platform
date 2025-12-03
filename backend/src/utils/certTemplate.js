@@ -53,12 +53,12 @@ export function buildCertificateHTML({
 
   .student-name {
     position: absolute;
-    left: 620px;    /* move left/right if needed */
-    top: 200px;     /* move up/down if needed, pag halangkaw pababa */
-    max-width: 480px;
+    left: 380px;    /* move left/right if needed */
+    top: 220px;     /* move up/down if needed, pag halangkaw pababa */
+    max-width: 880px;
 
     font-size: 28px;
-    font-weight: 700;
+    font-weight: 600;
     font-family: "Playfair Display", Georgia, serif;
     line-height: 1.2;
     white-space: nowrap;
@@ -70,12 +70,12 @@ export function buildCertificateHTML({
 
   .course-title {
     position: absolute;
-    left: 385px;   /* nudge left/right if it's not starting at that block */
-    top: 382px;    /* nudge up/down to sit just above the thick bar, 385px dukot na sa line */
+    left: 380px;   /* nudge left/right if it's not starting at that block */
+    top: 310px;    /* nudge up/down to sit just above the thick bar, 385px dukot na sa line */
     max-width: 700px;
 
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 600;
     font-family: "Playfair Display", Georgia, serif;
     line-height: 1.3;
     white-space: nowrap;
@@ -85,14 +85,14 @@ export function buildCertificateHTML({
 
   .verify-text {
     position: absolute;
-    left: 825px;
-    top: 560px;
+    right: 885px;
+    top: 480px;
     font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
                  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 11px;
     font-weight: 500;
     line-height: 1.4;
-    color: #000;
+    color: #ffffff;
     max-width: 250px;
     text-align: left;
     word-break: break-word;
@@ -100,10 +100,10 @@ export function buildCertificateHTML({
 
   .qr-box {
     position: absolute;
-    left: 825px;
-    top: 580px;
-    width: 130px;
-    height: 130px;
+    right: 878px;
+    top: 500px;
+    width: 180px;
+    height: 180px;
     background: #fff;
     border: 2px solid #000;
     display: flex;
@@ -112,10 +112,22 @@ export function buildCertificateHTML({
   }
 
   .qr-box img {
-    width: 118px;
-    height: 118px;
+    width: 150px;
+    height: 150px;
     display: block;
   }
+
+  .student-name .text {
+    font-weight: 200;
+  }
+  .course-title .text {
+    font-weight: 200;
+    font-size: 20px;
+  }
+  .ctitle {
+    align-item: center;
+  }
+
 
 </style>
 </head>
@@ -126,13 +138,18 @@ export function buildCertificateHTML({
   <div class="overlay">
     ${
       studentName
-        ? `<div class="student-name">${esc(studentName)}</div>`
+        ? `<div class="student-name">
+            <span class="text">Congratulations, </span>
+            ${esc(studentName)}
+          </div>`
         : ""
     }
 
     ${
       courseTitle
-        ? `<div class="course-title">${esc(courseTitle)}</div>`
+        ? `<div class="course-title">
+            <span class="text">For successfully completing the course, </span> <p class="ctitle">${esc(courseTitle)}</p>
+          </div>`
         : ""
     }
 

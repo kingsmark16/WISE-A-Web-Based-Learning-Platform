@@ -4,5 +4,5 @@ import { requireRole } from "../middlewares/authMiddleware.js";
 
 const r = Router();
 r.get("/verify", verifyPublic);                                           // public
-r.get("/certificates/me", requireRole(["STUDENT","FACULTY","ADMIN"]), listMine);
+r.get("/certificates/me", requireRole(['ADMIN','FACULTY','STUDENT']), listMine);
 export default r;

@@ -1,8 +1,10 @@
-import React, { useState, useRef } from "react";
-import { X, UploadCloud, Trash2 } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { X, UploadCloud, Trash2, FileText, CheckCircle2, AlertCircle, Loader2, File } from "lucide-react";
 import { useUploadPdf } from "../../hooks/lessons/useUploadPdf";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from 'react-toastify';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const bytesToSize = (bytes) => {
   if (!bytes) return "0 B";
@@ -15,17 +17,32 @@ export default function PdfUploadModal({ open, onClose, moduleId }) {
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
   const { mutateAsync: uploadPdfAsync, cancelUpload } = useUploadPdf();
-  const [items, setItems] = useState([]); // { id, file, progress, status, abortId, error }
+  const [items, setItems] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
 
   if (!open) return null;
 
   const addFiles = (files) => {
-    const arr = Array.from(files || []);
+    const arr = Array.from(files || []).filter(f => f.type === 'application/pdf');
+    if (arr.length === 0) {
+      toast.error('Please select PDF files only');
+      return;
+    }
     const newItems = arr.map((f) => ({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       file: f,
       progress: 0,
-      status: "queued", // queued | uploading | done | error | canceled
+      status: "queued",
       abortId: null,
       error: null,
     }));
@@ -41,12 +58,23 @@ export default function PdfUploadModal({ open, onClose, moduleId }) {
   const onDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragging(false);
     if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
   };
 
   const onDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
+  };
+
+  const onDragEnter = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
   };
 
   const startUploads = (itemsToStart) => {
@@ -86,12 +114,8 @@ export default function PdfUploadModal({ open, onClose, moduleId }) {
     const it = items.find((i) => i.id === id);
     if (!it) return;
     if (it.abortId) {
-      const ok = cancelUpload(it.abortId);
-      if (ok) {
-        setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled", abortId: null } : x)));
-      } else {
-        setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled", abortId: null } : x)));
-      }
+      cancelUpload(it.abortId);
+      setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled", abortId: null } : x)));
     } else {
       setItems((s) => s.map((x) => (x.id === id ? { ...x, status: "canceled" } : x)));
     }
@@ -104,85 +128,164 @@ export default function PdfUploadModal({ open, onClose, moduleId }) {
   const allFinished =
     items.length > 0 && items.every((i) => i.status === "done" || i.status === "error" || i.status === "canceled");
 
+  const uploadingCount = items.filter(i => i.status === "uploading").length;
+  const completedCount = items.filter(i => i.status === "done").length;
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "done":
+        return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
+      case "error":
+        return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
+      case "uploading":
+        return <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />;
+      case "canceled":
+        return <X className="h-3.5 w-3.5 text-muted-foreground" />;
+      default:
+        return <File className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "done":
+        return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20 text-[10px] sm:text-xs">Uploaded</Badge>;
+      case "error":
+        return <Badge variant="destructive" className="text-[10px] sm:text-xs">Failed</Badge>;
+      case "uploading":
+        return <Badge className="bg-primary/10 text-primary hover:bg-primary/20 text-[10px] sm:text-xs">Uploading</Badge>;
+      case "canceled":
+        return <Badge variant="secondary" className="text-[10px] sm:text-xs">Canceled</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] sm:text-xs">Queued</Badge>;
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl bg-card rounded-lg shadow-lg overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="text-lg font-semibold">Upload PDF Document</h3>
+    <div className="fixed inset-0 z-[9999]">
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      {/* Modal Container */}
+      <div className="fixed inset-0 flex items-center justify-center p-2 sm:p-4 pointer-events-none">
+        {/* Modal */}
+        <div className="relative w-full max-w-md sm:max-w-lg bg-background rounded-xl shadow-2xl overflow-hidden border animate-in fade-in zoom-in-95 duration-200 pointer-events-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
           <div className="flex items-center gap-2">
-            <button onClick={onClose} title="Close" className="p-1 rounded hover:bg-muted/10">
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-red-600 text-white">
+              <FileText className="h-3.5 w-3.5" />
+            </div>
+            <h3 className="text-sm font-semibold">Upload PDF</h3>
           </div>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 rounded-lg">
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-3 space-y-3 max-h-[calc(100vh-180px)] overflow-y-auto">
+          {/* Drop Zone */}
           <div
-            className="border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer"
+            className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200 ${
+              isDragging 
+                ? "border-primary bg-primary/5" 
+                : "border-border hover:border-primary/50 hover:bg-muted/30"
+            }`}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onDragEnter={onDragEnter}
+            onDragLeave={onDragLeave}
             onClick={() => inputRef.current?.click()}
             role="button"
             tabIndex={0}
           >
-            <div className="flex items-center justify-center gap-3">
-              <UploadCloud className="h-6 w-6 text-muted-foreground" />
-              <div>
-                <div className="font-semibold">Click to select or drop PDF files</div>
+            <div className="flex flex-col items-center gap-2">
+              <div className={`p-2 rounded-full transition-colors ${isDragging ? "bg-primary/10" : "bg-muted"}`}>
+                <UploadCloud className={`h-6 w-6 transition-colors ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-medium text-xs">
+                  {isDragging ? "Drop your files here" : "Click to select or drag & drop"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  PDF files only
+                </p>
               </div>
             </div>
-            <input ref={inputRef} type="file" accept="application/pdf" multiple className="hidden" onChange={onFilesPicked} />
+            <input 
+              ref={inputRef} 
+              type="file" 
+              accept="application/pdf" 
+              multiple 
+              className="hidden" 
+              onChange={onFilesPicked} 
+            />
           </div>
 
-          <div className="space-y-3 max-h-64 overflow-auto">
-            {items.map((it) => (
-              <div key={it.id} className="flex items-center gap-3 bg-muted/5 p-2 rounded">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <div className="font-medium text-sm truncate">{it.file.name}</div>
-                      <div className="text-xs text-muted-foreground">{bytesToSize(it.file.size)}</div>
+          {/* File List */}
+          {items.length > 0 && (
+            <div className="space-y-2">
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {items.map((it) => (
+                  <div 
+                    key={it.id} 
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-shrink-0">
+                      {getStatusIcon(it.status)}
                     </div>
-                    <div className="text-xs ml-3 w-20 text-right">
-                      {it.status === "uploading" && <span>Uploading…</span>}
-                      {it.status === "queued" && <span>Queued</span>}
-                      {it.status === "done" && <span className="text-green-600">Uploaded</span>}
-                      {it.status === "error" && <span className="text-destructive">Error</span>}
-                      {it.status === "canceled" && <span className="text-muted-foreground">Canceled</span>}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs truncate flex-1">{it.file.name}</span>
+                        {getStatusBadge(it.status)}
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {it.status === "uploading" ? (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleCancel(it.id)} 
+                          className="h-6 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 text-[10px]"
+                        >
+                          Cancel
+                        </Button>
+                      ) : (it.status === "done" || it.status === "error" || it.status === "canceled") ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemove(it.id)}
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {it.status === "uploading" && (
-                    <button onClick={() => handleCancel(it.id)} className="px-2 py-1 text-xs rounded bg-destructive/10 text-destructive hover:bg-destructive/20">
-                      Cancel
-                    </button>
-                  )}
-                  {(it.status === "done" || it.status === "error" || it.status === "canceled") && (
-                    <button onClick={() => handleRemove(it.id)} className="p-1 rounded hover:bg-muted/10" title="Remove">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              {items.length} file{items.length !== 1 ? "s" : ""} queued
             </div>
+          )}
 
-            <div className="flex items-center gap-2">
-              <button onClick={onClose} className="px-3 py-1 rounded bg-muted/10 hover:bg-muted/20">
-                Close
-              </button>
+          {/* All Finished Message */}
+          {allFinished && (
+            <div className="flex items-center gap-2 p-2 rounded-md bg-green-500/10 border border-green-500/20">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+              <span className="text-[10px] text-green-600 dark:text-green-400">
+                All uploads finished!
+              </span>
             </div>
-          </div>
+          )}
+        </div>
 
-          {allFinished && <div className="text-xs text-muted-foreground">All uploads finished. You can close this dialog.</div>}
+        {/* Footer */}
+        <div className="flex items-center justify-end px-3 py-2 border-t bg-card">
+          <Button variant="outline" onClick={onClose} className="h-7 text-xs">
+            Close
+          </Button>
+        </div>
         </div>
       </div>
     </div>

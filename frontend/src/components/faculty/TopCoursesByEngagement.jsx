@@ -209,15 +209,6 @@ const TopCoursesByEngagement = ({ facultyId }) => {
             </BarChart>
           </ChartContainer>
 
-          {/* Engagement Formula Explanation */}
-          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 md:p-4 text-xs md:text-sm">
-            <p className="text-blue-900 dark:text-blue-100 font-medium mb-2">How Engagement is Calculated</p>
-            <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-              <p><strong>Coverage Percentage</strong> = (60% × Lessons Accessed) + (40% × Quizzes Attempted)</p>
-              <p className="text-blue-700 dark:text-blue-300">Measured against enrolled students accessing all available content</p>
-            </div>
-          </div>
-
           {/* Course Details Table */}
           <div className="mt-6 md:mt-8 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
