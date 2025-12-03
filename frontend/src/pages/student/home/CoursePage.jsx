@@ -46,11 +46,46 @@ const CoursePage = () => {
   if (isEnrollmentStatusLoading || (enrollmentStatus && !enrollmentStatus.isEnrolled)) {
       return (
         <div className="space-y-6 w-full">
-             <Skeleton className="h-[300px] md:h-[400px] w-full rounded-xl" />
-             <div className="space-y-4">
-                <Skeleton className="h-8 w-1/2" />
-                <Skeleton className="h-4 w-full" />
-             </div>
+          {/* Hero Skeleton */}
+          <div className="relative h-[300px] md:h-[400px] w-full rounded-xl overflow-hidden">
+            <Skeleton className="absolute inset-0 w-full h-full" />
+            {/* College Badge Skeleton */}
+            <div className="absolute top-0 left-0 w-full p-6 md:p-8">
+              <Skeleton className="h-7 w-32 sm:w-40 rounded-full" />
+            </div>
+            {/* Title Skeleton */}
+            <div className="absolute bottom-0 left-0 w-full p-6 md:p-8">
+              <Skeleton className="h-8 sm:h-10 md:h-12 w-3/4 max-w-xl" />
+            </div>
+          </div>
+          
+          {/* Meta Bar Skeleton */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-4 rounded-xl border shadow-sm">
+            <div className="flex flex-wrap gap-6 md:gap-8">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-28" />
+                </div>
+              </div>
+            </div>
+            <Skeleton className="h-10 w-24 rounded-md" />
+          </div>
+
+          {/* Description Skeleton */}
+          <div className="space-y-3 px-1">
+            <Skeleton className="h-6 w-28" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
         </div>
       )
   }
@@ -60,22 +95,58 @@ const CoursePage = () => {
         {isLoading ? (
           <div className="space-y-6">
             {/* Hero Skeleton */}
-            <Skeleton className="h-[300px] md:h-[400px] w-full rounded-xl" />
+            <div className="relative h-[300px] md:h-[400px] w-full rounded-xl overflow-hidden">
+              <Skeleton className="absolute inset-0 w-full h-full" />
+              {/* College Badge Skeleton */}
+              <div className="absolute top-0 left-0 w-full p-6 md:p-8">
+                <Skeleton className="h-7 w-32 sm:w-40 rounded-full" />
+              </div>
+              {/* Title Skeleton */}
+              <div className="absolute bottom-0 left-0 w-full p-6 md:p-8">
+                <Skeleton className="h-8 sm:h-10 md:h-12 w-3/4 max-w-xl" />
+              </div>
+            </div>
             
             {/* Meta Bar Skeleton */}
-            <div className="flex flex-col md:flex-row justify-between gap-4">
-              <div className="flex gap-4">
-                <Skeleton className="h-12 w-40 rounded-lg" />
-                <Skeleton className="h-12 w-40 rounded-lg" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-4 rounded-xl border shadow-sm">
+              <div className="flex flex-wrap gap-6 md:gap-8">
+                {/* Instructor Skeleton */}
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+                {/* Last Updated Skeleton */}
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                </div>
               </div>
-              <Skeleton className="h-10 w-32 rounded-lg" />
+              {/* Unenroll Button Skeleton */}
+              <Skeleton className="h-10 w-24 rounded-md" />
             </div>
 
             {/* Description Skeleton */}
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-32" />
+            <div className="space-y-3 px-1">
+              <Skeleton className="h-6 w-28" />
+              <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-2/3" />
+            </div>
+
+            {/* Tabs Skeleton */}
+            <div className="pt-2 space-y-4">
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-24 rounded-md" />
+                <Skeleton className="h-10 w-24 rounded-md" />
+                <Skeleton className="h-10 w-24 rounded-md" />
+              </div>
+              <Skeleton className="h-48 w-full rounded-xl" />
             </div>
           </div>
         ) : error ? (

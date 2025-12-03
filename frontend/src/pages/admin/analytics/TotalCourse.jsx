@@ -70,7 +70,7 @@ export function TotalCoursesChart({ totalCourses, coursesPerCollege }) {
                 data={chartData}
                 dataKey="count"
                 nameKey="college"
-                innerRadius={32}
+                innerRadius={40}
                 outerRadius={65}
                 strokeWidth={2}
                 isAnimationActive={true}
