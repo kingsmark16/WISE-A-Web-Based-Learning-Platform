@@ -11,5 +11,7 @@ services:
         value: production
       - key: NODE_OPTIONS
         value: --max-old-space-size=512
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: "false"
+      - key: VERIFY_BASE_URL
+        value: https://parsuwise.onrender.com/verify
+      - key: API_BASE_URL
+        value: https://parsuwise.onrender.com
