@@ -4,7 +4,11 @@ import prisma from "../../lib/prisma.js";
 import { invalidateCoursesCertificates } from "../../services/invalidateCertificates.service.js";
 import ProgressService from "../../services/progress.service.js";
 
-const API_BASE = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+const API_BASE = process.env.API_BASE_URL || (
+  process.env.NODE_ENV === 'production' 
+    ? 'https://parsuwise.onrender.com'
+    : `http://localhost:${process.env.PORT || 3000}`
+);
 const EXPIRES_SEC = 60 * 60 * 4; // 4 hours
 
 const safeBase = (name) =>
