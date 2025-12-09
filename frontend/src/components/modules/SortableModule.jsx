@@ -47,7 +47,7 @@ import LessonList from "../lessons/LessonList";
 import LinkList from "../lessons/LinkList";
 import PdfViewer from "../PdfViewer";
 import EmbedYt from "../EmbedYt";
-import VideoPlayer from "../videoPlayer";
+import VideoPlayer from "../VideoPlayer";
 
 // added: upload hook import
 import { useUploadToDropbox } from "../../hooks/lessons/useUploadToDropbox";
