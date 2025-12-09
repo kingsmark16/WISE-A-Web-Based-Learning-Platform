@@ -137,19 +137,17 @@ io.on('connection', (socket) => {
   });
 });
 
-
+// Production: Serve frontend
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirnameDep, "../frontend/dist")));
 
-  
-  app.get("/{*wise}", (req, res) => {
+  // Catch-all route for SPA - MUST be last
+  app.get("/{*splat}", (req, res) => {
     res.sendFile(path.join(__dirnameDep, "../frontend", "dist", "index.html"));
   });
 }
 
-
-
 // Start server
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
