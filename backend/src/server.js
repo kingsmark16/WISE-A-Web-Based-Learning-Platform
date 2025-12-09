@@ -137,13 +137,17 @@ io.on('connection', (socket) => {
   });
 });
 
+
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirnameDep, "../frontend/dist")));
 
-  app.get("*", (req, res) => {
+  
+  app.get("/{*wise}", (req, res) => {
     res.sendFile(path.join(__dirnameDep, "../frontend", "dist", "index.html"));
   });
 }
+
+
 
 // Start server
 httpServer.listen(PORT, () => {
