@@ -3,11 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useGetSingleStudent } from "../../../hooks/userManagement/useStudents";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Mail, BookOpen, Award, Calendar, AlertCircle, Users, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, Mail, BookOpen, Award, Calendar, Users, ChevronUp, ChevronDown } from "lucide-react";
 
 // Mobile-optimized skeleton loader for courses list
 const CourseSkeletonLoader = () => (
@@ -127,16 +127,14 @@ const StudentInfo = () => {
           <ArrowLeft className="h-4 w-4 mr-1.5 sm:mr-2" />
           <span>Back</span>
         </Button>
-        <Alert variant="destructive" className="text-sm">
-          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <AlertDescription className="ml-2 text-xs sm:text-sm">
-            Error loading student information. {error?.message}
-          </AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate(-1)} variant="outline" className="w-full h-9">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Return to Student List
-        </Button>
+        <ErrorState
+          variant="inline"
+          title="Error Loading Student"
+          message={`Error loading student information. ${error?.message || ''}`}
+          onRetry={() => window.location.reload()}
+          showHome
+          homeRoute="/admin/student-management"
+        />
       </div>
     );
   }

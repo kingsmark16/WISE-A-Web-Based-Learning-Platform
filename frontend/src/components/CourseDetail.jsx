@@ -3,6 +3,7 @@ import { useGetCourse, usePublishCourse, useArchiveCourse } from "../hooks/cours
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Copy, CheckCircle2, Calendar, User, BookOpen, Archive } from "lucide-react";
@@ -52,10 +53,13 @@ const CourseDetail = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] p-4">
-        <div className="text-center">
-          <div className="text-destructive text-lg sm:text-xl font-semibold mb-2">Error loading course</div>
-          <p className="text-muted-foreground text-sm sm:text-base">{error.message}</p>
-        </div>
+        <ErrorState
+          variant="fullPage"
+          title="Error Loading Course"
+          message={error.message}
+          onRetry={() => window.location.reload()}
+          showBack
+        />
       </div>
     );
   }
@@ -64,10 +68,15 @@ const CourseDetail = () => {
   if (!course) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] p-4">
-        <div className="text-center text-muted-foreground">
-          <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">Course not found</p>
-        </div>
+        <ErrorState
+          variant="fullPage"
+          type="notFound"
+          title="Course Not Found"
+          message="The course you're looking for doesn't exist or has been removed."
+          showBack
+          showHome
+          homeRoute="/admin"
+        />
       </div>
     );
   }

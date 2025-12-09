@@ -3,6 +3,7 @@ import { useGetCourse } from '../../hooks/courses/useCourses';
 import { useCourseAnalytics } from '@/hooks/faculty/useCourseAnalytics';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 import { ArrowLeft, BookOpen, Users, MessageSquare, Eye, MessageCircle, Award } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -78,17 +79,13 @@ const AdminCourseAnalytics = () => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-red-800">Error loading analytics: {error.message}</p>
-        </div>
-        <Button
-          onClick={() => navigate(-1)}
-          variant="outline"
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Go Back
-        </Button>
+        <ErrorState
+          variant="card"
+          title="Error Loading Analytics"
+          message={error.message}
+          onRetry={() => window.location.reload()}
+          showBack
+        />
       </div>
     );
   }

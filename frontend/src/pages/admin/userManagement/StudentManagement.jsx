@@ -6,8 +6,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight, User, X, ChevronUp, ChevronDown } from "lucide-react";
+import { ErrorState } from "@/components/ui/error-state";
+import { ArrowUpDown, ChevronLeft, ChevronRight, User, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGetStudents } from "../../../hooks/userManagement/useStudents";
 
@@ -221,12 +221,12 @@ const StudentManagement = () => {
 
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Error loading students: {error.message}
-          </AlertDescription>
-        </Alert>
+        <ErrorState
+          variant="inline"
+          title="Error Loading Students"
+          message={error.message}
+          onRetry={() => window.location.reload()}
+        />
       )}
 
       {/* Search and Sort Controls */}

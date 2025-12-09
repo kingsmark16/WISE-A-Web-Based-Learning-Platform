@@ -2,6 +2,7 @@ import { useEnrolledCourses } from '@/hooks/student/useEnrolledCourses';
 import { useEnrollInCourse } from '@/hooks/courses/useCourses';
 import { CourseCard } from '@/components/student/CourseCard';
 import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/ui/error-state';
 import {
   Select,
   SelectContent,
@@ -107,15 +108,15 @@ const ActiveCourses = () => {
   // Error state
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-2xl font-bold">Error Loading Courses</h2>
-          <p className="text-muted-foreground">
-            {error?.response?.data?.message || 'Failed to load your active courses'}
-          </p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <ErrorState
+          variant="fullPage"
+          title="Error Loading Courses"
+          message={error?.response?.data?.message || 'Failed to load your active courses'}
+          onRetry={() => window.location.reload()}
+          showHome
+          homeRoute="/student"
+        />
       </div>
     );
   }

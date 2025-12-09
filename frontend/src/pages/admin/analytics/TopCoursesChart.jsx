@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { AlertTriangle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CustomTooltip = ({ active, payload, label, data }) => {
   if (active && payload && payload.length) {
@@ -46,13 +45,11 @@ export function TopCoursesChart({ data, isLoading, error }) {
           <CardTitle className="text-base sm:text-lg font-semibold">Top 5 Courses by Enrollments</CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription className="text-sm">
-              Failed to load top courses data
-            </AlertDescription>
-          </Alert>
+          <ErrorState
+            variant="compact"
+            message="Failed to load top courses data"
+            onRetry={() => window.location.reload()}
+          />
         </CardContent>
       </Card>
     );

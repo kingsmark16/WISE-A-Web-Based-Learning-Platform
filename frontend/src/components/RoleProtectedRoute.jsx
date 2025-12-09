@@ -1,6 +1,5 @@
 import { useUser } from '@clerk/clerk-react';
 import { Navigate } from 'react-router-dom';
-import { Loader } from 'lucide-react';
 
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
   const { user, isLoaded } = useUser();
@@ -16,8 +15,14 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
   // Wait for user to load
   if (!isLoaded) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <Loader className="size-8 text-emerald-500 animate-spin" />
+      <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full border-2 border-muted" />
+            <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          </div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }

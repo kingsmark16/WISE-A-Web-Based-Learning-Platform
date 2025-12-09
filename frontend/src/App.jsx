@@ -4,6 +4,7 @@ import SignIn from "./pages/SignIn"
 import LandingPage from "./pages/LandingPage"
 import AuthCallbackPage from "./pages/AuthCallbackPage"
 import SSOCallbackPage from "./pages/SSOCallbackPage"
+import NotFoundPage from "./pages/NotFoundPage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import RoleProtectedRoute from "./components/RoleProtectedRoute"
 import RedirectIfSignedIn from "./components/RedirectIfSignedIn"
@@ -135,6 +136,9 @@ const App = () => {
           <Route path="courses/:courseId/manage" element={<ManageCourse/>}/>
           <Route path="courses/:courseId/analytics" element={<CourseAnalytics/>}/>
         </Route>
+
+        {/* 404 - Catch all unmatched routes */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       
     </div>

@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 import {
   ChartContainer,
   ChartLegend,
@@ -113,9 +114,16 @@ export function ActiveUserAnalytics({ activeUsersData, isLoading, error }) {
     )
   if (error)
     return (
-      <Card className="w-full border-destructive">
-        <CardContent className="flex justify-center p-4 sm:p-8 text-destructive text-sm">
-          Error loading active users: {error.message}
+      <Card className="w-full">
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">Active Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ErrorState
+            variant="compact"
+            message={`Error loading active users: ${error.message}`}
+            onRetry={() => window.location.reload()}
+          />
         </CardContent>
       </Card>
     )

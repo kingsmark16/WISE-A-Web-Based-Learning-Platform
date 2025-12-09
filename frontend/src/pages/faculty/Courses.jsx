@@ -6,6 +6,7 @@ import { useDraftCourses } from '@/hooks/faculty/useDraftCourses';
 import { Loader, Plus, Trash2, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 
 const FacultyCourses = () => {
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
@@ -60,11 +61,12 @@ const FacultyCourses = () => {
   if (allError || draftError) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">
-            Error loading courses: {allError?.message || draftError?.message || 'Unknown error'}
-          </p>
-        </div>
+        <ErrorState
+          variant="inline"
+          title="Error Loading Courses"
+          message={allError?.message || draftError?.message || 'Unknown error'}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }

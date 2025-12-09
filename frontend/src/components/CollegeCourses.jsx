@@ -2,9 +2,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStudentSearch } from "../hooks/student/useStudentSearch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, AlertCircle, ArrowLeft } from "lucide-react";
+import { BookOpen, Search, ArrowLeft } from "lucide-react";
 
 const CollegeCourses = () => {
   const navigate = useNavigate();
@@ -17,13 +17,14 @@ const CollegeCourses = () => {
 
   if (!decodedCollege) {
     return (
-      <div className="space-y-4 sm:space-y-6 px-0">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            College not specified. Please go back and select a college.
-          </AlertDescription>
-        </Alert>
+      <div className="space-y-4 sm:space-y-6 px-4">
+        <ErrorState
+          variant="inline"
+          type="notFound"
+          title="College Not Specified"
+          message="College not specified. Please go back and select a college."
+          showBack
+        />
       </div>
     );
   }
@@ -60,13 +61,14 @@ const CollegeCourses = () => {
 
   if (error) {
     return (
-      <div className="space-y-4 sm:space-y-6 px-0">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load courses for {decodedCollege}. Please try again.
-          </AlertDescription>
-        </Alert>
+      <div className="space-y-4 sm:space-y-6 px-4">
+        <ErrorState
+          variant="inline"
+          title="Failed to Load Courses"
+          message={`Failed to load courses for ${decodedCollege}. Please try again.`}
+          onRetry={() => window.location.reload()}
+          showBack
+        />
       </div>
     );
   }

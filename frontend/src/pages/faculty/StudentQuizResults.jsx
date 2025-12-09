@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStudentQuizAttempts } from '@/hooks/faculty/useStudentQuizAttempts';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorState } from '@/components/ui/error-state';
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, AlertCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 
 const StudentQuizResults = () => {
   const { studentId } = useParams();
@@ -97,12 +97,12 @@ const StudentQuizResults = () => {
             Back
           </Button>
 
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Failed to load quiz results. Please try again later.
-            </AlertDescription>
-          </Alert>
+          <ErrorState
+            variant="inline"
+            title="Failed to Load Results"
+            message="Failed to load quiz results. Please try again later."
+            onRetry={() => window.location.reload()}
+          />
         </div>
       </div>
     );

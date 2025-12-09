@@ -4,6 +4,7 @@ import { useFacultyCourseList } from '@/hooks/faculty/useFacultyCourseList';
 import { useDraftCourses } from '@/hooks/faculty/useDraftCourses';
 import { Loader, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 import { ArchivedCourseGridSkeleton } from '@/components/skeletons';
 
 const CourseListPage = ({ status, title, description }) => {
@@ -54,9 +55,14 @@ const CourseListPage = ({ status, title, description }) => {
   if (!isSignedIn) {
     return (
       <div className="px-2 md:px-4 py-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">Please sign in to access your courses</p>
-        </div>
+        <ErrorState
+          variant="inline"
+          type="auth"
+          title="Sign In Required"
+          message="Please sign in to access your courses"
+          showHome
+          homeRoute="/sign-in"
+        />
       </div>
     );
   }
@@ -64,11 +70,12 @@ const CourseListPage = ({ status, title, description }) => {
   if (error) {
     return (
       <div className="px-2 md:px-4 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">
-            Error loading courses: {error?.message || 'Unknown error'}
-          </p>
-        </div>
+        <ErrorState
+          variant="inline"
+          title="Error Loading Courses"
+          message={error?.message || 'Unknown error'}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }

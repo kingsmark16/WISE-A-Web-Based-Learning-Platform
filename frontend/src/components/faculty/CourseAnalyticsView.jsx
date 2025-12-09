@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useFacultyCourseList } from '@/hooks/faculty/useFacultyCourseList';
 import { useCourseAnalytics } from '@/hooks/faculty/useCourseAnalytics';
+import { ErrorState } from '@/components/ui/error-state';
 import {
   Select,
   SelectContent,
@@ -65,9 +66,11 @@ const CourseAnalyticsView = ({ facultyId }) => {
 
       {/* Error State */}
       {error && !isLoading && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error loading course analytics: {error.message}</p>
-        </div>
+        <ErrorState
+          variant="compact"
+          message={`Error loading course analytics: ${error.message}`}
+          onRetry={() => window.location.reload()}
+        />
       )}
 
       {/* Analytics Display */}

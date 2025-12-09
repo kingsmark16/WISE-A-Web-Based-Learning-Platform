@@ -2,8 +2,8 @@ import { useArchivedCourses } from '@/hooks/student/useArchivedCourses';
 import { CourseCard } from '@/components/student/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArchivedCourseGridSkeleton } from '@/components/skeletons';
-import { Archive, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorState } from '@/components/ui/error-state';
+import { Archive } from 'lucide-react';
 
 const ArchivedCoursesPage = () => {
   const { data: archivedCourses = [], isLoading, error } = useArchivedCourses();
@@ -32,12 +32,12 @@ const ArchivedCoursesPage = () => {
           <Archive className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Archived Courses</h1>
         </div>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load archived courses. Please try again later.
-          </AlertDescription>
-        </Alert>
+        <ErrorState
+          variant="inline"
+          title="Failed to Load Courses"
+          message="Failed to load archived courses. Please try again later."
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }

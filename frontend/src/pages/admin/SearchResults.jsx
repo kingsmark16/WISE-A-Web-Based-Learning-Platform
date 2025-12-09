@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   BookOpen, 
   Users, 
   GraduationCap, 
   Search, 
-  ArrowRight,
-  AlertCircle
+  ArrowRight
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -82,12 +82,12 @@ const SearchResults = () => {
   if (error) {
     return (
       <div className="space-y-4 sm:space-y-6 px-0">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load search results. Please try again.
-          </AlertDescription>
-        </Alert>
+        <ErrorState
+          variant="inline"
+          title="Search Failed"
+          message="Failed to load search results. Please try again."
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }

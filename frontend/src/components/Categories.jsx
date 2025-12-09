@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 
@@ -22,7 +23,7 @@ const Categories = ({categoryList, loadingCategories, errorCategories}) => {
                     <Skeleton key={idx} className="h-10 w-32 rounded-full" />
                 ))
                 ) : errorCategories ? (
-                    <span className="text-destructive">Error loading colleges.</span>
+                    <ErrorState variant="compact" message="Error loading colleges." />
                 ) : categoryList.length === 0 ? (
                     <span className="text-muted-foreground">No colleges found.</span>
                 ) : (

@@ -9,8 +9,7 @@ import { useGetTopCourses } from "../../../hooks/analytics/adminAnalytics/useGet
 import { useGetTopStudentsByAchievements } from "../../../hooks/analytics/adminAnalytics/useGetTopStudents"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle } from "lucide-react"
+import { ErrorState } from "@/components/ui/error-state"
 
 export default function Analytics() {
   const {
@@ -91,21 +90,14 @@ export default function Analytics() {
   if (errorCourseAnalytics) {
     return (
       <div className="w-full min-h-screen bg-background flex items-center justify-center px-4 py-8">
-        <Alert
-          variant="destructive"
-          className="max-w-md w-full mx-auto flex flex-col items-center gap-3 shadow-lg"
-        >
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <AlertTriangle className="h-8 w-8 text-destructive animate-bounce" />
-            <span className="text-lg sm:text-xl font-bold text-destructive">Error</span>
-          </div>
-          <AlertTitle className="text-base sm:text-lg font-semibold text-destructive text-center">
-            Failed to load analytics
-          </AlertTitle>
-          <AlertDescription className="text-sm text-muted-foreground text-center">
-            {errorCourseAnalytics.message}
-          </AlertDescription>
-        </Alert>
+        <ErrorState
+          variant="fullPage"
+          title="Failed to Load Analytics"
+          message={errorCourseAnalytics.message}
+          onRetry={() => window.location.reload()}
+          showHome
+          homeRoute="/admin"
+        />
       </div>
     )
   }

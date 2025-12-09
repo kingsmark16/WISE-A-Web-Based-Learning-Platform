@@ -1,7 +1,7 @@
 import { useStudentCertificates } from '@/hooks/student/useStudentCertificates';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Award, AlertCircle, Download, Calendar, Hash } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorState } from '@/components/ui/error-state';
+import { Award, Download, Calendar, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
@@ -87,12 +87,12 @@ const AchievementsTab = () => {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Failed to load certificates. Please try again later.
-        </AlertDescription>
-      </Alert>
+      <ErrorState
+        variant="inline"
+        title="Failed to Load Certificates"
+        message="Failed to load certificates. Please try again later."
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

@@ -2,6 +2,7 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { useFacultyCourseStats } from '@/hooks/faculty/useFacultyCourseStats';
 import { Loader, BookOpen, CheckCircle, Clock, Archive } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 import StatCard from '@/components/faculty/StatCard';
 import AnalyticsOverview from '@/components/faculty/AnalyticsOverview';
 import TopCoursesByEngagement from '@/components/faculty/TopCoursesByEngagement';
@@ -113,9 +114,12 @@ const FacultyDashboard = () => {
   if (error) {
     return (
       <div className="px-2 md:px-4 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error loading dashboard: {error.message}</p>
-        </div>
+        <ErrorState
+          variant="inline"
+          title="Dashboard Error"
+          message={`Error loading dashboard: ${error.message}`}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }

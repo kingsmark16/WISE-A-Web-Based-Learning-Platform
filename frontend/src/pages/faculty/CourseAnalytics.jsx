@@ -3,6 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import { useCourseAnalytics } from '@/hooks/faculty/useCourseAnalytics';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 import { Loader, ArrowLeft, BookOpen, Users, MessageSquare, Eye, MessageCircle, Award } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -17,9 +18,14 @@ const CourseAnalytics = () => {
   if (!facultyId) {
     return (
       <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">Unable to load analytics - Faculty ID not found</p>
-        </div>
+        <ErrorState
+          variant="inline"
+          type="auth"
+          title="Access Denied"
+          message="Unable to load analytics - Faculty ID not found"
+          showHome
+          homeRoute="/faculty"
+        />
       </div>
     );
   }
@@ -122,9 +128,12 @@ const CourseAnalytics = () => {
           <ArrowLeft className="w-4 h-4" />
           Back
         </Button>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error loading analytics: {error.message}</p>
-        </div>
+        <ErrorState
+          variant="inline"
+          title="Error Loading Analytics"
+          message={error.message}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { useGetCourse, usePublishCourse, useArchiveCourse } from "../../hooks/co
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, Archive, CheckCircle2, Copy, User, BookOpen } from "lucide-react";
@@ -51,8 +52,14 @@ const ManageCourse = () => {
 
   if (error) {
     return (
-      <div className="text-red-600 text-center p-4 bg-destructive rounded-lg">
-        Error loading course: {error.message}
+      <div className="p-4">
+        <ErrorState
+          variant="card"
+          title="Error Loading Course"
+          message={error.message}
+          onRetry={() => window.location.reload()}
+          showBack
+        />
       </div>
     );
   }
@@ -61,16 +68,16 @@ const ManageCourse = () => {
 
   if (!course) {
     return (
-      <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-yellow-800">Course data not found. Please try again.</p>
-        <Button
-          onClick={() => navigate(-1)}
-          variant="outline"
-          className="mt-4 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Go Back
-        </Button>
+      <div className="p-4">
+        <ErrorState
+          variant="card"
+          type="notFound"
+          title="Course Not Found"
+          message="Course data not found. Please try again."
+          showBack
+          showHome
+          homeRoute="/faculty"
+        />
       </div>
     );
   }

@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertTriangle, Award } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Award } from "lucide-react";
 
 const CustomTooltip = ({ active, payload, label, data }) => {
   if (active && payload && payload.length) {
@@ -48,13 +48,11 @@ export function TopStudentsChart({ data, isLoading, error }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription className="text-sm">
-              Failed to load top students data
-            </AlertDescription>
-          </Alert>
+          <ErrorState
+            variant="compact"
+            message="Failed to load top students data"
+            onRetry={() => window.location.reload()}
+          />
         </CardContent>
       </Card>
     );

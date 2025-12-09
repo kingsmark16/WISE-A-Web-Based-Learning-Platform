@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useCheckEnrollmentStatus, useGetSelectedCourse, useUnenrollInCourse } from "../../../hooks/courses/useCourses";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Calendar, BookOpen } from "lucide-react";
@@ -150,11 +151,14 @@ const CoursePage = () => {
             </div>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center min-h-[60vh] p-4 border rounded-xl bg-muted/30">
-            <div className="text-center">
-              <div className="text-destructive text-lg sm:text-xl font-semibold mb-2">Failed to load course details</div>
-              <p className="text-muted-foreground text-sm sm:text-base">{error.message}</p>
-            </div>
+          <div className="flex items-center justify-center min-h-[60vh] p-4">
+            <ErrorState
+              variant="card"
+              title="Failed to Load Course"
+              message={error.message}
+              onRetry={() => window.location.reload()}
+              showBack
+            />
           </div>
         ) : selectedCourse ? (
           <>
