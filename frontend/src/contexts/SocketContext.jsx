@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
+const BASE_URL = import.meta.env.MODE === 'development' ? 'http://localhost:3000/api' : '/api';
+
 const SocketContext = createContext(null);
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -18,7 +20,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Create socket connection
-    const socketInstance = io('http://localhost:3000', {
+    const socketInstance = io(BASE_URL, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
     });

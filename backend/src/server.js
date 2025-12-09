@@ -47,6 +47,7 @@ const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const __dirnameDep = path.resolve();
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads", "pdfs");
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -135,6 +136,14 @@ io.on('connection', (socket) => {
     console.log('Client disconnected:', socket.id);
   });
 });
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirnameDep, "../frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirnameDep, "../frontend", "dist", "index.html"));
+  });
+}
 
 // Start server
 httpServer.listen(PORT, () => {
