@@ -9,11 +9,27 @@ import { buildCertificateHTML } from "../utils/certTemplate.js";
 import { uploadBufferToSupabase } from "../storage/certificateStorage.js";
 
 
-const VERIFY_BASE = process.env.VERIFY_BASE_URL || (
-  process.env.NODE_ENV === 'production' 
-    ? 'https://parsuwise.onrender.com/verify'
-    : 'http://localhost:5173/verify'
-);
+const VERIFY_BASE = (() => {
+  // First, try explicit env variable
+  if (process.env.VERIFY_BASE_URL) {
+    console.log(`[cert] INIT: Using VERIFY_BASE_URL from env: ${process.env.VERIFY_BASE_URL}`);
+    return process.env.VERIFY_BASE_URL;
+  }
+  
+  // Fall back to NODE_ENV check
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`[cert] INIT: NODE_ENV is production, using https://parsuwise.onrender.com/verify`);
+    return 'https://parsuwise.onrender.com/verify';
+  }
+  
+  // Default to localhost
+  console.log(`[cert] INIT: Using localhost default: http://localhost:5173/verify`);
+  return 'http://localhost:5173/verify';
+})();
+
+console.log(`[cert] INIT: VERIFY_BASE = ${VERIFY_BASE}`);
+console.log(`[cert] INIT: NODE_ENV = ${process.env.NODE_ENV}`);
+
 const prisma = new PrismaClient();
 
 // Keep track of browser instance to reuse it
@@ -143,9 +159,6 @@ async function renderPdf(html) {
   
   try {
     console.log(`[cert] PUPPETEER: Launching...`);
-    console.log(`[cert] PUPPETEER: NODE_ENV=${process.env.NODE_ENV}`);
-    console.log(`[cert] PUPPETEER: EXECUTABLE_PATH=${process.env.PUPPETEER_EXECUTABLE_PATH || 'default'}`);
-    console.log(`[cert] PUPPETEER: SKIP_DOWNLOAD=${process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD || 'false'}`);
     
     // Get the browser instance
     browser = await getBrowser();
@@ -206,9 +219,12 @@ async function getBrowser() {
     ],
   };
 
+  // Only set executablePath if explicitly provided
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    console.log(`[cert] PUPPETEER: Using custom path from env: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
     launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    console.log(`[cert] PUPPETEER: Using custom path: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+  } else {
+    console.log(`[cert] PUPPETEER: No custom path, letting Puppeteer manage Chromium`);
   }
 
   try {
