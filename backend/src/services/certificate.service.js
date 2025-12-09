@@ -8,6 +8,12 @@ import { generateCertificateNumber } from "../utils/certNumber.js";
 import { buildCertificateHTML } from "../utils/certTemplate.js";
 import { uploadBufferToSupabase } from "../storage/certificateStorage.js";
 
+
+const VERIFY_BASE = process.env.VERIFY_BASE_URL || (
+  process.env.NODE_ENV === 'production' 
+    ? 'https://parsuwise.onrender.com/verify'
+    : 'http://localhost:5173/verify'
+);
 const prisma = new PrismaClient();
 
 export async function issueCertificateForCompletion(completionId) {
@@ -34,7 +40,7 @@ export async function issueCertificateForCompletion(completionId) {
   // 2) Generate PDF asynchronously in background (non-blocking)
   setImmediate(async () => {
     try {
-      const verifyUrl = `${process.env.VERIFY_BASE_URL}?code=${encodeURIComponent(certificateNumber)}`;
+      const verifyUrl = `${VERIFY_BASE}?code=${encodeURIComponent(certificateNumber)}`;
       const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, scale: 6 });
 
       // Load background image (can be cached)

@@ -1,12 +1,7 @@
 import prisma from '../lib/prisma.js';
 import { removeObject } from '../storage/providers/supabase.js';
 
-/**
- * Invalidate all certificates for a course
- * Called when new content (lesson/module) is added to the course
- * This ensures students must recomplete if they want updated certificate
- * Also deletes the PDF files from Supabase storage
- */
+
 export async function invalidateCoursesCertificates(courseId) {
   try {
     // Find all certificates for this course with certificateNumber to delete storage files
