@@ -16,6 +16,9 @@ const VERIFY_BASE = process.env.VERIFY_BASE_URL || (
 );
 const prisma = new PrismaClient();
 
+// Keep track of browser instance to reuse it
+let globalBrowser = null;
+
 export async function issueCertificateForCompletion(completionId) {
   const completion = await prisma.courseCompletion.findUnique({
     where: { id: completionId },
@@ -40,10 +43,13 @@ export async function issueCertificateForCompletion(completionId) {
   console.log(`[cert] Certificate record created: ${certificateNumber}, starting async generation...`);
 
   // 2) Generate PDF asynchronously in background (non-blocking)
-  generateCertificatePdf(certificate.id, certificateNumber, completion)
-    .catch((error) => {
-      console.error(`[cert] Unhandled error generating certificate ${certificateNumber}:`, error);
-    });
+  // Use setImmediate to ensure it runs after response is sent
+  setImmediate(() => {
+    generateCertificatePdf(certificate.id, certificateNumber, completion)
+      .catch((error) => {
+        console.error(`[cert] Unhandled error generating certificate ${certificateNumber}:`, error?.message);
+      });
+  });
 
   // Return immediately with empty URL (frontend will handle gracefully)
   return certificate;
@@ -53,23 +59,23 @@ async function generateCertificatePdf(certificateId, certificateNumber, completi
   const MAX_RETRIES = 3;
   
   try {
-    console.log(`[cert] Generating PDF for ${certificateNumber} (attempt ${attemptNumber}/${MAX_RETRIES})...`);
+    console.log(`[cert] START: Generating PDF for ${certificateNumber} (attempt ${attemptNumber}/${MAX_RETRIES})`);
     
     const verifyUrl = `${VERIFY_BASE}?code=${encodeURIComponent(certificateNumber)}`;
-    console.log(`[cert] QR Code URL: ${verifyUrl}`);
+    console.log(`[cert] QR URL: ${verifyUrl}`);
     
     const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, scale: 6 });
-    console.log(`[cert] QR Code generated for ${certificateNumber}`);
+    console.log(`[cert] QR Code: Generated`);
 
-    // Load background image (can be cached)
+    // Load background image
     const bgPath = path.resolve(process.cwd(), "src/lib/assets/certificate-bg.png");
     let bgDataUrl = "";
     try {
       const buf = await fs.readFile(bgPath);
       bgDataUrl = `data:image/png;base64,${buf.toString("base64")}`;
-      console.log(`[cert] Background image loaded (${buf.length} bytes)`);
+      console.log(`[cert] BG: Loaded (${buf.length} bytes)`);
     } catch (e) {
-      console.warn("[cert] Background not found:", bgPath, e?.message);
+      console.warn(`[cert] BG: Not found at ${bgPath} - ${e?.message}`);
     }
 
     // Build HTML
@@ -80,111 +86,137 @@ async function generateCertificatePdf(certificateId, certificateNumber, completi
       qrDataUrl,
       bgDataUrl,
     });
-    console.log(`[cert] HTML built for ${certificateNumber}`);
+    console.log(`[cert] HTML: Built`);
 
     // Render PDF
+    console.log(`[cert] PDF: Starting render...`);
     const pdfBuffer = await renderPdf(html);
-    console.log(`[cert] PDF rendered (${pdfBuffer.length} bytes) for ${certificateNumber}`);
+    console.log(`[cert] PDF: Rendered (${pdfBuffer.length} bytes)`);
 
     // Upload to storage
     const publicId = `${completion.courseId}-${certificateNumber}`;
-    console.log(`[cert] Uploading to Supabase with publicId: ${publicId}`);
+    console.log(`[cert] UPLOAD: Starting to Supabase...`);
     
     const { directUrl } = await uploadBufferToSupabase(pdfBuffer, publicId);
-    console.log(`[cert] Upload successful, URL: ${directUrl}`);
+    console.log(`[cert] UPLOAD: Success`);
 
     // Update certificate with actual URL
+    console.log(`[cert] DB: Updating with URL...`);
     const updated = await prisma.certificate.update({
       where: { id: certificateId },
       data: { certificateUrl: directUrl },
     });
 
-    console.log(`[cert] ✅ Certificate ${certificateNumber} generated and saved successfully`);
+    console.log(`[cert] DONE: Certificate ${certificateNumber} successfully generated`);
+    console.log(`[cert] URL: ${directUrl}`);
     return updated;
     
   } catch (error) {
-    console.error(`[cert] Error in attempt ${attemptNumber}/${MAX_RETRIES} for ${certificateNumber}:`, {
-      message: error?.message,
-      code: error?.code,
-      status: error?.status,
-      stack: error?.stack?.split('\n').slice(0, 5).join('\n')
-    });
+    console.error(`[cert] FAIL (attempt ${attemptNumber}/${MAX_RETRIES}): ${certificateNumber}`);
+    console.error(`[cert] ERROR MSG: ${error?.message}`);
+    if (error?.code) console.error(`[cert] ERROR CODE: ${error.code}`);
+    if (error?.stack) {
+      const stackLines = error.stack.split('\n').slice(0, 5);
+      stackLines.forEach(line => console.error(`[cert] STACK: ${line}`));
+    }
 
-    // Retry logic with exponential backoff
+    // Retry logic
     if (attemptNumber < MAX_RETRIES) {
       const delay = Math.pow(2, attemptNumber) * 5000; // 10s, 20s, 40s
-      console.log(`[cert] Retrying in ${delay}ms...`);
+      console.log(`[cert] RETRY: Waiting ${delay}ms before retry...`);
       
       setTimeout(() => {
         generateCertificatePdf(certificateId, certificateNumber, completion, attemptNumber + 1)
           .catch((retryError) => {
-            console.error(`[cert] Final retry failed for ${certificateNumber}:`, retryError?.message);
+            console.error(`[cert] FINAL FAIL: ${certificateNumber} - ${retryError?.message}`);
           });
       }, delay);
     } else {
-      console.error(`[cert] ❌ Max retries (${MAX_RETRIES}) reached for ${certificateNumber}. Certificate URL will remain empty.`);
+      console.error(`[cert] ABORT: Max retries (${MAX_RETRIES}) reached for ${certificateNumber}`);
     }
   }
 }
 
 async function renderPdf(html) {
   let browser;
+  let page;
+  
   try {
-    console.log("[cert] Launching Puppeteer...");
+    console.log(`[cert] PUPPETEER: Launching...`);
+    console.log(`[cert] PUPPETEER: NODE_ENV=${process.env.NODE_ENV}`);
+    console.log(`[cert] PUPPETEER: EXECUTABLE_PATH=${process.env.PUPPETEER_EXECUTABLE_PATH || 'default'}`);
+    console.log(`[cert] PUPPETEER: SKIP_DOWNLOAD=${process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD || 'false'}`);
     
-    const launchOptions = {
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage", // Important for Render to avoid memory issues
-      ],
-    };
-
-    // On Render, use the bundled Chromium
-    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-      console.log(`[cert] Using custom executable: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-    } else {
-      console.log("[cert] Using default/bundled Chromium");
-    }
-
-    browser = await puppeteer.launch(launchOptions);
-    console.log("[cert] Browser launched successfully");
+    // Get the browser instance
+    browser = await getBrowser();
     
-    const page = await browser.newPage();
-    console.log("[cert] Setting page content...");
+    console.log(`[cert] PUPPETEER: Browser ready`);
     
-    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 20000 });
+    page = await browser.newPage();
+    console.log(`[cert] PUPPETEER: Page created`);
     
-    console.log("[cert] Rendering to PDF...");
+    await page.setContent(html, { 
+      waitUntil: "domcontentloaded", 
+      timeout: 30000 
+    });
+    console.log(`[cert] PUPPETEER: Content set`);
+    
     const pdfBuffer = await page.pdf({
       printBackground: true,
       landscape: true,
       format: "A4",
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      timeout: 10000,
+      timeout: 30000,
     });
     
-    console.log("[cert] PDF rendered successfully");
+    console.log(`[cert] PUPPETEER: PDF generated`);
+    
     return pdfBuffer;
     
   } catch (error) {
-    console.error("[cert] PDF rendering failed:", {
-      message: error?.message,
-      code: error?.code,
-      stack: error?.stack?.split('\n').slice(0, 3).join('\n')
-    });
+    console.error(`[cert] PUPPETEER: LAUNCH FAILED`);
+    console.error(`[cert] PUPPETEER: ${error?.message}`);
     throw error;
     
   } finally {
-    if (browser) { 
-      try { 
-        await browser.close(); 
-        console.log("[cert] Browser closed");
-      } catch (e) { 
-        console.warn("[cert] Error closing browser:", e?.message);
-      } 
+    if (page) {
+      try {
+        await page.close();
+      } catch (e) {
+        console.warn(`[cert] PUPPETEER: Page close error: ${e?.message}`);
+      }
     }
+    // Don't close browser - keep it alive for reuse
+  }
+}
+
+async function getBrowser() {
+  if (globalBrowser && globalBrowser.connected) {
+    console.log(`[cert] PUPPETEER: Reusing browser instance`);
+    return globalBrowser;
+  }
+  
+  const launchOptions = {
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+    ],
+  };
+
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    console.log(`[cert] PUPPETEER: Using custom path: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+  }
+
+  try {
+    globalBrowser = await puppeteer.launch(launchOptions);
+    console.log(`[cert] PUPPETEER: Launched successfully`);
+    return globalBrowser;
+  } catch (error) {
+    console.error(`[cert] PUPPETEER: Launch error: ${error?.message}`);
+    throw error;
   }
 }
