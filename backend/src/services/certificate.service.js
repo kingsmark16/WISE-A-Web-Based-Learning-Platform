@@ -8,32 +8,28 @@ import { generateCertificateNumber } from "../utils/certNumber.js";
 import { buildCertificateHTML } from "../utils/certTemplate.js";
 import { uploadBufferToSupabase } from "../storage/certificateStorage.js";
 
+const prisma = new PrismaClient();
 
-const VERIFY_BASE = (() => {
+// Keep track of browser instance to reuse it
+let globalBrowser = null;
+
+// Helper to get VERIFY_BASE - evaluated at runtime, not module load time
+function getVerifyBase() {
   // First, try explicit env variable
   if (process.env.VERIFY_BASE_URL) {
-    console.log(`[cert] INIT: Using VERIFY_BASE_URL from env: ${process.env.VERIFY_BASE_URL}`);
     return process.env.VERIFY_BASE_URL;
   }
   
   // Fall back to NODE_ENV check
   if (process.env.NODE_ENV === 'production') {
-    console.log(`[cert] INIT: NODE_ENV is production, using https://parsuwise.onrender.com/verify`);
     return 'https://parsuwise.onrender.com/verify';
   }
   
   // Default to localhost
-  console.log(`[cert] INIT: Using localhost default: http://localhost:5173/verify`);
   return 'http://localhost:5173/verify';
-})();
+}
 
-console.log(`[cert] INIT: VERIFY_BASE = ${VERIFY_BASE}`);
-console.log(`[cert] INIT: NODE_ENV = ${process.env.NODE_ENV}`);
-
-const prisma = new PrismaClient();
-
-// Keep track of browser instance to reuse it
-let globalBrowser = null;
+console.log(`[cert] INIT: Module loaded, will determine VERIFY_BASE at runtime`);
 
 export async function issueCertificateForCompletion(completionId) {
   const completion = await prisma.courseCompletion.findUnique({
@@ -76,6 +72,10 @@ async function generateCertificatePdf(certificateId, certificateNumber, completi
   
   try {
     console.log(`[cert] START: Generating PDF for ${certificateNumber} (attempt ${attemptNumber}/${MAX_RETRIES})`);
+    
+    // Get VERIFY_BASE at runtime
+    const VERIFY_BASE = getVerifyBase();
+    console.log(`[cert] VERIFY_BASE determined: ${VERIFY_BASE}`);
     
     const verifyUrl = `${VERIFY_BASE}?code=${encodeURIComponent(certificateNumber)}`;
     console.log(`[cert] QR URL: ${verifyUrl}`);
@@ -159,6 +159,8 @@ async function renderPdf(html) {
   
   try {
     console.log(`[cert] PUPPETEER: Launching...`);
+    console.log(`[cert] PUPPETEER: NODE_ENV = ${process.env.NODE_ENV}`);
+    console.log(`[cert] PUPPETEER: CACHE_DIR = ${process.env.PUPPETEER_CACHE_DIR || 'default'}`);
     
     // Get the browser instance
     browser = await getBrowser();
@@ -228,6 +230,7 @@ async function getBrowser() {
   }
 
   try {
+    console.log(`[cert] PUPPETEER: About to launch with options:`, JSON.stringify(launchOptions, null, 2));
     globalBrowser = await puppeteer.launch(launchOptions);
     console.log(`[cert] PUPPETEER: Launched successfully`);
     return globalBrowser;
