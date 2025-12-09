@@ -105,7 +105,6 @@ app.use('/api', strictRateLimit("5m", 10), guestRoutes);
 
 // Health / debug
 app.post("/api/_ping", (req, res) => res.json({ ok: true }));
-app.get("/", (req, res) => res.send("Server is running"));
 
 //testing endpoint: 
 app.get("/healthz", (req, res) => {
