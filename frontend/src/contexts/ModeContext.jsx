@@ -3,6 +3,9 @@ import { useUser } from '@clerk/clerk-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ModeContext } from './modeContext';
 
+// Re-export ModeContext so consumers can import from this file
+export { ModeContext };
+
 export const ModeProvider = ({ children }) => {
   const { user, isLoaded } = useUser();
   const navigate = useNavigate();
