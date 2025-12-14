@@ -109,18 +109,20 @@ export const MyCourses = () => {
   // Empty state
   if (courses.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 bg-background/50">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="bg-primary/10 p-6 rounded-full w-fit mx-auto animate-in zoom-in duration-500">
-            <BookOpen className="w-12 h-12 text-primary" />
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">My Courses</h1>
+          <p className="text-muted-foreground">Join and manage your learning courses</p>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-muted mb-4">
+            <BookOpen className="h-8 w-8 text-muted-foreground" />
           </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight">No Courses Yet</h2>
-            <p className="text-muted-foreground">
-              You haven't enrolled in any courses yet. Join a course with a code to get started!
-            </p>
-          </div>
-          <Button size="lg" onClick={() => setIsJoinDialogOpen(true)} className="w-full sm:w-auto gap-2">
+          <p className="text-xl font-semibold text-foreground mb-2">No Courses Yet</p>
+          <p className="text-sm text-muted-foreground text-center max-w-md">
+            You haven't enrolled in any courses yet. Join a course with a code to get started!
+          </p>
+          <Button size="lg" onClick={() => setIsJoinDialogOpen(true)} className="mt-6 gap-2">
             <Plus className="h-4 w-4" />
             Join Course
           </Button>

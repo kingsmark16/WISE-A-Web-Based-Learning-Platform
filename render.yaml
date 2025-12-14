@@ -3,7 +3,7 @@ services:
     name: WISE
     env: node
     plan: starter
-    buildCommand: cd backend && npm install && npx puppeteer browsers install chrome && npx prisma generate && cd ../frontend && npm install && npm run build
+    buildCommand: cd backend && npm install && npx prisma generate && cd ../frontend && npm install && npm run build
     startCommand: cd backend && npm start
     healthCheckPath: /
     envVars:

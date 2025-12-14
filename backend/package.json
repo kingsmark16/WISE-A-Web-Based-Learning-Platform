@@ -34,6 +34,7 @@
     "mimetypes": "^0.1.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "pdfkit": "^0.17.2",
     "puppeteer": "^24.26.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
