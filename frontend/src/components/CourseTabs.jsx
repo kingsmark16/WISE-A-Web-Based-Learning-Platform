@@ -28,9 +28,9 @@ const CourseTabs = ({ courseId, courseTitle, certificateEnabled }) => {
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         
         {/* Navigation Container */}
-        <div className="mb-8">
-            <div className="flex items-center justify-start sm:justify-center overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                <TabsList className="h-auto p-1.5 bg-muted/50 backdrop-blur-sm border border-border/50 rounded-full gap-1 inline-flex">
+        <div className="mb-8 w-full">
+            <div className="flex items-center justify-start sm:justify-center overflow-x-auto pb-4 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+                <TabsList className="h-auto p-1 bg-muted/50 backdrop-blur-sm border border-border/50 rounded-full gap-1 flex w-full sm:w-auto min-w-fit">
                     {tabConfig.map((tabItem) => {
                         const Icon = tabItem.icon;
                         const isDisabled = tabItem.value === 'certification' && !certificateEnabled;
@@ -40,17 +40,17 @@ const CourseTabs = ({ courseId, courseTitle, certificateEnabled }) => {
                                 <TooltipProvider key={tabItem.value}>
                                     <Tooltip delayDuration={0}>
                                         <TooltipTrigger asChild>
-                                            <div className="relative">
+                                            <div className="relative flex-1 sm:flex-none">
                                                 <TabsTrigger
                                                     value={tabItem.value}
                                                     disabled={true}
                                                     className="
-                                                        relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300
+                                                        relative flex items-center justify-center gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 w-full sm:w-auto
                                                         opacity-50 cursor-not-allowed
                                                         data-[state=inactive]:text-muted-foreground
                                                     "
                                                 >
-                                                    <Icon className="w-4 h-4" />
+                                                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                     <span className="whitespace-nowrap">{tabItem.label}</span>
                                                     <Lock className="w-3 h-3 ml-0.5" />
                                                 </TabsTrigger>
@@ -69,12 +69,12 @@ const CourseTabs = ({ courseId, courseTitle, certificateEnabled }) => {
                                 key={tabItem.value}
                                 value={tabItem.value}
                                 className="
-                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300
+                                    relative flex items-center justify-center gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 flex-1 sm:flex-none
                                     data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md
                                     data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-background/50 data-[state=inactive]:hover:text-foreground
                                 "
                             >
-                                <Icon className="w-4 h-4" />
+                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 <span className="whitespace-nowrap">{tabItem.label}</span>
                             </TabsTrigger>
                         );

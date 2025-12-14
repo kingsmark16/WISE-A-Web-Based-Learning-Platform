@@ -15,13 +15,15 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
   // Wait for user to load
   if (!isLoaded) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative w-10 h-10">
-            <div className="absolute inset-0 rounded-full border-2 border-muted" />
-            <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          </div>
-          <p className="text-sm text-muted-foreground">Loading...</p>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
+            <div className="relative h-16 w-16">
+                <div className="absolute inset-0 border-4 border-muted rounded-full" />
+                <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground tracking-wide">
+                VERIFYING ACCESS
+            </p>
         </div>
       </div>
     );
