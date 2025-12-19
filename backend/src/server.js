@@ -49,9 +49,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const __dirnameDep = path.resolve();
 
-const UPLOADS_DIR = path.join(process.cwd(), "uploads", "pdfs");
-fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-
 // Core middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -72,8 +69,6 @@ app.use(clerkMiddleware());
 // GLOBAL rate limiter (applies to all routes below) can be edited through .env file
 //app.use(arcjetRateLimit);
 
-// Static files
-app.use("/files", express.static(UPLOADS_DIR));
 
 app.use('/api/upload', requireAuth(), updateLastActive, uploadRoutes);
 app.use('/api/admin',   requireAuth(), updateLastActive, adminRoutes);

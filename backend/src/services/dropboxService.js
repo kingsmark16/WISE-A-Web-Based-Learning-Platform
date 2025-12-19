@@ -18,7 +18,7 @@ let persisted = null;
 // --- add token cache and fetch helper ---
 const tokenCache = {
   accessToken: null,
-  expiresAt: null // ms epoch
+  expiresAt: null
 };
 
 async function getFetch() {
@@ -26,7 +26,7 @@ async function getFetch() {
   const mod = await import('node-fetch');
   return mod.default;
 }
-// --- end added code ---
+
 
 async function loadPersistedFromDB() {
   if (persisted !== null) return;

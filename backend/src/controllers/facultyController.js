@@ -586,8 +586,7 @@ export const getCourseAnalytics = async (req, res) => {
           engagementScore
         };
       })
-      .sort((a, b) => b.engagementScore - a.engagementScore)
-      .slice(0, 5);
+      .sort((a, b) => b.engagementScore - a.engagementScore);
 
     console.log('Analytics response:', {
       modulesCount: moduleMetrics.length,

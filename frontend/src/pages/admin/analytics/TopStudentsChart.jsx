@@ -76,8 +76,8 @@ export function TopStudentsChart({ data, isLoading, error }) {
     );
   }
 
-  // Transform data for chart - take top 5
-  const topStudents = data.slice(0, 5);
+  // Transform data for chart
+  const topStudents = data;
   const chartData = topStudents.map((student, index) => ({
     name: student.name.split(' ')[0],
     achievements: student.certificatesEarned || 0,
